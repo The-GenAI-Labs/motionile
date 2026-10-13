@@ -4,7 +4,15 @@ import http from "k6/http";
 import { smokeThresholds } from "../thresholds.js";
 
 const webBaseUrl = __ENV.WEB_BASE_URL || "http://localhost:3000";
-const publicPaths = ["/", "/about", "/pricing", "/contact"];
+const publicPaths = [
+  "/",
+  "/about",
+  "/pricing",
+  "/contact",
+  "/legal/terms",
+  "/legal/privacy",
+  "/legal/refund-policy",
+];
 
 export const options = {
   vus: 5,

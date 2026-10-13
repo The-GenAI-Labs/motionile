@@ -5,6 +5,7 @@ from motionile import __version__
 from motionile.core.config import AppEnv, Settings, get_settings
 from motionile.core.health import health_router
 from motionile.core.logging import configure_logging
+from motionile.core.middleware.security_headers import SecurityHeadersMiddleware
 
 API_TITLE = "Motionile API"
 
@@ -27,6 +28,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Content-Type", "X-CSRF-Token", "Idempotency-Key"],
     )
+    app.add_middleware(SecurityHeadersMiddleware)
     app.include_router(health_router)
     return app
 

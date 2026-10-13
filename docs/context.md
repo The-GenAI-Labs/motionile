@@ -328,7 +328,7 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 - CI runs external providers in `PROVIDERS_MODE=fake`: fake LLM, TTS, OTP channels, Razorpay and publishing providers; Cloudflare's dummy Turnstile keys.
 
 ### Git
-- Branches: `phase-<n>/<slug>` or `feat/<slug>` → pull request into `staging` → fast-forward into `main`.
+- Branches: `phase-<n>/<slug>` or `feat/<slug>` → pull request into `develop` → release pull request from `develop` into `prod`. `develop` deploys to staging and `prod` deploys to production.
 - Conventional Commits, enforced by commitlint.
 - Pull requests merge only with every CI check green.
 
@@ -466,8 +466,8 @@ Local development adds Postgres with pgvector, MinIO and Mailpit. The web app ru
 `APP_ENV` is `local`, `ci`, `staging` or `production`. `PROVIDERS_MODE` is `fake` or `live`.
 
 ### CI/CD
-- **`ci.yml`** on every pull request into `staging` or `main`: lint (ESLint, ruff, no-comments, module boundaries, commitlint), typecheck (tsc, pyright), unit, integration, API contract drift, evals, scan (gitleaks, pip-audit, pnpm audit, Trivy), build images, e2e, security (security suite + ZAP baseline), load (k6 smoke).
-- **Deploy:** push to `staging` → build → push to ECR → SSH to EC2 (runner IP temporarily allowed in the security group) → `deploy.sh`: pull, migrate, `compose up --wait`, roll back on failure. `main` deploys the same image after reviewer approval.
+- **`ci.yml`** on every pull request into `develop` or `prod`: lint (ESLint, ruff, no-comments, module boundaries, commitlint), typecheck (tsc, pyright), unit, integration, API contract drift, evals, scan (gitleaks, pip-audit, pnpm audit, Trivy), build images, e2e, security (security suite + ZAP baseline), load (k6 smoke).
+- **Deploy:** push to `develop` → build → push to ECR → SSH to the staging EC2 instance (runner IP temporarily allowed in the security group) → `deploy.sh`: pull, migrate, `compose up --wait`, roll back on failure. `prod` deploys the same image to production after reviewer approval.
 - **`nightly.yml`:** full load test, ZAP full scan and full evals against staging.
 - **Frontend:** Vercel Git integration for both branches.
 

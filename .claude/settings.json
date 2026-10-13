@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm verify)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm test:unit)",
+      "Bash(pnpm test:integration)",
+      "Bash(pnpm contract:generate)",
+      "Bash(pnpm contract:check)",
+      "Bash(pnpm format)",
+      "Bash(uv run pytest:*)",
+      "Bash(uv run ruff:*)",
+      "Bash(uv run pyright:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/.env)",
+      "Read(./**/.env.local)",
+      "Read(./**/.env.*.local)",
+      "Read(./**/.env.production)",
+      "Read(./**/.env.staging)",
+      "Read(./**/.env.test)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push origin +*)",
+      "Bash(git push origin develop:*)",
+      "Bash(git push origin prod:*)",
+      "Bash(git push origin HEAD:develop:*)",
+      "Bash(git push origin HEAD:prod:*)",
+      "Bash(git push -u origin develop:*)",
+      "Bash(git push -u origin prod:*)",
+      "Bash(git push --set-upstream origin develop:*)",
+      "Bash(git push --set-upstream origin prod:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(git push --no-verify:*)",
+      "Bash(rm -rf /:*)",
+      "Bash(rm -rf /*:*)",
+      "Bash(rm -rf ~:*)",
+      "Bash(rm -rf ~/*:*)",
+      "Bash(rm -rf ..:*)",
+      "Bash(rm -rf ../*:*)",
+      "Bash(sudo:*)",
+      "Bash(docker system prune:*)",
+      "Bash(docker volume prune:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/format_edited_file.py\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

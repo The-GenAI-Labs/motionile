@@ -1,0 +1,4 @@
+{
+  "extends": "@motionile/config/typescript/library.json",
+  "include": ["playwright.config.ts", "e2e", "security"]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@motionile/tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "e2e": "playwright test --project=e2e",
+    "security": "playwright test --project=security",
+    "zap": "bash security/zap/run-baseline.sh",
+    "load": "bash load/run-smoke.sh"
+  },
+  "devDependencies": {
+    "@motionile/config": "workspace:*",
+    "@playwright/test": "1.64.0",
+    "@types/node": "24.19.2",
+    "eslint": "10.12.0",
+    "typescript": "6.0.3"
+  }
+}

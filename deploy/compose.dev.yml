@@ -34,22 +34,20 @@ services:
         condition: service_healthy
 
   mcp:
+    build: *server-build
     image: motionile-api:local
     environment:
       FORWARDED_ALLOW_IPS: "*"
     ports:
       - "8001:8000"
     depends_on:
-      api:
-        condition: service_started
       postgres:
         condition: service_healthy
 
   worker-default:
+    build: *server-build
     image: motionile-api:local
     depends_on:
-      api:
-        condition: service_started
       postgres:
         condition: service_healthy
 
@@ -63,10 +61,9 @@ services:
         condition: service_healthy
 
   migrate:
+    build: *server-build
     image: motionile-api:local
     depends_on:
-      api:
-        condition: service_started
       postgres:
         condition: service_healthy
 

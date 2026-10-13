@@ -1,0 +1,28 @@
+name: Set up toolchain
+description: Install Node.js, pnpm, uv and the project dependencies.
+inputs:
+  python:
+    description: Install the Python environment for apps/server.
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v6.1.0
+    - uses: actions/setup-node@v7.1.0
+      with:
+        node-version-file: .node-version
+        cache: pnpm
+    - name: Install Node.js dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+    - uses: astral-sh/setup-uv@v10.3.0
+      if: inputs.python == 'true'
+      with:
+        version: "0.13.0"
+        enable-cache: true
+        cache-dependency-glob: apps/server/uv.lock
+    - name: Install Python dependencies
+      if: inputs.python == 'true'
+      shell: bash
+      run: uv sync --frozen --project apps/server

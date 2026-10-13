@@ -1,0 +1,55 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "agentGuidance": false,
+  "globalDependencies": [
+    ".node-version",
+    ".python-version",
+    ".npmrc",
+    "packages/config/typescript/*.json"
+  ],
+  "globalPassThroughEnv": ["DOCKER_HOST", "TESTCONTAINERS_*", "UV_*", "PLAYWRIGHT_*", "CI"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.test.*", "!tests/**", "!coverage/**"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": ["NEXT_PUBLIC_*"]
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "../../packages/config/eslint/**",
+        "../../packages/config/prettier/**"
+      ],
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": []
+    },
+    "test:unit": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": ["coverage/**"],
+      "env": ["NEXT_PUBLIC_*"]
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": ["coverage/**"],
+      "cache": false
+    },
+    "contract:generate": {
+      "dependsOn": ["^contract:generate"],
+      "inputs": ["$TURBO_DEFAULT$", "!tests/**", "!coverage/**"],
+      "outputs": ["openapi.json", "src/generated/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

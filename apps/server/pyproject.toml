@@ -1,0 +1,131 @@
+[project]
+name = "motionile"
+version = "0.1.0"
+description = "Motionile backend: API, MCP server and background workers"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "alembic>=1.20.0",
+    "asyncpg>=0.32.0",
+    "fastapi>=0.143.0",
+    "httpx>=0.28.1",
+    "orjson>=3.13.0",
+    "procrastinate>=3.10.0",
+    "psycopg[binary,pool]>=3.3.6",
+    "pydantic>=2.14.1",
+    "pydantic-settings>=2.15.0",
+    "redis>=8.1.0",
+    "sqlalchemy[asyncio]>=2.1.4",
+    "structlog>=26.1.0",
+    "uuid-utils>=1.0.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+render = [
+    "playwright>=1.63.0",
+]
+dev = [
+    "import-linter>=2.15",
+    "pyright>=1.1.414",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "pyyaml>=6.0.3",
+    "ruff>=0.17.0",
+    "testcontainers[postgres,redis]>=4.15.0",
+    "types-pyyaml>=6.0.12.20260906",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+src = ["src", "tests", "evals", "migrations"]
+extend-exclude = ["**/tests/fixtures"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "W",
+    "I",
+    "N",
+    "UP",
+    "B",
+    "A",
+    "C4",
+    "SIM",
+    "S",
+    "ASYNC",
+    "PL",
+    "PT",
+    "RET",
+    "ARG",
+    "PTH",
+    "ERA",
+    "RUF",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "PLR2004"]
+"migrations/versions/*.py" = ["N999"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["motionile", "evals"]
+
+[tool.pyright]
+include = ["src", "tests", "evals", "migrations"]
+exclude = ["**/tests/fixtures", "**/__pycache__", ".venv"]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
+reportMissingModuleSource = "error"
+reportUnnecessaryTypeIgnoreComment = "error"
+
+[tool.pytest.ini_options]
+minversion = "9.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["--strict-markers", "--strict-config", "-ra", "--import-mode=importlib"]
+markers = [
+    "unit: fast tests without real I/O",
+    "integration: tests against real Postgres and Redis containers",
+    "slow: tests that take longer than a few seconds",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+asyncio_default_test_loop_scope = "function"
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["motionile"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+
+[tool.importlinter]
+root_packages = ["motionile"]
+include_external_packages = false
+
+[[tool.importlinter.contracts]]
+id = "core-is-foundational"
+name = "core imports nothing from modules, engine or mcp"
+type = "forbidden"
+source_modules = ["motionile.core"]
+forbidden_modules = ["motionile.modules", "motionile.engine", "motionile.mcp"]
+allow_indirect_imports = false
+
+[[tool.importlinter.contracts]]
+id = "engine-is-independent-of-modules"
+name = "engine imports nothing from modules"
+type = "layers"
+layers = ["(motionile.modules)", "(motionile.engine)"]

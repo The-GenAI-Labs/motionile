@@ -1,0 +1,11 @@
+name: example
+on: push
+env:
+  COLOR: "#0E0E10"
+  ANCHOR: https://example.com/docs#install
+  SINGLE: 'value # inside single quotes'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "issue #42" && echo ${#PATH}

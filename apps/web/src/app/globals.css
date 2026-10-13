@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  color-scheme: dark;
+  --bg: #0e0e10;
+  --surface: #16161a;
+  --elevated: #1e1e23;
+  --border: #2a2a30;
+  --text-muted: #8a8a93;
+  --text-secondary: #b4b4bc;
+  --text: #f2f2f3;
+  --accent: #fafafa;
+  --ring: rgb(255 255 255 / 0.4);
+  --danger: #e5484d;
+  --success: #3dd68c;
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--elevated);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--bg);
+  --color-secondary: var(--elevated);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface);
+  --color-muted-foreground: var(--text-muted);
+  --color-subtle-foreground: var(--text-secondary);
+  --color-accent: var(--elevated);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--danger);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply bg-background;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}

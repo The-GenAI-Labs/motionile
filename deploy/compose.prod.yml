@@ -1,0 +1,92 @@
+x-required-environment: &required-environment
+  APP_ENV: ${APP_ENV:?set APP_ENV}
+  PROVIDERS_MODE: ${PROVIDERS_MODE:?set PROVIDERS_MODE}
+  DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+  REDIS_URL: redis://:${REDIS_PASSWORD:?set REDIS_PASSWORD}@redis:6379/0
+  ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+
+services:
+  proxy:
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL}
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN}
+      MCP_DOMAIN: ${MCP_DOMAIN:?set MCP_DOMAIN}
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256m
+
+  api:
+    environment: *required-environment
+    image: ${MOTIONILE_API_IMAGE:?set MOTIONILE_API_IMAGE}
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1g
+
+  mcp:
+    environment: *required-environment
+    image: ${MOTIONILE_API_IMAGE:?set MOTIONILE_API_IMAGE}
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512m
+
+  worker-default:
+    environment: *required-environment
+    image: ${MOTIONILE_API_IMAGE:?set MOTIONILE_API_IMAGE}
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1g
+
+  worker-render:
+    environment: *required-environment
+    image: ${MOTIONILE_WORKER_IMAGE:?set MOTIONILE_WORKER_IMAGE}
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          cpus: "2.00"
+          memory: 4g
+
+  migrate:
+    environment: *required-environment
+    image: ${MOTIONILE_API_IMAGE:?set MOTIONILE_API_IMAGE}
+    logging: *logging
+
+  redis:
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory-policy
+      - noeviction
+      - --requirepass
+      - ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512m
+    volumes:
+      - /srv/motionile/data/redis:/data

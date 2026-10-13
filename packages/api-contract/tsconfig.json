@@ -1,0 +1,8 @@
+{
+  "extends": "@motionile/config/typescript/library.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["src", "tests", "openapi-ts.config.ts", "vitest.config.ts"]
+}

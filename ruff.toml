@@ -1,0 +1,6 @@
+extend = "apps/server/pyproject.toml"
+src = ["."]
+extend-exclude = ["scripts/tests/fixtures"]
+
+[lint.extend-per-file-ignores]
+"scripts/tests/**" = ["S101", "PLR2004"]

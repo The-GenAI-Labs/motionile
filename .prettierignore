@@ -1,0 +1,14 @@
+pnpm-lock.yaml
+apps/server/uv.lock
+apps/server/openapi.json
+packages/api-contract/src/generated/
+**/tests/fixtures/
+.next/
+.turbo/
+coverage/
+playwright-report/
+test-results/
+zap-report/
+.venv/
+docs/context.md
+**/.import_linter_cache/

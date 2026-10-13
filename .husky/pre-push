@@ -1,0 +1,1 @@
+TURBO_SCM_BASE="${TURBO_SCM_BASE:-origin/develop}" pnpm exec turbo run typecheck test:unit --affected --output-logs=errors-only

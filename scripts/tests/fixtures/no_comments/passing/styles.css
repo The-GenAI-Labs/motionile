@@ -1,0 +1,8 @@
+:root {
+  --bg: #0e0e10;
+}
+
+.link::after {
+  content: "/* not a comment */";
+  background: url("https://example.com/image.png");
+}

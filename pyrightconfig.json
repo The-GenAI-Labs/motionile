@@ -1,0 +1,9 @@
+{
+  "include": ["scripts"],
+  "exclude": ["**/tests/fixtures", "**/__pycache__"],
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "strict",
+  "venvPath": "apps/server",
+  "venv": ".venv",
+  "reportUnnecessaryTypeIgnoreComment": "error"
+}

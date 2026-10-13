@@ -6,6 +6,7 @@ Motionile is a project by [The GenAI Labs](https://github.com/The-GenAI-Labs).
 
 | Branch    | Purpose                                                            |
 | --------- | ------------------------------------------------------------------ |
+| `init`    | Initial project setup snapshot.                                    |
 | `develop` | Integration branch for ongoing work. Feature branches merge here.  |
 | `prod`    | Production-ready code. Only receives tested merges from `develop`. |
 

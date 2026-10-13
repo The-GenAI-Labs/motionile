@@ -28,3 +28,8 @@ git clone https://github.com/The-GenAI-Labs/motionile.git
 cd motionile
 git checkout develop
 ```
+
+## Contributing
+
+All commits should be signed so they show as **Verified** on GitHub.
+See [GitHub's guide to signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits).

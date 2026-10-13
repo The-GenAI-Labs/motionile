@@ -174,12 +174,11 @@ apps/web/
 │   │   │   ├── users/[userId]/  roles/  analytics/  audit-logs/
 │   │   │   ├── billing/  payments/  refunds/  webhooks/
 │   │   │   ├── catalog/  prompts/  skills/  platforms/  settings/
-│   │   ├── forbidden/
+│   │   ├── forbidden.tsx  not-found.tsx  error.tsx  global-error.tsx  providers.tsx
 │   │   └── api/health/route.ts
 │   ├── components/           ui/  layouts/  shared/
 │   ├── features/             auth/  catalog/  generation/  library/  publishing/  skills/  billing/  voices/  memory/  settings/  dashboard/  admin/
 │   ├── lib/                  api/  auth/  query/  razorpay/  seo/  utils/  validations/
-│   ├── providers/
 │   ├── hooks/
 │   ├── stores/
 │   ├── config/               env.ts  site.ts  navigation.ts

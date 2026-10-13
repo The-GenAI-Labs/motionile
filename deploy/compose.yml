@@ -1,0 +1,156 @@
+name: motionile
+
+x-server-environment: &server-environment
+  APP_ENV: ${APP_ENV:-local}
+  PROVIDERS_MODE: ${PROVIDERS_MODE:-fake}
+  DATABASE_URL: ${DATABASE_URL:-postgresql://motionile:motionile@postgres:5432/motionile}
+  DATABASE_DIRECT_URL: ${DATABASE_DIRECT_URL:-}
+  REDIS_URL: redis://:${REDIS_PASSWORD:-motionile}@redis:6379/0
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+
+x-api-image: &api-image ${MOTIONILE_API_IMAGE:-motionile-api:local}
+
+services:
+  proxy:
+    image: caddy:2.11.7-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:-}
+      API_DOMAIN: ${API_DOMAIN:-api.localhost}
+      MCP_DOMAIN: ${MCP_DOMAIN:-mcp.localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      backend:
+        ipv4_address: ${PROXY_IP:-172.30.0.10}
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    image: *api-image
+    restart: unless-stopped
+    environment:
+      <<: *server-environment
+      FORWARDED_ALLOW_IPS: ${PROXY_IP:-172.30.0.10}
+    healthcheck: &http-healthcheck
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    networks:
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  mcp:
+    image: *api-image
+    restart: unless-stopped
+    command:
+      - uvicorn
+      - motionile.entrypoints.mcp:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --proxy-headers
+      - --no-server-header
+    environment:
+      <<: *server-environment
+      FORWARDED_ALLOW_IPS: ${PROXY_IP:-172.30.0.10}
+    healthcheck: *http-healthcheck
+    networks:
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker-default:
+    image: *api-image
+    restart: unless-stopped
+    command:
+      - procrastinate
+      - --app=motionile.entrypoints.worker.app
+      - worker
+      - --queues=default,billing,publishing
+    environment: *server-environment
+    stop_grace_period: 60s
+    networks:
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker-render:
+    image: ${MOTIONILE_WORKER_IMAGE:-motionile-worker:local}
+    restart: unless-stopped
+    environment: *server-environment
+    shm_size: 1gb
+    stop_grace_period: 10m
+    networks:
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  migrate:
+    image: *api-image
+    profiles:
+      - tools
+    command:
+      - alembic
+      - upgrade
+      - head
+    environment: *server-environment
+    restart: "no"
+    networks:
+      - backend
+
+  redis:
+    image: redis:8.10.2-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory-policy
+      - noeviction
+      - --requirepass
+      - ${REDIS_PASSWORD:-motionile}
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:-motionile}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend
+
+networks:
+  backend:
+    ipam:
+      config:
+        - subnet: ${BACKEND_SUBNET:-172.30.0.0/24}
+
+volumes:
+  caddy-data:
+  caddy-config:
+  redis-data:

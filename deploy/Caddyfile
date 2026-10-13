@@ -1,0 +1,29 @@
+{
+	email {$ACME_EMAIL}
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+(api_defaults) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+		-Via
+	}
+}
+
+{$API_DOMAIN} {
+	import api_defaults
+	reverse_proxy api:8000
+}
+
+{$MCP_DOMAIN} {
+	import api_defaults
+	reverse_proxy mcp:8000 {
+		flush_interval -1
+	}
+}

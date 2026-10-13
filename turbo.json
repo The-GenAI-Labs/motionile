@@ -1,7 +1,13 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "stream",
-  "globalDependencies": [".node-version", ".python-version", ".npmrc", "packages/config/typescript/*.json"],
+  "agentGuidance": false,
+  "globalDependencies": [
+    ".node-version",
+    ".python-version",
+    ".npmrc",
+    "packages/config/typescript/*.json"
+  ],
   "globalPassThroughEnv": ["DOCKER_HOST", "TESTCONTAINERS_*", "UV_*", "PLAYWRIGHT_*", "CI"],
   "tasks": {
     "build": {
@@ -12,7 +18,11 @@
     },
     "lint": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", "../../packages/config/eslint/**", "../../packages/config/prettier/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "../../packages/config/eslint/**",
+        "../../packages/config/prettier/**"
+      ],
       "outputs": []
     },
     "typecheck": {

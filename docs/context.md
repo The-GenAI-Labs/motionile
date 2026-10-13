@@ -282,10 +282,13 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 - Versioned under `/v1`. Health checks at `/health/live` and `/health/ready`.
 - JSON uses camelCase on the wire through a Pydantic alias generator; Python stays snake_case.
 - Request schemas use `extra="forbid"` and strip whitespace; every string, number and list is bounded.
-- Errors are RFC 9457 `application/problem+json` with a stable machine-readable `code`.
+- Errors are RFC 9457 `application/problem+json` with a stable machine-readable `code`, a `type` of `urn:motionile:problem:<code>`, the `requestId`, and camelCase `errors[].field` paths for validation failures.
 - Lists use cursor pagination.
 - Mutating endpoints that create money or credit side effects require an `Idempotency-Key` header.
-- Every route declares `response_model`, status codes and rate-limit policy.
+- Every route declares `response_model`, status codes and rate-limit policy. `/v1` routes inherit `api.default`; stricter policies are added per route.
+- OpenAPI operation IDs are `<tag>_<function_name>` and become the generated TypeScript names. Error responses are documented as `application/problem+json`.
+- Idempotency records live in Postgres (`idempotency_records`): one atomic upsert claims a key per scope and user, a replay returns the stored status, body and `Location`/`ETag` headers with `Idempotent-Replayed: true`, a different body under the same key is `409 idempotency_key_reused`, and a request still running is `409 idempotency_request_in_progress` with `Retry-After`.
+- A test-support router under `/v1/_test` exists only when `APP_ENV` is `local` or `ci` and is never part of the published contract.
 
 ### Database
 - Primary keys are UUIDv7 generated in the application.
@@ -295,7 +298,8 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 - Money is `bigint` paise. Credits are `bigint`.
 - `jsonb` only for payloads and metadata, never for queried fields.
 - SQLAlchemy `naming_convention` for all constraints. Every foreign key is indexed. `ON DELETE` is chosen explicitly per foreign key.
-- Migrations: one per pull request, reversible, expand/contract only so a code rollback never breaks the schema.
+- Migrations: one per pull request, reversible, expand/contract only so a code rollback never breaks the schema. Alembic runs on psycopg; the application uses asyncpg.
+- Append-only tables (`audit_log`, `credit_ledger`) are guarded by a trigger; only a retention job that sets `motionile.allow_purge = 'on'` for its transaction may delete.
 
 ### Security
 - All outbound HTTP goes through `SafeHttpClient`.
@@ -323,7 +327,7 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 
 ### Testing
 - Server unit tests use `tests/fakes`, never real I/O.
-- Server integration tests use testcontainers Postgres and Redis; each test runs in a rolled-back transaction.
+- Server integration tests use testcontainers Postgres, Redis and MinIO; each test runs in a rolled-back transaction unless it must observe committed concurrent transactions, in which case its fixture truncates the mutable tables afterwards.
 - Root `tests/` holds e2e, security and load tests against a running stack.
 - CI runs external providers in `PROVIDERS_MODE=fake`: fake LLM, TTS, OTP channels, Razorpay and publishing providers; Cloudflare's dummy Turnstile keys.
 
@@ -368,7 +372,7 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 
 ### Request protection
 - **CSRF:** SameSite cookies, Origin check on every unsafe method, double-submit `mo_csrf` cookie matched against `X-CSRF-Token`.
-- **CORS:** explicit origin allowlist, credentials allowed, no wildcards.
+- **CORS:** explicit origin allowlist (`CORS_ALLOWED_ORIGINS`, https only when deployed), credentials allowed, no wildcards.
 - **Origin guard:** state-changing requests from non-allowlisted origins are rejected (Referer as fallback).
 - **SSRF:** https only, DNS resolved and private, loopback, link-local and metadata ranges blocked, redirects re-validated, timeouts and size caps. EC2 uses IMDSv2 with hop limit 1. The render sandbox blocks all network access except the bundled runtime.
 - **Turnstile** on register, login, OTP send, forgot-password and contact. Verified server-side with remote IP, hostname and action checks.
@@ -463,7 +467,7 @@ One server Dockerfile with two targets produces two images.
 Local development adds Postgres with pgvector, MinIO and Mailpit. The web app runs with `pnpm dev` locally and on Vercel in staging and production; its Dockerfile exists for self-hosting.
 
 ### Environments
-`APP_ENV` is `local`, `ci`, `staging` or `production`. `PROVIDERS_MODE` is `fake` or `live`.
+`APP_ENV` is `local`, `ci`, `staging` or `production`. `PROVIDERS_MODE` is `fake` or `live`. Settings are grouped by prefix (`DATABASE_`, `REDIS_`, `SECURITY_`, `CORS_`, `RATE_LIMIT_`, `STORAGE_`, `TURNSTILE_`, `ENCRYPTION_`, `LOG_`, `OUTBOUND_HTTP_`); blank values count as unset, and staging and production refuse to start without live providers, explicit database, Redis and https CORS origins, a cursor-signing secret, encryption keys, a Turnstile secret and a storage bucket.
 
 ### CI/CD
 - **`ci.yml`** on every pull request into `develop` or `prod`: lint (ESLint, ruff, no-comments, module boundaries, commitlint), typecheck (tsc, pyright), unit, integration, API contract drift, evals, scan (gitleaks, pip-audit, pnpm audit, Trivy), build images, e2e, security (security suite + ZAP baseline), load (k6 smoke).

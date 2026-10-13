@@ -72,6 +72,8 @@ The SQLAlchemy metadata in `motionile.core.db` applies this naming convention, a
 | Primary key | `pk_<table>`                            |
 | Trigger     | `trg_<table>_<purpose>`                 |
 
+In models, give check constraints only the `<name>` part (`CheckConstraint(..., name="status")`) and let the convention add the prefix. In migrations, write the full name inside `op.f()` (`name=op.f("ck_orders_status")`) so Alembic does not apply the convention a second time; the integration suite compares the migrated schema with the models and fails on any drift.
+
 - Every foreign key column is indexed, alone or as the leading column of another index.
 - `ON DELETE` is chosen explicitly for every foreign key:
   - `CASCADE` for owned children.

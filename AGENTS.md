@@ -74,10 +74,11 @@ Operational rules for any coding agent working in this repository. `docs/context
 - Version routes under `/v1`. Health checks live at `/health/live` and `/health/ready`.
 - Use camelCase on the wire through the Pydantic alias generator; keep Python snake_case.
 - Request schemas use `extra="forbid"`, strip whitespace and bound every string, number and list.
-- Return errors as RFC 9457 `application/problem+json` with a stable `code`.
+- Return errors as RFC 9457 `application/problem+json` with a stable `code`; `type` is `urn:motionile:problem:<code>`. Raise `AppError` subclasses from `motionile.core.errors`; never build error bodies by hand.
 - Paginate lists with cursors.
-- Require an `Idempotency-Key` header on endpoints that create money or credit side effects.
-- Declare `response_model`, status codes and a rate-limit policy on every route.
+- Require an `Idempotency-Key` header on endpoints that create money or credit side effects through the `idempotent(scope)` dependency and `IdempotencyGuard.respond()`.
+- Declare `response_model`, status codes and a rate-limit policy on every route. Operation IDs are generated as `<tag>_<function_name>`.
+- Keep test-only endpoints in the test-support router; it mounts only in `local` and `ci` and is excluded from the contract.
 - Regenerate and commit the API contract whenever the OpenAPI schema changes.
 
 ## Database
@@ -89,12 +90,13 @@ Operational rules for any coding agent working in this repository. `docs/context
 - Store money as `bigint` paise and credits as `bigint`.
 - Use `jsonb` only for payloads and metadata, never for queried fields.
 - Rely on the SQLAlchemy naming convention in `motionile.core.db`. Index every foreign key and choose `ON DELETE` explicitly.
-- Ship at most one migration per pull request. Make it reversible and expand/contract only.
+- Ship at most one migration per pull request. Make it reversible and expand/contract only. Wrap explicit constraint names in `op.f()` so the naming convention does not prefix them twice.
 - Details live in [`docs/db/conventions.md`](docs/db/conventions.md).
 
 ## Security
 
 - Send all outbound HTTP through `SafeHttpClient`.
+- Read secrets only as `SecretStr` settings; add every value without a safe default to `Settings.deployment_problems()`.
 - Never put secrets in logs, errors, responses or the frontend bundle.
 - Hash refresh tokens and OTPs. Encrypt third-party credentials with AES-GCM.
 - Authorize in the service layer and always include the owner in resource lookups.
@@ -124,7 +126,7 @@ Operational rules for any coding agent working in this repository. `docs/context
 
 - Ship every change with tests at the right layer.
 - Server unit tests use `tests/fakes` and never touch real I/O.
-- Server integration tests use testcontainers Postgres and Redis; each test runs in a rolled-back transaction.
+- Server integration tests use testcontainers Postgres, Redis and MinIO; each test runs in a rolled-back transaction unless it must observe committed concurrent transactions, in which case its fixture truncates the mutable tables.
 - Root `tests/` holds e2e, security and load tests against a running stack.
 - CI runs with `PROVIDERS_MODE=fake` and Cloudflare's dummy Turnstile keys.
 

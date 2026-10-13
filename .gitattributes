@@ -1,0 +1,13 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.woff2 binary
+*.mp4 binary
+*.mp3 binary
+pnpm-lock.yaml linguist-generated=true -diff
+apps/server/uv.lock linguist-generated=true -diff
+apps/server/openapi.json linguist-generated=true
+packages/api-contract/src/generated/** linguist-generated=true

@@ -1,0 +1,10 @@
+packages:
+  - apps/web
+  - apps/server
+  - packages/*
+  - tests
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - unrs-resolver

@@ -1,0 +1,39 @@
+{
+  "name": "motionile",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.7",
+  "engines": {
+    "node": ">=24.0.0 <25.0.0",
+    "pnpm": ">=10.0.0 <11.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint && pnpm run lint:scripts && pnpm run check:comments && pnpm run check:boundaries",
+    "lint:scripts": "uv run --project apps/server ruff check scripts && uv run --project apps/server ruff format --check scripts",
+    "typecheck": "turbo run typecheck && pnpm run typecheck:scripts",
+    "typecheck:scripts": "uv run --project apps/server pyright -p pyrightconfig.json",
+    "test:unit": "turbo run test:unit && pnpm run test:scripts",
+    "test:scripts": "uv run --project apps/server pytest -c apps/server/pyproject.toml --rootdir . scripts/tests",
+    "test:integration": "turbo run test:integration",
+    "format": "prettier --write . && uv run --project apps/server ruff format apps/server scripts",
+    "format:check": "prettier --check .",
+    "check:comments": "uv run --project apps/server python scripts/check_no_comments.py",
+    "check:boundaries": "uv run --project apps/server python scripts/check_module_boundaries.py && pnpm --filter @motionile/server run lint:imports",
+    "contract:generate": "bash scripts/generate-api-contract.sh",
+    "contract:check": "bash scripts/generate-api-contract.sh --check",
+    "evals": "pnpm --filter @motionile/server run evals",
+    "verify": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test:unit && pnpm run contract:check && pnpm run evals",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.3",
+    "@commitlint/config-conventional": "21.2.3",
+    "@motionile/config": "workspace:*",
+    "husky": "9.1.7",
+    "lint-staged": "17.6.0",
+    "prettier": "3.9.10",
+    "turbo": "2.11.7"
+  }
+}

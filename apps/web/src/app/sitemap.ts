@@ -1,7 +1,12 @@
 import type { MetadataRoute } from "next";
 
-import { siteConfig } from "@/config/site";
+import { publicPages } from "@/config/navigation";
+import { absoluteUrl } from "@/lib/seo/metadata";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [{ url: `${siteConfig.url}/`, changeFrequency: "weekly", priority: 1 }];
+  return publicPages.map((page) => ({
+    url: absoluteUrl(page.path),
+    changeFrequency: page.changeFrequency,
+    priority: page.priority,
+  }));
 }

@@ -28,9 +28,11 @@ zap-report/
 .env
 .env.*
 !.env.example
+!apps/web/.env.development
 *.pem
 *.key
 
 .DS_Store
 .idea/
 *.log
+.import_linter_cache/

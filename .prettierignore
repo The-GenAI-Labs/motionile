@@ -11,3 +11,4 @@ test-results/
 zap-report/
 .venv/
 docs/context.md
+**/.import_linter_cache/

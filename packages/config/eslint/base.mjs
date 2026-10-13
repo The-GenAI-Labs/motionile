@@ -50,7 +50,10 @@ export const createBaseConfig = ({ tsconfigRootDir }) =>
         "simple-import-sort/exports": "error",
         "no-console": "error",
         eqeqeq: ["error", "always"],
-        "@typescript-eslint/consistent-type-imports": ["error", { fixStyle: "inline-type-imports" }],
+        "@typescript-eslint/consistent-type-imports": [
+          "error",
+          { fixStyle: "inline-type-imports" },
+        ],
         "@typescript-eslint/no-import-type-side-effects": "error",
         "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
       },

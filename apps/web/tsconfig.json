@@ -1,0 +1,10 @@
+{
+  "extends": "@motionile/config/typescript/nextjs.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "src", "tests", ".next/types/**/*.ts", "*.ts", "*.mts"],
+  "exclude": ["node_modules", ".next/cache"]
+}

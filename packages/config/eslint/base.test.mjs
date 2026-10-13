@@ -36,7 +36,9 @@ describe("base config", () => {
   });
 
   it("reports unsorted imports", async () => {
-    const ruleIds = await lint('import { b } from "b";\nimport { a } from "a";\nexport { a, b };\n');
+    const ruleIds = await lint(
+      'import { b } from "b";\nimport { a } from "a";\nexport { a, b };\n',
+    );
     expect(ruleIds).toContain("simple-import-sort/imports");
   });
 });

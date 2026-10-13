@@ -7,12 +7,12 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from motionile.core.config import PSYCOPG_SCHEME, get_settings, with_driver
-from motionile.core.db import Base
+from motionile.models import metadata
 
 DATABASE_URL_ATTRIBUTE = "database_url"
 
 config = context.config
-target_metadata = Base.metadata
+target_metadata = metadata
 
 if config.config_file_name is not None and DATABASE_URL_ATTRIBUTE not in config.attributes:
     fileConfig(config.config_file_name, disable_existing_loggers=False)
@@ -22,7 +22,7 @@ def resolve_database_url() -> str:
     override: str | None = config.attributes.get(DATABASE_URL_ATTRIBUTE)
     if override is not None:
         return with_driver(override, PSYCOPG_SCHEME)
-    return get_settings().sqlalchemy_migration_url
+    return get_settings().database.sqlalchemy_migration_url
 
 
 def run_migrations_offline() -> None:

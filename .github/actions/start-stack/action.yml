@@ -1,0 +1,45 @@
+name: Start application stack
+description: Build and start the development Compose stack, run migrations and optionally serve a production build of the web app.
+inputs:
+  services:
+    description: Space-separated application services to start after migrations.
+    required: false
+    default: api mcp
+  web:
+    description: Build and serve the web app on port 3000.
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - name: Build server images
+      shell: bash
+      run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml build api ${{ contains(inputs.services, 'worker-render') && 'worker-render' || '' }}
+    - name: Start data services
+      shell: bash
+      run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml up --detach --wait postgres redis
+    - name: Run migrations
+      shell: bash
+      run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml run --rm migrate
+    - name: Start application services
+      shell: bash
+      run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml up --detach --no-build --wait --wait-timeout 180 ${{ inputs.services }}
+    - name: Build web app
+      if: inputs.web == 'true'
+      shell: bash
+      env:
+        NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      run: pnpm --filter @motionile/web build
+    - name: Serve web app
+      if: inputs.web == 'true'
+      shell: bash
+      env:
+        PORT: "3000"
+        HOSTNAME: 127.0.0.1
+      run: |
+        cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
+        nohup node apps/web/.next/standalone/apps/web/server.js > web-server.log 2>&1 &
+        curl --silent --fail --retry 30 --retry-connrefused --retry-delay 2 http://127.0.0.1:3000/api/health
+    - name: Wait for the API
+      shell: bash
+      run: curl --silent --fail --retry 30 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/health/ready

@@ -1,0 +1,391 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - prod
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  APP_ENV: ci
+  PROVIDERS_MODE: fake
+  NEXT_TELEMETRY_DISABLED: "1"
+  TURBO_TELEMETRY_DISABLED: "1"
+  DO_NOT_TRACK: "1"
+  FORCE_COLOR: "1"
+
+jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      server: ${{ steps.filter.outputs.server }}
+      contract: ${{ steps.filter.outputs.contract }}
+      images: ${{ steps.filter.outputs.images }}
+      stack: ${{ steps.filter.outputs.stack }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@v4.0.3
+        id: filter
+        with:
+          filters: |
+            workflow: &workflow
+              - ".github/**"
+            code:
+              - *workflow
+              - "*"
+              - ".claude/**"
+              - ".husky/**"
+              - "apps/**"
+              - "packages/**"
+              - "scripts/**"
+              - "tests/**"
+              - "deploy/**"
+            server:
+              - *workflow
+              - "apps/server/**"
+              - "scripts/**"
+            contract:
+              - *workflow
+              - "apps/server/**"
+              - "packages/api-contract/**"
+              - "scripts/generate-api-contract.sh"
+            images:
+              - *workflow
+              - "apps/**"
+              - "packages/**"
+              - "pnpm-lock.yaml"
+              - ".dockerignore"
+            stack:
+              - *workflow
+              - "apps/**"
+              - "packages/**"
+              - "tests/**"
+              - "deploy/**"
+              - "pnpm-lock.yaml"
+
+  lint:
+    name: lint
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Prettier
+        run: pnpm run format:check
+      - name: ESLint, ruff, comments, module boundaries and import-linter
+        run: pnpm run lint
+      - name: Commit messages
+        run: >-
+          pnpm exec commitlint --verbose
+          --from ${{ github.event.pull_request.base.sha }}
+          --to ${{ github.event.pull_request.head.sha }}
+
+  typecheck:
+    name: typecheck
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: tsc and pyright
+        run: pnpm run typecheck
+
+  unit:
+    name: unit
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Vitest and pytest
+        run: pnpm run test:unit
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: unit-coverage
+          path: |
+            apps/server/coverage/
+            apps/web/coverage/
+          if-no-files-found: warn
+          retention-days: 14
+
+  integration:
+    name: integration
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: pytest integration
+        run: pnpm run test:integration
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: integration-coverage
+          path: apps/server/coverage/
+          if-no-files-found: warn
+          retention-days: 14
+
+  contract:
+    name: contract
+    needs: changes
+    if: needs.changes.outputs.contract == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Regenerate the API contract and fail on drift
+        run: pnpm run contract:check
+
+  evals:
+    name: evals
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Run eval suites against thresholds
+        run: pnpm run evals
+
+  scan:
+    name: scan
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: gitleaks
+        env:
+          LOG_OPTS: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+        run: bash scripts/run-gitleaks.sh "$LOG_OPTS"
+      - name: pip-audit
+        run: |
+          uv export --project apps/server --frozen --all-groups --no-emit-project --format requirements.txt --output-file "$RUNNER_TEMP/requirements.txt"
+          uvx pip-audit==2.10.1 --strict --disable-pip --requirement "$RUNNER_TEMP/requirements.txt"
+      - name: pnpm audit
+        run: pnpm audit --audit-level high
+      - name: Trivy filesystem scan
+        run: >-
+          docker run --rm --volume "$PWD:/repo" aquasec/trivy:0.75.0
+          fs /repo --scanners vuln,secret,misconfig --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
+          --skip-dirs "**/node_modules" --skip-dirs "**/.venv" --skip-dirs "**/tests/fixtures"
+
+  build:
+    name: build
+    needs: changes
+    if: needs.changes.outputs.images == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: motionile-api
+            context: apps/server
+            file: apps/server/Dockerfile
+            target: api
+          - image: motionile-worker
+            context: apps/server
+            file: apps/server/Dockerfile
+            target: worker
+          - image: motionile-web
+            context: .
+            file: apps/web/Dockerfile
+            target: runner
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v4.4.1
+      - name: Build ${{ matrix.image }}
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          target: ${{ matrix.target }}
+          build-args: |
+            NEXT_PUBLIC_SITE_URL=http://localhost:3000
+          tags: ${{ matrix.image }}:ci
+          load: true
+          push: false
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+      - name: Trivy image scan
+        run: >-
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.75.0
+          image ${{ matrix.image }}:ci --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
+
+  e2e:
+    name: e2e
+    needs: changes
+    if: needs.changes.outputs.stack == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          python: "false"
+      - uses: ./.github/actions/start-stack
+        with:
+          services: api mcp worker-default worker-render
+      - name: Confirm both workers keep running
+        run: |
+          sleep 15
+          docker compose -f deploy/compose.yml -f deploy/compose.dev.yml ps --status running --services | tee running.txt
+          grep -qx worker-default running.txt
+          grep -qx worker-render running.txt
+          curl --silent --fail http://127.0.0.1:8001/health/live
+      - name: Install Chromium
+        run: pnpm --filter @motionile/tests exec playwright install --with-deps chromium
+      - name: Playwright e2e
+        env:
+          CI: "true"
+          WEB_BASE_URL: http://127.0.0.1:3000
+          API_BASE_URL: http://127.0.0.1:8000
+        run: pnpm --filter @motionile/tests run e2e
+      - name: Stack logs
+        if: failure()
+        run: |
+          docker compose -f deploy/compose.yml -f deploy/compose.dev.yml logs --no-color
+          cat web-server.log || true
+      - uses: actions/upload-artifact@v7.0.2
+        if: failure()
+        with:
+          name: playwright-e2e-report
+          path: tests/playwright-report/
+          retention-days: 14
+
+  security:
+    name: security
+    needs: changes
+    if: needs.changes.outputs.stack == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          python: "false"
+      - uses: ./.github/actions/start-stack
+      - name: Playwright security suite
+        env:
+          CI: "true"
+          API_BASE_URL: http://127.0.0.1:8000
+        run: pnpm --filter @motionile/tests run security
+      - name: ZAP baseline against the web app
+        run: bash tests/security/zap/run-baseline.sh http://127.0.0.1:3000 zap-web
+      - name: ZAP baseline against the API
+        run: bash tests/security/zap/run-baseline.sh http://127.0.0.1:8000/health/live zap-api
+      - name: Stack logs
+        if: failure()
+        run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml logs --no-color
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            zap-report/
+            tests/playwright-report/
+          if-no-files-found: warn
+          retention-days: 14
+
+  load:
+    name: load
+    needs: changes
+    if: needs.changes.outputs.stack == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          python: "false"
+      - uses: ./.github/actions/start-stack
+        with:
+          services: api
+          web: "false"
+      - name: k6 smoke
+        env:
+          API_BASE_URL: http://127.0.0.1:8000
+        run: bash tests/load/run-smoke.sh
+
+  ci-ok:
+    name: ci-ok
+    needs:
+      [
+        changes,
+        lint,
+        typecheck,
+        unit,
+        integration,
+        contract,
+        evals,
+        scan,
+        build,
+        e2e,
+        security,
+        load,
+      ]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every job to pass or be skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              exit 1
+            fi
+          done

@@ -1,0 +1,79 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    target-branch: develop
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: uv
+    directory: /apps/server
+    schedule:
+      interval: weekly
+      day: monday
+    target-branch: develop
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      python-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/setup
+      - /.github/actions/start-stack
+    schedule:
+      interval: weekly
+      day: monday
+    target-branch: develop
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directories:
+      - /apps/server
+      - /apps/web
+    schedule:
+      interval: weekly
+      day: monday
+    target-branch: develop
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      docker-images:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker-compose
+    directory: /deploy
+    schedule:
+      interval: weekly
+      day: monday
+    target-branch: develop
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      compose-images:
+        patterns:
+          - "*"

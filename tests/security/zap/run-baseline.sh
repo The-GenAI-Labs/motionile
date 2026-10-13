@@ -4,7 +4,7 @@ set -euo pipefail
 target="${1:?usage: run-baseline.sh <target-url> [report-name]}"
 report="${2:-zap-baseline}"
 zap_dir="$(cd "$(dirname "$0")" && pwd)"
-reports_dir="${ZAP_REPORTS_DIR:-$zap_dir/../../zap-report}"
+reports_dir="${ZAP_REPORTS_DIR:-$zap_dir/../../../zap-report}"
 image="${ZAP_IMAGE:-zaproxy/zap-stable:2.17.0}"
 
 mkdir -p "$reports_dir"

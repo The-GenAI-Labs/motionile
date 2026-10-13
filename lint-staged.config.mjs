@@ -5,7 +5,7 @@ const checkComments = (files) =>
 
 const config = {
   "*.{ts,tsx,js,mjs,cjs}": (files) => [
-    `eslint --max-warnings=0 --fix ${quote(files)}`,
+    `eslint --max-warnings=0 --no-warn-ignored --fix ${quote(files)}`,
     `prettier --write ${quote(files)}`,
   ],
   "*.py": (files) => [

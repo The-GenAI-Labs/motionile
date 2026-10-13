@@ -55,6 +55,12 @@ def test_migration_url_prefers_direct_connection() -> None:
     assert settings.sqlalchemy_migration_url == "postgresql+psycopg://direct.example/motionile"
 
 
+def test_blank_direct_url_is_treated_as_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DATABASE_DIRECT_URL", "")
+
+    assert Settings().database_direct_url is None
+
+
 def test_migration_url_falls_back_to_database_url() -> None:
     settings = Settings(database_url="postgres://pooled.example/motionile")
 

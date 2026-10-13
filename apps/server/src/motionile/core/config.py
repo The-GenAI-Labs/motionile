@@ -50,6 +50,13 @@ class Settings(BaseSettings):
     log_level: LogLevel = LogLevel.INFO
     allowed_origins: Annotated[tuple[str, ...], NoDecode] = ()
 
+    @field_validator("database_direct_url", mode="before")
+    @classmethod
+    def treat_blank_as_unset(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
     @field_validator("database_url", "database_direct_url")
     @classmethod
     def require_postgres_scheme(cls, value: str | None) -> str | None:

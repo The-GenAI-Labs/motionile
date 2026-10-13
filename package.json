@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "lint": "turbo run lint && pnpm run lint:scripts && pnpm run check:comments && pnpm run check:boundaries",
+    "lint": "turbo run lint && pnpm run lint:root && pnpm run lint:scripts && pnpm run check:comments && pnpm run check:boundaries",
+    "lint:root": "eslint \"*.mjs\" --max-warnings=0",
     "lint:scripts": "uv run --project apps/server ruff check scripts && uv run --project apps/server ruff format --check scripts",
     "typecheck": "turbo run typecheck && pnpm run typecheck:scripts",
     "typecheck:scripts": "uv run --project apps/server pyright -p pyrightconfig.json",
@@ -31,9 +32,11 @@
     "@commitlint/cli": "21.2.3",
     "@commitlint/config-conventional": "21.2.3",
     "@motionile/config": "workspace:*",
+    "eslint": "10.12.0",
     "husky": "9.1.7",
     "lint-staged": "17.6.0",
     "prettier": "3.9.10",
-    "turbo": "2.11.7"
+    "turbo": "2.11.7",
+    "typescript": "6.0.3"
   }
 }

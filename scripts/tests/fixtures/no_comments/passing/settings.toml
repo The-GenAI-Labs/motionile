@@ -1,0 +1,3 @@
+[tool.example]
+color = "#FAFAFA"
+pattern = 'a#b'

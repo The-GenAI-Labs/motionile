@@ -319,6 +319,7 @@ jobs:
         env:
           CI: "true"
           API_BASE_URL: http://127.0.0.1:8000
+          WEB_BASE_URL: http://127.0.0.1:3000
         run: pnpm --filter @motionile/tests run security
       - name: ZAP baseline against the web app
         run: bash tests/security/zap/run-baseline.sh http://127.0.0.1:3000 zap-web
@@ -353,10 +354,10 @@ jobs:
       - uses: ./.github/actions/start-stack
         with:
           services: api
-          web: "false"
-      - name: k6 smoke
+      - name: k6 smoke and public pages
         env:
           API_BASE_URL: http://127.0.0.1:8000
+          WEB_BASE_URL: http://127.0.0.1:3000
         run: bash tests/load/run-smoke.sh
 
   ci-ok:

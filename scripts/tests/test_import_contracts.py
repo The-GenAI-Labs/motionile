@@ -13,7 +13,8 @@ FIXTURES = Path(__file__).parent / "fixtures" / "import_contracts"
 def lint_imports(source_root: Path, cache_dir: Path) -> subprocess.CompletedProcess[str]:
     executable = shutil.which("lint-imports")
     assert executable is not None
-    environment = {**os.environ, "PYTHONPATH": str(source_root)}
+    inherited = {name: value for name, value in os.environ.items() if name not in {"FORCE_COLOR", "CLICOLOR_FORCE"}}
+    environment = {**inherited, "PYTHONPATH": str(source_root), "NO_COLOR": "1", "TERM": "dumb"}
     return subprocess.run(  # noqa: S603
         [executable, "--config", str(SERVER_ROOT / "pyproject.toml"), "--cache-dir", str(cache_dir)],
         cwd=source_root,

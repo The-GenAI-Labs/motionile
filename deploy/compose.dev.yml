@@ -3,6 +3,12 @@ x-server-build: &server-build
   dockerfile: Dockerfile
   target: api
 
+x-dev-storage: &dev-storage
+  STORAGE_ENDPOINT_URL: http://minio:9000
+  STORAGE_BUCKET: motionile-local
+  STORAGE_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-motionile}
+  STORAGE_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-motionile-dev-secret}
+
 services:
   proxy:
     profiles:
@@ -23,6 +29,7 @@ services:
       - /app/src
       - --no-server-header
     environment:
+      <<: *dev-storage
       FORWARDED_ALLOW_IPS: "*"
       PYTHONPATH: /app/src
     ports:
@@ -37,6 +44,7 @@ services:
     build: *server-build
     image: motionile-api:local
     environment:
+      <<: *dev-storage
       FORWARDED_ALLOW_IPS: "*"
     ports:
       - "8001:8000"
@@ -47,6 +55,7 @@ services:
   worker-default:
     build: *server-build
     image: motionile-api:local
+    environment: *dev-storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,6 +65,7 @@ services:
       <<: *server-build
       target: worker
     image: motionile-worker:local
+    environment: *dev-storage
     depends_on:
       postgres:
         condition: service_healthy

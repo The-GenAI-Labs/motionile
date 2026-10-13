@@ -14,7 +14,11 @@ COPY apps/web ./apps/web
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile --offline --ignore-scripts --filter "@motionile/web..."
 ARG NEXT_PUBLIC_SITE_URL
-ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ARG NEXT_PUBLIC_API_URL=""
+ARG NEXT_PUBLIC_CDN_URL=""
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_CDN_URL=$NEXT_PUBLIC_CDN_URL
 RUN pnpm --filter @motionile/web build
 
 FROM node:24.21.0-trixie-slim AS runner

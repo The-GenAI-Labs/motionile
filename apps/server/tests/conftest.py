@@ -2,6 +2,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+import structlog
 
 from motionile.core.config import get_settings
 
@@ -21,5 +22,8 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 def isolated_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
     monkeypatch.chdir(tmp_path)
     get_settings.cache_clear()
+    structlog.contextvars.clear_contextvars()
     yield
     get_settings.cache_clear()
+    structlog.contextvars.clear_contextvars()
+    structlog.reset_defaults()

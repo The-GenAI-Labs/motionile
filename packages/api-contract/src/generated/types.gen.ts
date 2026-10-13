@@ -5,43 +5,179 @@ export type ClientOptions = {
 };
 
 /**
- * HealthResponse
+ * DependencyStatus
  */
-export type HealthResponse = {
+export type DependencyStatus = 'ok' | 'unavailable';
+
+/**
+ * FieldError
+ */
+export type FieldError = {
+    /**
+     * Field
+     */
+    field: string;
+    /**
+     * Message
+     */
+    message: string;
+    /**
+     * Type
+     */
+    type: string;
+};
+
+/**
+ * LivenessResponse
+ */
+export type LivenessResponse = {
     /**
      * Status
      */
     status: 'ok';
 };
 
-export type GetLivenessData = {
+/**
+ * ProblemDetails
+ */
+export type ProblemDetails = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Detail
+     */
+    detail?: string | null;
+    /**
+     * Errors
+     */
+    errors?: Array<FieldError> | null;
+    /**
+     * Instance
+     */
+    instance?: string | null;
+    /**
+     * Requestid
+     */
+    requestId?: string | null;
+    /**
+     * Status
+     */
+    status: number;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Type
+     */
+    readonly type: string;
+};
+
+/**
+ * ReadinessChecks
+ */
+export type ReadinessChecks = {
+    postgres: DependencyStatus;
+    redis: DependencyStatus;
+};
+
+/**
+ * ReadinessResponse
+ */
+export type ReadinessResponse = {
+    checks: ReadinessChecks;
+    /**
+     * Status
+     */
+    status: 'ok' | 'unavailable';
+};
+
+/**
+ * ProblemDetails
+ */
+export type ProblemDetailsWritable = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Detail
+     */
+    detail?: string | null;
+    /**
+     * Errors
+     */
+    errors?: Array<FieldError> | null;
+    /**
+     * Instance
+     */
+    instance?: string | null;
+    /**
+     * Requestid
+     */
+    requestId?: string | null;
+    /**
+     * Status
+     */
+    status: number;
+    /**
+     * Title
+     */
+    title: string;
+};
+
+export type HealthLiveData = {
     body?: never;
     path?: never;
     query?: never;
     url: '/health/live';
 };
 
-export type GetLivenessResponses = {
+export type HealthLiveErrors = {
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+};
+
+export type HealthLiveError = HealthLiveErrors[keyof HealthLiveErrors];
+
+export type HealthLiveResponses = {
     /**
      * Successful Response
      */
-    200: HealthResponse;
+    200: LivenessResponse;
 };
 
-export type GetLivenessResponse = GetLivenessResponses[keyof GetLivenessResponses];
+export type HealthLiveResponse = HealthLiveResponses[keyof HealthLiveResponses];
 
-export type GetReadinessData = {
+export type HealthReadyData = {
     body?: never;
     path?: never;
     query?: never;
     url: '/health/ready';
 };
 
-export type GetReadinessResponses = {
+export type HealthReadyErrors = {
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * A dependency is down
+     */
+    503: ReadinessResponse;
+};
+
+export type HealthReadyError = HealthReadyErrors[keyof HealthReadyErrors];
+
+export type HealthReadyResponses = {
     /**
      * Successful Response
      */
-    200: HealthResponse;
+    200: ReadinessResponse;
 };
 
-export type GetReadinessResponse = GetReadinessResponses[keyof GetReadinessResponses];
+export type HealthReadyResponse = HealthReadyResponses[keyof HealthReadyResponses];

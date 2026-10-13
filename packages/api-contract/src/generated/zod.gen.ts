@@ -3,18 +3,75 @@
 import * as z from 'zod';
 
 /**
- * HealthResponse
+ * DependencyStatus
  */
-export const zHealthResponse = z.object({
+export const zDependencyStatus = z.enum(['ok', 'unavailable']);
+
+/**
+ * FieldError
+ */
+export const zFieldError = z.object({
+    field: z.string(),
+    message: z.string(),
+    type: z.string()
+});
+
+/**
+ * LivenessResponse
+ */
+export const zLivenessResponse = z.object({
     status: z.literal('ok')
+});
+
+/**
+ * ProblemDetails
+ */
+export const zProblemDetails = z.object({
+    code: z.string(),
+    detail: z.string().nullish(),
+    errors: z.array(zFieldError).nullish(),
+    instance: z.string().nullish(),
+    requestId: z.string().nullish(),
+    status: z.int(),
+    title: z.string(),
+    type: z.string().readonly()
+});
+
+/**
+ * ReadinessChecks
+ */
+export const zReadinessChecks = z.object({
+    postgres: zDependencyStatus,
+    redis: zDependencyStatus
+});
+
+/**
+ * ReadinessResponse
+ */
+export const zReadinessResponse = z.object({
+    checks: zReadinessChecks,
+    status: z.enum(['ok', 'unavailable'])
+});
+
+/**
+ * ProblemDetails
+ */
+export const zProblemDetailsWritable = z.object({
+    code: z.string(),
+    detail: z.string().nullish(),
+    errors: z.array(zFieldError).nullish(),
+    instance: z.string().nullish(),
+    requestId: z.string().nullish(),
+    status: z.int(),
+    title: z.string()
 });
 
 /**
  * Successful Response
  */
-export const zGetLivenessResponse = zHealthResponse;
+export const zHealthLiveResponse = zLivenessResponse;
 
 /**
  * Successful Response
  */
-export const zGetReadinessResponse = zHealthResponse;
+export const zHealthReadyResponse = zReadinessResponse;

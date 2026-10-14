@@ -5,31 +5,20 @@ import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
+import { Providers } from "@/app/providers";
 import { siteConfig } from "@/config/site";
+import { buildMetadata, TITLE_TEMPLATE } from "@/lib/seo/metadata";
+
+const defaultMetadata = buildMetadata({ description: siteConfig.description, path: "/" });
 
 export const metadata: Metadata = {
+  ...defaultMetadata,
   metadataBase: new URL(siteConfig.url),
   title: {
     default: siteConfig.title,
-    template: `%s · ${siteConfig.name}`,
+    template: TITLE_TEMPLATE,
   },
-  description: siteConfig.description,
   applicationName: siteConfig.name,
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    siteName: siteConfig.name,
-    title: siteConfig.title,
-    description: siteConfig.description,
-    url: "/",
-    locale: "en_US",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: siteConfig.title,
-    description: siteConfig.description,
-  },
-  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -40,7 +29,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

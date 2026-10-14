@@ -74,21 +74,31 @@ pnpm --filter @motionile/tests run load
 
 `.env.example` lists every variable used so far; `deploy/.env.example` lists the variables Compose reads in production.
 
-| Variable               | Used by | Meaning                                                                                         |
-| ---------------------- | ------- | ----------------------------------------------------------------------------------------------- |
-| `APP_ENV`              | server  | `local`, `ci`, `staging` or `production`                                                        |
-| `PROVIDERS_MODE`       | server  | `fake` for local and CI, `live` in staging and production                                       |
-| `DATABASE_URL`         | server  | PostgreSQL connection URL (`postgresql://`)                                                     |
-| `DATABASE_DIRECT_URL`  | server  | Optional direct connection for migrations and workers when `DATABASE_URL` goes through a pooler |
-| `REDIS_URL`            | server  | Redis connection URL                                                                            |
-| `LOG_LEVEL`            | server  | `DEBUG`, `INFO`, `WARNING` or `ERROR`                                                           |
-| `ALLOWED_ORIGINS`      | server  | Comma-separated origins allowed by CORS                                                         |
-| `FORWARDED_ALLOW_IPS`  | uvicorn | IPs trusted to set forwarded headers; only the reverse proxy in production                      |
-| `NEXT_PUBLIC_SITE_URL` | web     | Public site URL used for canonical URLs, Open Graph and the sitemap                             |
-| `WEB_BASE_URL`         | tests   | Web app under test                                                                              |
-| `API_BASE_URL`         | tests   | API under test                                                                                  |
+| Variable                       | Used by | Meaning                                                                                           |
+| ------------------------------ | ------- | ------------------------------------------------------------------------------------------------- |
+| `APP_ENV`                      | server  | `local`, `ci`, `staging` or `production`; test-support routes exist only in `local` and `ci`      |
+| `PROVIDERS_MODE`               | server  | `fake` for local and CI, `live` in staging and production                                         |
+| `DATABASE_URL`                 | server  | PostgreSQL connection URL (`postgresql://`)                                                       |
+| `DATABASE_DIRECT_URL`          | server  | Optional direct connection for migrations and workers when `DATABASE_URL` goes through a pooler   |
+| `REDIS_URL`                    | server  | Redis connection URL                                                                              |
+| `LOG_LEVEL`                    | server  | `DEBUG`, `INFO`, `WARNING` or `ERROR`                                                             |
+| `CORS_ALLOWED_ORIGINS`         | server  | Comma-separated origins allowed by CORS and the Origin guard                                      |
+| `RATE_LIMIT_ENABLED`           | server  | Turns rate limiting on or off; always on when deployed                                            |
+| `RATE_LIMIT_OVERRIDES`         | server  | JSON map of policy name to rules, for example `{"auth.login":[{"limit":10,"window_seconds":60}]}` |
+| `SECURITY_PAGINATION_SECRET`   | server  | At least 32 characters; signs pagination cursors                                                  |
+| `ENCRYPTION_KEYS`              | server  | JSON map of key version to base64 32-byte AES-GCM key; the highest version encrypts               |
+| `TURNSTILE_SECRET_KEY`         | server  | Cloudflare Turnstile secret; fake verification is used while `PROVIDERS_MODE=fake`                |
+| `TURNSTILE_EXPECTED_HOSTNAMES` | server  | Comma-separated hostnames Turnstile tokens must come from                                         |
+| `STORAGE_ENDPOINT_URL`         | server  | S3-compatible endpoint; leave empty for AWS S3                                                    |
+| `STORAGE_BUCKET`               | server  | Bucket for private media                                                                          |
+| `STORAGE_ACCESS_KEY_ID`        | server  | Static S3 credentials for MinIO; leave empty to use the instance role                             |
+| `STORAGE_SECRET_ACCESS_KEY`    | server  | Static S3 secret for MinIO; leave empty to use the instance role                                  |
+| `FORWARDED_ALLOW_IPS`          | uvicorn | IPs trusted to set forwarded headers; only the reverse proxy in production                        |
+| `NEXT_PUBLIC_SITE_URL`         | web     | Public site URL used for canonical URLs, Open Graph and the sitemap                               |
+| `WEB_BASE_URL`                 | tests   | Web app under test                                                                                |
+| `API_BASE_URL`                 | tests   | API under test                                                                                    |
 
-Staging and production must set `DATABASE_URL`, `REDIS_URL` and `ALLOWED_ORIGINS` explicitly and use `PROVIDERS_MODE=live`; the server refuses to start otherwise.
+Staging and production must set `DATABASE_URL`, `REDIS_URL`, `CORS_ALLOWED_ORIGINS` (https only), `SECURITY_PAGINATION_SECRET`, `ENCRYPTION_KEYS`, `TURNSTILE_SECRET_KEY` and `STORAGE_BUCKET` explicitly and use `PROVIDERS_MODE=live`; the server refuses to start otherwise.
 
 ## Branching
 

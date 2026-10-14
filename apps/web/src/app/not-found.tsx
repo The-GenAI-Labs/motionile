@@ -1,25 +1,33 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { StatusPage } from "@/components/shared/status-page";
 import { Button } from "@/components/ui/button";
+import { buildMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Page not found",
-  description: "The page you are looking for does not exist.",
-  robots: { index: false, follow: false },
-};
+  description: "The page you are looking for does not exist or has moved.",
+  path: "/404",
+  noIndex: true,
+});
 
 export default function NotFound() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col items-start justify-center gap-6 px-6">
-      <p className="font-mono text-sm text-muted-foreground">404</p>
-      <h1 className="text-3xl font-semibold tracking-tight">Page not found</h1>
-      <p className="text-subtle-foreground">
-        The page you are looking for does not exist or has moved.
-      </p>
-      <Button asChild>
-        <Link href="/">Back to home</Link>
-      </Button>
-    </main>
+    <StatusPage
+      code="404"
+      title="Page not found"
+      description="The page you are looking for does not exist or has moved."
+      actions={
+        <>
+          <Button asChild>
+            <Link href="/">Back to home</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/contact">Contact support</Link>
+          </Button>
+        </>
+      }
+    />
   );
 }

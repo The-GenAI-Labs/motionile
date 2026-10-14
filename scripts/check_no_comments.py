@@ -139,17 +139,26 @@ def sql_comments(source: str) -> Iterator[tuple[int, str]]:
     return block_comments(source, line_markers=("--",))
 
 
+def lua_comments(source: str) -> Iterator[tuple[int, str]]:
+    return block_comments(source, line_markers=("--",))
+
+
 type Scanner = Callable[[str], Iterable[tuple[int, str]]]
+
+
+SCANNERS_BY_SUFFIX: dict[str, Scanner] = {
+    ".py": python_comments,
+    ".css": css_comments,
+    ".sql": sql_comments,
+    ".lua": lua_comments,
+}
 
 
 def scanner_for(path: Path) -> Scanner | None:
     name = path.name
-    if path.suffix == ".py":
-        return python_comments
-    if path.suffix == ".css":
-        return css_comments
-    if path.suffix == ".sql":
-        return sql_comments
+    by_suffix = SCANNERS_BY_SUFFIX.get(path.suffix)
+    if by_suffix is not None:
+        return by_suffix
     if name in LINE_START_COMMENT_NAMES or path.suffix in LINE_START_COMMENT_SUFFIXES:
         return lambda source: hash_comments(source, line_start_only=True)
     if name in INLINE_HASH_COMMENT_NAMES or path.suffix in INLINE_HASH_COMMENT_SUFFIXES or path.parent.name == ".husky":

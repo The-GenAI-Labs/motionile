@@ -6,6 +6,8 @@ source "$script_dir/lib.sh"
 export LOG_SCOPE=deploy
 
 readonly WAIT_TIMEOUT_SECONDS="${DEPLOY_WAIT_TIMEOUT_SECONDS:-180}"
+readonly READY_ATTEMPTS="${DEPLOY_READY_ATTEMPTS:-12}"
+readonly READY_DELAY_SECONDS="${DEPLOY_READY_DELAY_SECONDS:-5}"
 readonly CURRENT_TAG_FILE="${STATE_DIR}/current-tag"
 readonly PREVIOUS_TAG_FILE="${STATE_DIR}/previous-tag"
 readonly LOCK_FILE="${STATE_DIR}/deploy.lock"
@@ -17,7 +19,8 @@ Usage: deploy.sh <image-tag>
 
 Deploys motionile-api and motionile-worker images tagged <image-tag>:
 renders $ENV_FILE from SSM, pulls the images, runs migrations against
-DATABASE_DIRECT_URL, starts every service and waits for health checks.
+DATABASE_DIRECT_URL, starts every service, waits for health checks and for
+/health/ready to confirm Postgres and Redis are reachable.
 On failure it restarts the previous tag and exits non-zero.
 USAGE
 }
@@ -49,6 +52,22 @@ pull_images() {
 
 start_services() {
   compose up --detach --remove-orphans --wait --wait-timeout "$WAIT_TIMEOUT_SECONDS"
+}
+
+api_is_ready() {
+  compose exec -T api python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5)" >/dev/null 2>&1
+}
+
+wait_until_ready() {
+  local attempt
+  for ((attempt = 1; attempt <= READY_ATTEMPTS; attempt++)); do
+    if api_is_ready; then
+      return 0
+    fi
+    log "api is not ready yet (attempt $attempt of $READY_ATTEMPTS)"
+    sleep "$READY_DELAY_SECONDS"
+  done
+  return 1
 }
 
 roll_back() {
@@ -103,7 +122,7 @@ main() {
   fi
 
   log "starting services and waiting up to ${WAIT_TIMEOUT_SECONDS}s for health checks"
-  if ! start_services; then
+  if ! start_services || ! wait_until_ready; then
     compose ps --all || true
     roll_back "$tag" "$previous_tag"
     die "deployment of $tag failed health checks"

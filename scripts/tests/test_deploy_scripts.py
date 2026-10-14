@@ -36,6 +36,9 @@ case "$*" in
   *" up --detach"*)
     if [[ -n "${FAIL_UP_TAG:-}" && "$images" == *":${FAIL_UP_TAG}'"* ]]; then exit 1; fi
     ;;
+  *" exec -T api python"*)
+    if [[ -n "${FAIL_READY_TAG:-}" && "$images" == *":${FAIL_READY_TAG}'"* ]]; then exit 1; fi
+    ;;
   "pull"*)
     if [[ -n "${FAIL_PULL_TAG:-}" && "$*" == *":${FAIL_PULL_TAG}"* ]]; then exit 1; fi
     ;;
@@ -109,6 +112,8 @@ def server(tmp_path: Path) -> Server:
         "STUB_LOG": str(stub_dir / "calls.log"),
         "STUB_SSM_JSON": str(stub_dir / "ssm.json"),
         "STUB_DIR": str(stub_dir),
+        "DEPLOY_READY_ATTEMPTS": "2",
+        "DEPLOY_READY_DELAY_SECONDS": "0",
     }
     created = Server(root=root, stub_dir=stub_dir, env=env)
     created.set_parameters(required_values())
@@ -186,6 +191,17 @@ def test_failed_health_check_rolls_back_to_the_previous_tag(server: Server) -> N
     assert "rollback to good succeeded" in result.stdout
     assert (state / "current-tag").read_text(encoding="utf-8").strip() == "good"
     assert ":good'" in (state / "images.env").read_text(encoding="utf-8")
+
+
+def test_unready_api_rolls_back_to_the_previous_tag(server: Server) -> None:
+    assert server.run("deploy.sh", "good").returncode == 0
+
+    result = server.run("deploy.sh", "no-database", extra_env={"FAIL_READY_TAG": "no-database"})
+
+    assert result.returncode == 1
+    assert "api is not ready yet (attempt 2 of 2)" in result.stdout
+    assert "rollback to good succeeded" in result.stdout
+    assert (server.root / "state" / "current-tag").read_text(encoding="utf-8").strip() == "good"
 
 
 def test_failed_migration_rolls_back_and_fails(server: Server) -> None:

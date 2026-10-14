@@ -1,0 +1,16 @@
+[Unit]
+Description=Back up Motionile Redis to S3
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+ConditionPathExists=/srv/motionile/bundle/scripts/backup-redis.sh
+ConditionPathExists=/srv/motionile/.env
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+EnvironmentFile=/etc/motionile/environment
+ExecStart=/srv/motionile/bundle/scripts/backup-redis.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

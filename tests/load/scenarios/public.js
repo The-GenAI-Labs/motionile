@@ -1,7 +1,7 @@
 import { check, sleep } from "k6";
 import http from "k6/http";
 
-import { smokeThresholds } from "../thresholds.js";
+import { loadOptions } from "../thresholds.js";
 
 const webBaseUrl = __ENV.WEB_BASE_URL || "http://localhost:3000";
 const publicPaths = [
@@ -14,11 +14,7 @@ const publicPaths = [
   "/legal/refund-policy",
 ];
 
-export const options = {
-  vus: 5,
-  duration: "30s",
-  thresholds: smokeThresholds,
-};
+export const options = loadOptions();
 
 export default function browsePublicPages() {
   for (const path of publicPaths) {

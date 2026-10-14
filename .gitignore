@@ -46,3 +46,4 @@ crash.log
 crash.*.log
 *.tfplan
 infra/parameters/
+k6-report/

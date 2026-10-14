@@ -131,9 +131,11 @@ motionile/
 │   ├── api-contract/
 │   └── config/               eslint/  typescript/  prettier/
 ├── tests/                    e2e/  security/  load/  support/
-├── deploy/                   compose.yml  compose.dev.yml  compose.prod.yml  Caddyfile  scripts/
-├── infra/aws/
-├── docs/                     context.md  roadmap.md  adr/  db/
+├── deploy/                   compose.yml  compose.dev.yml  compose.prod.yml  Caddyfile  parameters.csv  scripts/  systemd/
+├── infra/
+│   ├── aws/                  bootstrap/  modules/  envs/staging/  envs/production/
+│   └── scripts/              put-parameters.sh
+├── docs/                     context.md  roadmap.md  infrastructure.md  adr/  db/  runbooks/
 ├── scripts/                  check_no_comments.py  check_module_boundaries.py  generate-api-contract.sh
 ├── AGENTS.md
 ├── CLAUDE.md
@@ -373,7 +375,7 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 - **CSRF:** SameSite cookies, Origin check on every unsafe method, double-submit `mo_csrf` cookie matched against `X-CSRF-Token`.
 - **CORS:** explicit origin allowlist (`CORS_ALLOWED_ORIGINS`, https only when deployed), credentials allowed, no wildcards.
 - **Origin guard:** state-changing requests from non-allowlisted origins are rejected (Referer as fallback).
-- **SSRF:** https only, DNS resolved and private, loopback, link-local and metadata ranges blocked, redirects re-validated, timeouts and size caps. EC2 uses IMDSv2 with hop limit 1. The render sandbox blocks all network access except the bundled runtime.
+- **SSRF:** https only, DNS resolved and private, loopback, link-local and metadata ranges blocked, redirects re-validated, timeouts and size caps. EC2 requires IMDSv2 with a hop limit of 2 so containers can use the instance role ([ADR 0011](adr/0011-imdsv2-hop-limit-two.md)); `SafeHttpClient` blocks the metadata addresses and the render sandbox blocks all network access except the bundled runtime.
 - **Turnstile** on register, login, OTP send, forgot-password and contact. Verified server-side with remote IP, hostname and action checks.
 - **Security headers:** HSTS, `nosniff`, `Cache-Control: no-store` on auth responses; the web app sets a CSP with `frame-ancestors 'none'` and `Referrer-Policy: strict-origin-when-cross-origin`.
 
@@ -463,19 +465,23 @@ One server Dockerfile with two targets produces two images.
 | `migrate` | `motionile-api` | `alembic upgrade head` (one-off) |
 | `redis` | `redis` | AOF on, `noeviction`, password |
 
-Local development adds Postgres with pgvector, MinIO and Mailpit. The web app runs with `pnpm dev` locally and on Vercel in staging and production; its Dockerfile exists for self-hosting.
+Local development adds Postgres with pgvector, MinIO and Mailpit. The web app runs with `pnpm dev` locally and on Vercel in staging and production; its Dockerfile exists for self-hosting. In staging and production, Redis and Caddy keep their data on the EBS data volume at `/srv/motionile/data`, images come from ECR, and the two environments differ only by the env file rendered from SSM.
 
 ### Environments
 `APP_ENV` is `local`, `ci`, `staging` or `production`. `PROVIDERS_MODE` is `fake` or `live`. Settings are grouped by prefix (`DATABASE_`, `REDIS_`, `SECURITY_`, `CORS_`, `RATE_LIMIT_`, `STORAGE_`, `TURNSTILE_`, `ENCRYPTION_`, `LOG_`, `OUTBOUND_HTTP_`); blank values count as unset, and staging and production refuse to start without live providers, explicit database, Redis and https CORS origins, a cursor-signing secret, encryption keys, a Turnstile secret and a storage bucket.
 
 ### CI/CD
 - **`ci.yml`** on every pull request into `develop` or `prod`: lint (ESLint, ruff, no-comments, module boundaries, commitlint), typecheck (tsc, pyright), unit, integration, API contract drift, evals, scan (gitleaks, pip-audit, pnpm audit, Trivy), build images, e2e, security (security suite + ZAP baseline), load (k6 smoke).
-- **Deploy:** push to `develop` → build → push to ECR → SSH to the staging EC2 instance (runner IP temporarily allowed in the security group) → `deploy.sh`: pull, migrate, `compose up --wait`, roll back on failure. `prod` deploys the same image to production after reviewer approval.
-- **`nightly.yml`:** full load test, ZAP full scan and full evals against staging.
-- **Frontend:** Vercel Git integration for both branches.
+- **Deploy:** push to `develop` → build `api` and `worker` with buildx → Trivy scan → push to staging ECR tagged with the commit SHA → `_deploy.yml`: assume the environment's OIDC role, allow the runner's IP on port 22 (always revoked), pin the host key, `rsync` `deploy/` to `/srv/motionile/bundle`, run `deploy.sh` (render `.env` from SSM, pull, migrate against `DATABASE_DIRECT_URL`, `compose up --wait`, roll back to the previous tag on failure), then HTTPS health checks and the Playwright smoke project.
+- **Release:** `prod` is only ever fast-forwarded to a commit already deployed from `develop`. After reviewer approval on the `production` environment, `deploy-production.yml` copies that commit's images from staging ECR to production ECR and deploys them; it never rebuilds and fails if the images are missing.
+- **`nightly.yml`:** full k6 load profile, ZAP full scan of the web app and OpenAPI scan of the API, and the full eval suite against staging; reports are artifacts.
+- **`ci.yml` `infra` job:** `tofu fmt` and `validate`, tflint, Trivy configuration scan of `infra/` and `deploy/`, shellcheck and actionlint; `ci-ok` requires it.
+- **Frontend:** Vercel Git integration, one project: production branch `prod`, staging domain on branch `develop`.
 
 ### AWS path
-- **Phase 1 of infrastructure:** one EC2 instance with Compose, an EBS data volume, S3 + CloudFront + WAF, SES, SSM, CloudWatch agent; Neon or RDS for Postgres.
+- **Phase 1 of infrastructure:** one EC2 instance with Compose, an EBS data volume, S3 + CloudFront + WAF, SES, SSM, CloudWatch agent; Neon or RDS for Postgres. OpenTofu 1.13 with the AWS provider 6.68 builds it from `infra/aws`: one `environment` module called by `envs/staging` and `envs/production`, state in an S3 bucket with lockfile locking, everything in `ap-south-1` except the CloudFront certificate and web ACL in `us-east-1`. See `docs/infrastructure.md` and `docs/runbooks/`.
+- **Configuration:** `deploy/parameters.csv` lists every environment parameter under `/motionile/<env>/`. OpenTofu writes the non-secret ones from its outputs; the owner uploads secrets as SecureString with `infra/scripts/put-parameters.sh`; `render-env.sh` refuses to deploy while a required one is missing ([ADR 0013](adr/0013-one-environment-module-and-parameter-catalog.md)).
+- **Logs and alarms:** containers log to `/motionile/<env>` through the awslogs driver ([ADR 0012](adr/0012-container-logs-through-awslogs.md)); the CloudWatch agent ships host logs and memory and disk metrics; alarms on CPU, memory, both disks, the API 5xx rate and task failures notify an SNS topic.
 - **Later:** `worker-render` moves to ECS with an Auto Scaling capacity provider, scaling on queue depth; the API moves behind an ALB; Redis moves to ElastiCache.
 
 ---

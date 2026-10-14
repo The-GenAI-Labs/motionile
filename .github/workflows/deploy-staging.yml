@@ -1,0 +1,100 @@
+name: Deploy staging
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging-pipeline
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  build:
+    name: build ${{ matrix.image }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment:
+      name: staging
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - image: motionile-api
+            target: api
+          - image: motionile-worker
+            target: worker
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+      IMAGE_REFERENCE: ${{ vars.ECR_REGISTRY }}/staging/${{ matrix.image }}:${{ github.sha }}
+      REPOSITORY: staging/${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Assume the staging deploy role
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: build-${{ matrix.image }}-${{ github.run_id }}
+          aws-region: ${{ vars.AWS_REGION }}
+          mask-aws-account-id: true
+
+      - name: Check whether the image already exists
+        id: existing
+        run: |
+          if aws ecr describe-images --repository-name "$REPOSITORY" --image-ids "imageTag=$GITHUB_SHA" >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-buildx-action@v4.4.1
+        if: steps.existing.outputs.found == 'false'
+
+      - name: Build ${{ matrix.image }}
+        if: steps.existing.outputs.found == 'false'
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: apps/server
+          file: apps/server/Dockerfile
+          target: ${{ matrix.target }}
+          tags: ${{ env.IMAGE_REFERENCE }}
+          load: true
+          push: false
+          provenance: false
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+      - name: Scan with Trivy
+        if: steps.existing.outputs.found == 'false'
+        run: >-
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.75.0
+          image "$IMAGE_REFERENCE" --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
+
+      - name: Push to staging ECR
+        if: steps.existing.outputs.found == 'false'
+        run: |
+          aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+          docker push "$IMAGE_REFERENCE"
+
+  deploy:
+    name: deploy
+    needs: build
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      environment: staging
+      image-tag: ${{ github.sha }}
+    secrets: inherit

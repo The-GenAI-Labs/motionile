@@ -17,8 +17,10 @@ PYTHON_DIRECTIVES = (
     re.compile(r"^pragma: no cover$"),
 )
 
-EXCLUDED_PARTS = frozenset({"node_modules", ".venv", ".next", ".turbo", "fixtures", "generated"})
-EXCLUDED_NAMES = frozenset({"uv.lock", "pnpm-lock.yaml"})
+EXCLUDED_PARTS = frozenset({"node_modules", ".venv", ".next", ".turbo", ".terraform", "fixtures", "generated"})
+EXCLUDED_NAMES = frozenset({"uv.lock", "pnpm-lock.yaml", ".terraform.lock.hcl"})
+HEREDOC_START = re.compile(r"<<-?([A-Za-z_][A-Za-z0-9_]*)\s*$")
+TEMPLATE_DIRECTIVES = frozenset({"#cloud-config"})
 INLINE_HASH_COMMENT_NAMES = frozenset({"Dockerfile", "Caddyfile", ".env.example", ".env.development"})
 INLINE_HASH_COMMENT_SUFFIXES = frozenset({".yml", ".yaml", ".toml", ".sh", ".bash", ".Dockerfile"})
 LINE_START_COMMENT_NAMES = frozenset(
@@ -139,6 +141,74 @@ def sql_comments(source: str) -> Iterator[tuple[int, str]]:
     return block_comments(source, line_markers=("--",))
 
 
+def hcl_line_comments(line: str, number: int, state: list[str]) -> Iterator[tuple[int, str]]:
+    index = 0
+    while index < len(line):
+        character = line[index]
+        context = state[-1] if state else "code"
+        if context == "block":
+            end = line.find("*/", index)
+            if end == -1:
+                return
+            state.pop()
+            index = end + 2
+            continue
+        if context == "string":
+            if character == "\\":
+                index += 2
+                continue
+            if line.startswith("${", index) or line.startswith("%{", index):
+                state.append("interpolation")
+                index += 2
+                continue
+            if character == '"':
+                state.pop()
+            index += 1
+            continue
+        if character == '"':
+            state.append("string")
+        elif character == "{" and context == "interpolation":
+            state.append("interpolation")
+        elif character == "}" and context == "interpolation":
+            state.pop()
+        elif character == "#" or line.startswith("//", index):
+            yield number, line[index:]
+            return
+        elif line.startswith("/*", index):
+            yield number, line[index:]
+            state.append("block")
+            index += 2
+            continue
+        index += 1
+
+
+def hcl_comments(source: str) -> Iterator[tuple[int, str]]:
+    state: list[str] = []
+    heredoc_end: str | None = None
+    for number, line in enumerate(source.splitlines(), start=1):
+        if heredoc_end is not None:
+            if line.strip() == heredoc_end:
+                heredoc_end = None
+            continue
+        yield from hcl_line_comments(line, number, state)
+        heredoc = HEREDOC_START.search(line)
+        if heredoc is not None and not state:
+            heredoc_end = heredoc.group(1)
+
+
+def template_comments(source: str) -> Iterator[tuple[int, str]]:
+    for number, line in enumerate(source.splitlines(), start=1):
+        stripped = line.strip()
+        if (number == 1 and stripped in TEMPLATE_DIRECTIVES) or stripped.startswith("#!/"):
+            continue
+        if stripped.startswith(("//", "/*", "%{/*")):
+            yield number, stripped
+            continue
+        start = hash_comment_start(line, line_start_only=False)
+        if start is not None:
+            yield number, line[start:]
+
+
 def lua_comments(source: str) -> Iterator[tuple[int, str]]:
     return block_comments(source, line_markers=("--",))
 
@@ -151,6 +221,9 @@ SCANNERS_BY_SUFFIX: dict[str, Scanner] = {
     ".css": css_comments,
     ".sql": sql_comments,
     ".lua": lua_comments,
+    ".tf": hcl_comments,
+    ".hcl": hcl_comments,
+    ".tftpl": template_comments,
 }
 
 

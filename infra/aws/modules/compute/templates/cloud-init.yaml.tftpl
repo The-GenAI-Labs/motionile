@@ -1,0 +1,136 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+groups:
+  - docker
+
+users:
+  - default
+  - name: deploy
+    gecos: Motionile deployments
+    shell: /bin/bash
+    groups: [docker]
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${ci_ssh_public_key}
+
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - jq
+  - unzip
+  - rsync
+  - nvme-cli
+  - fail2ban
+  - unattended-upgrades
+
+write_files:
+  - path: /etc/motionile/environment
+    permissions: "0644"
+    content: |
+      MOTIONILE_ENVIRONMENT=${environment}
+      AWS_REGION=${region}
+      AWS_DEFAULT_REGION=${region}
+  - path: /etc/docker/daemon.json
+    permissions: "0644"
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "${docker_log_max_size}",
+          "max-file": "${docker_log_max_files}"
+        },
+        "live-restore": true,
+        "no-new-privileges": true
+      }
+  - path: /etc/ssh/sshd_config.d/60-motionile.conf
+    permissions: "0644"
+    content: |
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitRootLogin no
+      AllowUsers deploy
+      X11Forwarding no
+      AllowAgentForwarding no
+      MaxAuthTries 3
+  - path: /etc/fail2ban/jail.d/sshd.local
+    permissions: "0644"
+    content: |
+      [sshd]
+      enabled = true
+      backend = systemd
+      maxretry = 5
+      bantime = 1h
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    permissions: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+  - path: /etc/apt/apt.conf.d/52motionile-unattended-upgrades
+    permissions: "0644"
+    content: |
+      Unattended-Upgrade::Automatic-Reboot "false";
+      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+  - path: /usr/local/sbin/motionile-mount-data
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      device="${data_volume_device}"
+      mount_point=/srv/motionile/data
+      for _ in $(seq 1 60); do
+        [ -e "$device" ] && break
+        sleep 5
+      done
+      [ -e "$device" ] || { echo "data volume $device never appeared" >&2; exit 1; }
+      if ! blkid "$device" >/dev/null 2>&1; then
+        mkfs.ext4 -L motionile-data "$device"
+      fi
+      uuid=$(blkid -s UUID -o value "$device")
+      mkdir -p "$mount_point"
+      if ! grep -q "$uuid" /etc/fstab; then
+        echo "UUID=$uuid $mount_point ext4 defaults,nofail,noatime 0 2" >> /etc/fstab
+      fi
+      mountpoint -q "$mount_point" || mount "$mount_point"
+      mkdir -p "$mount_point/redis" "$mount_point/caddy/data" "$mount_point/caddy/config"
+  - path: /usr/local/sbin/motionile-install-runtime
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+      chmod a+r /etc/apt/keyrings/docker.asc
+      codename=$(lsb_release -cs)
+      echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $codename stable" > /etc/apt/sources.list.d/docker.list
+      apt-get update
+      DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      snap wait system seed.loaded
+      snap install aws-cli --classic
+      agent_deb=$(mktemp --suffix=.deb)
+      curl -fsSL "https://amazoncloudwatch-agent-${region}.s3.${region}.amazonaws.com/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb" -o "$agent_deb"
+      DEBIAN_FRONTEND=noninteractive apt-get install -y "$agent_deb"
+      rm -f "$agent_deb"
+      /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c "ssm:${cloudwatch_agent_config}"
+%{ for file_name, content in systemd_units ~}
+  - path: /etc/systemd/system/${file_name}
+    permissions: "0644"
+    content: |
+      ${indent(6, trimspace(content))}
+%{ endfor ~}
+
+runcmd:
+  - [/usr/local/sbin/motionile-mount-data]
+  - [/usr/local/sbin/motionile-install-runtime]
+  - [install, -d, -o, deploy, -g, deploy, -m, "0750", /srv/motionile, /srv/motionile/bundle, /srv/motionile/state, /srv/motionile/logs]
+  - [chown, "deploy:deploy", /srv/motionile/data]
+  - [systemctl, enable, --now, docker]
+  - [systemctl, restart, ssh]
+  - [systemctl, enable, --now, fail2ban]
+  - [systemctl, daemon-reload]
+%{ for timer in systemd_timers ~}
+  - [systemctl, enable, --now, ${timer}]
+%{ endfor ~}

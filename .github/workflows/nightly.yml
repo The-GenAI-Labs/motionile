@@ -1,0 +1,90 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "30 21 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  STAGING_WEB_URL: ${{ vars.STAGING_WEB_URL }}
+  STAGING_API_URL: ${{ vars.STAGING_API_URL }}
+
+jobs:
+  load:
+    name: load
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Require staging URLs
+        run: |
+          [[ -n "$STAGING_WEB_URL" && -n "$STAGING_API_URL" ]] || { echo "::error::set the STAGING_WEB_URL and STAGING_API_URL repository variables"; exit 1; }
+      - name: k6 full load against staging
+        env:
+          API_BASE_URL: ${{ vars.STAGING_API_URL }}
+          WEB_BASE_URL: ${{ vars.STAGING_WEB_URL }}
+          LOAD_PROFILE: full
+          K6_REPORTS_DIR: ${{ github.workspace }}/k6-report
+        run: bash tests/load/run-smoke.sh smoke public
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: nightly-k6
+          path: k6-report/
+          if-no-files-found: warn
+          retention-days: 30
+
+  zap:
+    name: zap full scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: ZAP full scan of the web app
+        env:
+          ZAP_REPORTS_DIR: ${{ github.workspace }}/zap-report
+        run: bash tests/security/zap/run-full-scan.sh web "$STAGING_WEB_URL" zap-web-full
+      - name: ZAP API scan from the OpenAPI document
+        if: success() || failure()
+        env:
+          ZAP_REPORTS_DIR: ${{ github.workspace }}/zap-report
+        run: bash tests/security/zap/run-full-scan.sh api "$STAGING_API_URL/openapi.json" zap-api-full
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: nightly-zap
+          path: zap-report/
+          if-no-files-found: warn
+          retention-days: 30
+
+  evals:
+    name: evals
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Full eval suite
+        run: |
+          mkdir -p eval-report
+          pnpm evals 2>&1 | tee eval-report/evals.log
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: nightly-evals
+          path: eval-report/
+          if-no-files-found: warn
+          retention-days: 30

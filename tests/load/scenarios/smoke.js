@@ -1,15 +1,11 @@
 import { check, sleep } from "k6";
 import http from "k6/http";
 
-import { smokeThresholds } from "../thresholds.js";
+import { loadOptions } from "../thresholds.js";
 
 const apiBaseUrl = __ENV.API_BASE_URL || "http://localhost:8000";
 
-export const options = {
-  vus: 5,
-  duration: "30s",
-  thresholds: smokeThresholds,
-};
+export const options = loadOptions();
 
 export default function smoke() {
   const response = http.get(`${apiBaseUrl}/health/live`);

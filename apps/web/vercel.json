@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm turbo run build --filter=@motionile/web",
+  "ignoreCommand": "npx --yes turbo-ignore@2.11.7 @motionile/web --fallback=HEAD^1"
+}

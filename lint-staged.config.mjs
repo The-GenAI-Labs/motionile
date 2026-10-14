@@ -15,8 +15,9 @@ const config = {
   ],
   "*.{json,md}": (files) => `prettier --write ${quote(files)}`,
   "*.{yml,yaml,css}": (files) => [`prettier --write ${quote(files)}`, checkComments(files)],
-  "{*.toml,*.sh,**/Dockerfile,**/Caddyfile,.husky/*,**/.env.example}": (files) =>
-    checkComments(files),
+  "{*.toml,*.sh,*.tf,*.tftpl,*.hcl,*.lua,**/Dockerfile,**/Caddyfile,.husky/*,**/.env.example}": (
+    files,
+  ) => checkComments(files),
 };
 
 export default config;

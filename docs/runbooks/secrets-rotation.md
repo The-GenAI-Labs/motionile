@@ -1,0 +1,298 @@
+# Secrets rotation
+
+How to rotate every Motionile secret without guessing. Each environment has its own values; rotate staging (`develop`) first, verify, then production (`prod`).
+
+Placeholders:
+
+| Placeholder             | Meaning                                                                                                  |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `<ENV>`                 | `staging` or `production`                                                                                |
+| `<GITHUB_OWNER>/<REPO>` | GitHub repository                                                                                        |
+| `<API_DOMAIN>`          | `api.<DOMAIN>` or `api.<STAGING_DOMAIN>`                                                                 |
+| `<INSTANCE_ID>`         | EC2 instance ID, see [access-and-operations.md](access-and-operations.md#1-open-a-shell-on-the-instance) |
+| `<YYYYMM>`              | Year and month of the rotation, used to label new keys                                                   |
+
+## Schedule
+
+| Secret                                     | Where it lives                                                                                   | Rotate every | Downtime                                |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------------ | --------------------------------------- |
+| Neon `motionile` role password             | SSM `DATABASE_URL`, `DATABASE_DIRECT_URL`                                                        | 180 days     | Minutes, between reset and redeploy     |
+| `REDIS_PASSWORD`                           | SSM                                                                                              | 365 days     | Seconds, while containers are recreated |
+| JWT signing key (from Phase 4)             | SSM, parameter added to `deploy/parameters.csv` in Phase 4                                       | 180 days     | None with the overlap procedure         |
+| `ENCRYPTION_KEYS`                          | SSM                                                                                              | 365 days     | None                                    |
+| CloudFront signing key pair (from Phase 9) | Public key in OpenTofu, private key in SSM `CLOUDFRONT_PRIVATE_KEY`                              | 365 days     | None with the overlap procedure         |
+| SSH deploy key                             | `ci_ssh_public_key`, `/home/deploy/.ssh/authorized_keys`, GitHub secret `DEPLOY_SSH_PRIVATE_KEY` | 180 days     | None                                    |
+| `TURNSTILE_SECRET_KEY`                     | SSM and Cloudflare                                                                               | 365 days     | None if done within 2 hours             |
+| `SECURITY_PAGINATION_SECRET`               | SSM                                                                                              | 365 days     | None; open cursors become invalid       |
+
+Rotate any secret immediately when it may have leaked, when someone with access leaves, or when a laptop holding a copy is lost. After each rotation, update the password manager entry and record the date in the operations log.
+
+## Common procedures
+
+### Upload owner parameters
+
+`infra/scripts/put-parameters.sh` uploads `NAME=value` lines as SecureString parameters under `/motionile/<ENV>/`. It accepts only names whose source is `owner` in `deploy/parameters.csv`, rejects empty values and values containing a single quote, and never prints values. A file may hold just the parameters you rotate; the closing `note:` line only lists required owner names that were not in this file.
+
+```bash
+mkdir -p infra/parameters
+umask 077
+AWS_REGION=ap-south-1 infra/scripts/put-parameters.sh <ENV> infra/parameters/<ENV>-rotation.env
+rm infra/parameters/<ENV>-rotation.env
+```
+
+Expected result: one `stored /motionile/<ENV>/<NAME>` line per parameter.
+
+Verify the change date without printing values:
+
+```bash
+aws ssm describe-parameters --region ap-south-1 \
+  --parameter-filters 'Key=Path,Values=/motionile/<ENV>' \
+  --query 'Parameters[].[Name,Type,LastModifiedDate]' --output table
+```
+
+### Redeploy with the current tag
+
+Containers read SSM values only when `deploy.sh` renders `/srv/motionile/.env`. `deploy.sh` then runs migrations and `docker compose up --wait`, which recreates every container whose configuration changed.
+
+Option A, through GitHub Actions (also runs the HTTPS health checks and the Playwright smoke project). The image for the branch head already exists, so the build is skipped:
+
+```bash
+gh workflow run deploy-staging.yml --repo <GITHUB_OWNER>/<REPO> --ref develop
+gh workflow run deploy-production.yml --repo <GITHUB_OWNER>/<REPO> --ref prod
+gh run watch --repo <GITHUB_OWNER>/<REPO> "$(gh run list --repo <GITHUB_OWNER>/<REPO> --workflow deploy-staging.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
+```
+
+Production waits for a reviewer to approve the `production` environment. This deploys the current head of the branch, which equals the running tag unless a merge is pending.
+
+Option B, on the instance as `deploy` (fastest, no SSH window needed):
+
+```bash
+/srv/motionile/bundle/scripts/deploy.sh "$(cat /srv/motionile/state/current-tag)"
+curl -fsS https://<API_DOMAIN>/health/ready
+```
+
+Expected result: the log ends with `deployed <tag>`, and readiness returns `{"status":"ok","checks":{"postgres":"ok","redis":"ok"}}`. `deploy.sh` also waits for `/health/ready` before it records the tag, so a wrong credential fails the deployment. When the tag is redeployed onto itself there is no older tag to roll back to: if it fails, fix the parameter and run it again.
+
+## 1. Database password (Neon)
+
+Resetting the password invalidates the old one immediately, so new connections fail until the redeploy finishes. Do it in a quiet period.
+
+1. Prepare the rotation file template with the hosts you already use (see [neon-setup.md](neon-setup.md#5-build-the-two-connection-strings)):
+
+   ```text
+   DATABASE_URL=postgresql://motionile:<NEW_PASSWORD>@<ENDPOINT_ID>-pooler.<REGION_HOST>/motionile?sslmode=require&channel_binding=require
+   DATABASE_DIRECT_URL=postgresql://motionile:<NEW_PASSWORD>@<ENDPOINT_ID>.<REGION_HOST>/motionile?sslmode=require&channel_binding=require
+   ```
+
+2. In the Neon Console select project `motionile-<ENV>`, branch `<ENV>`, open **Postgres database → Roles**, open the menu of `motionile`, choose **Reset password**, click **Reset**. Copy the new password.
+
+   Expected result: a modal with the new password. Running requests keep their open connections; new connections fail with `password authentication failed`.
+
+3. Put the password into the file as `infra/parameters/<ENV>-rotation.env` and upload it ([Upload owner parameters](#upload-owner-parameters)).
+4. Redeploy with Option B ([Redeploy with the current tag](#redeploy-with-the-current-tag)), because it is faster than waiting for a workflow.
+5. Verify:
+
+   ```bash
+   curl -fsS https://<API_DOMAIN>/health/ready
+   /srv/motionile/bundle/scripts/compose.sh logs --since 5m worker-default worker-render | grep -i -c 'authentication failed'
+   ```
+
+   Expected result: readiness `ok` and a count of `0` for log lines after the redeploy. Update the password manager entry.
+
+## 2. Redis password
+
+`REDIS_PASSWORD` appears in the Redis `command` (`--requirepass`), in its `REDISCLI_AUTH` environment and in every application container's `REDIS_URL`. Changing it changes the configuration of `redis`, `api`, `mcp`, `worker-default`, `worker-render` and `migrate`, so Compose recreates all of them together; the data on `/srv/motionile/data/redis` stays. Requests fail for a few seconds while the containers are recreated.
+
+1. Take a fresh backup on the instance (as `ssm-user`): `sudo systemctl start motionile-redis-backup.service`.
+2. Create `infra/parameters/<ENV>-rotation.env`:
+
+   ```bash
+   umask 077
+   printf 'REDIS_PASSWORD=%s\n' "$(openssl rand -hex 32)" > infra/parameters/<ENV>-rotation.env
+   ```
+
+   Copy the value into the password manager, then upload ([Upload owner parameters](#upload-owner-parameters)).
+
+3. Optional check of what Compose will do, on the instance as `deploy`:
+
+   ```bash
+   /srv/motionile/bundle/scripts/render-env.sh
+   /srv/motionile/bundle/scripts/compose.sh --dry-run up --detach
+   ```
+
+   Expected result: `Recreate` lines for the `redis`, `api`, `mcp`, `worker-default` and `worker-render` containers. If `redis` is not listed, the parameter did not change; stop and check SSM.
+
+4. Redeploy with Option A or B ([Redeploy with the current tag](#redeploy-with-the-current-tag)).
+5. Verify:
+
+   ```bash
+   /srv/motionile/bundle/scripts/compose.sh ps --format 'table {{.Service}}\t{{.CreatedAt}}\t{{.Status}}'
+   /srv/motionile/bundle/scripts/compose.sh exec redis redis-cli ping
+   curl -fsS https://<API_DOMAIN>/health/ready
+   ```
+
+   Expected result: every service was created in the last minutes and is running, `PONG`, and readiness `ok`. The next nightly `motionile-redis-backup` run succeeds (it authenticates through the container's `REDISCLI_AUTH`).
+
+## 3. JWT signing key (Phase 4)
+
+Phase 4 introduces EdDSA access tokens (15-minute lifetime, `docs/context.md` section 7), the JWKS endpoint `/v1/auth/jwks.json` and the signing key parameter. That phase adds the parameter to `deploy/parameters.csv` as an `owner` parameter and must update this section with its exact name and format. Refresh tokens are opaque random values whose SHA-256 hash is stored; they are not signed and are unaffected by key rotation.
+
+Each key has a key ID (`kid`) carried in the JWT header. Rotation keeps two keys published so no valid token is ever rejected:
+
+1. Generate the new Ed25519 key with a new `kid`, for example `<YYYYMM>`:
+
+   ```bash
+   openssl genpkey -algorithm ed25519 -out jwt-<ENV>-<YYYYMM>.pem
+   ```
+
+2. Add it to the signing key parameter next to the current key, still marked as not signing, upload and redeploy. `/v1/auth/jwks.json` now lists both `kid` values.
+
+   Verify: `curl -fsS https://<API_DOMAIN>/v1/auth/jwks.json | jq -r '.keys[].kid'` prints both IDs.
+
+3. Wait at least as long as the JWKS cache lifetime of the verifiers (the Next.js server caches the JWKS), so every verifier knows the new key.
+4. Switch signing to the new `kid`, upload and redeploy. New tokens carry the new `kid`; tokens signed with the old key stay valid because the old public key is still published.
+5. Wait at least the maximum access-token lifetime (15 minutes) plus clock skew. After that no unexpired token signed by the old key exists.
+6. Remove the old key from the parameter, upload and redeploy.
+
+   Verify: the JWKS lists only the new `kid`; logging in and refreshing on the web app works; the API logs show no token verification failures.
+
+Delete the old private key file and update the password manager.
+
+## 4. Encryption key ring (`ENCRYPTION_KEYS`)
+
+`ENCRYPTION_KEYS` is a JSON object mapping a positive integer version to a base64-encoded 32-byte AES-256-GCM key, for example `{"1":"<base64>","2":"<base64>"}`. `motionile.core.security.encryption.KeyRing` encrypts with the highest version and decrypts any version present; every stored value records its `key_version`. Removing a version that rows still use makes those rows fail with `unknown key version`. Never reuse a version number.
+
+1. Build the new value from the current one without printing either:
+
+   ```bash
+   umask 077
+   current=$(aws ssm get-parameter --region ap-south-1 --with-decryption \
+     --name /motionile/<ENV>/ENCRYPTION_KEYS --query Parameter.Value --output text)
+   next_version=$(jq -r 'keys | map(tonumber) | max + 1' <<<"$current")
+   printf 'ENCRYPTION_KEYS=%s\n' "$(jq -c --arg version "$next_version" --arg key "$(openssl rand -base64 32)" '. + {($version): $key}' <<<"$current")" \
+     > infra/parameters/<ENV>-rotation.env
+   unset current
+   echo "new active version: $next_version"
+   ```
+
+   Copy the file content into the password manager, then upload ([Upload owner parameters](#upload-owner-parameters)) and redeploy ([Redeploy with the current tag](#redeploy-with-the-current-tag)).
+
+2. Verify the loaded versions (prints version numbers only):
+
+   ```bash
+   /srv/motionile/bundle/scripts/compose.sh exec api python -c 'from motionile.core.config import get_settings; print(sorted(get_settings().encryption_keys))'
+   ```
+
+   Expected result: for example `[1, 2]`. New values are encrypted with the highest version.
+
+3. Re-encrypt existing values in the background. `KeyRing.needs_reencryption(value)` tells whether a stored value uses an older version and `KeyRing.reencrypt(value, associated_data=...)` returns it encrypted with the active version. No table stores encrypted values yet and no re-encryption task exists; the first module that stores encrypted values must ship a procrastinate task that walks its rows in small batches with `key_version < <ACTIVE_VERSION>`, re-encrypts them and commits per batch. Run that task after step 2.
+4. Check progress on every table that holds encrypted values:
+
+   ```sql
+   SELECT key_version, count(*) FROM <TABLE> GROUP BY key_version ORDER BY key_version;
+   ```
+
+5. When no row in any table uses an old version, remove it:
+
+   ```bash
+   umask 077
+   current=$(aws ssm get-parameter --region ap-south-1 --with-decryption \
+     --name /motionile/<ENV>/ENCRYPTION_KEYS --query Parameter.Value --output text)
+   printf 'ENCRYPTION_KEYS=%s\n' "$(jq -c 'del(.["<OLD_VERSION>"])' <<<"$current")" > infra/parameters/<ENV>-rotation.env
+   unset current
+   ```
+
+   Upload, redeploy and repeat the verification in step 2.
+
+## 5. CloudFront signing key pair
+
+Signed cookies (`/media/*`) and signed URLs (`/share/*`) are issued from Phase 9 with `CLOUDFRONT_PRIVATE_KEY` and `CLOUDFRONT_KEY_PAIR_ID`. CloudFront accepts any public key in the distribution's trusted key group, so a rotation adds the new key to the group, switches signing, waits, then removes the old key.
+
+`infra/aws/modules/cdn` trusts every key in the `cloudfront_public_keys` map (label to PEM) and writes the ID of the key labelled by `cloudfront_active_key` to `CLOUDFRONT_KEY_PAIR_ID` and the `cloudfront_public_key_id` output. CloudFront public keys are immutable, so a rotation always adds a new label rather than editing a key.
+
+1. Generate the new pair:
+
+   ```bash
+   openssl genrsa -out cloudfront-<ENV>-<YYYYMM>-private.pem 2048
+   openssl rsa -pubout -in cloudfront-<ENV>-<YYYYMM>-private.pem -out cloudfront-<ENV>-<YYYYMM>-public.pem
+   ```
+
+2. Add the new public key to `cloudfront_public_keys` in `infra/aws/envs/<ENV>/terraform.tfvars`, leave `cloudfront_active_key` unchanged, and apply.
+
+   Expected result: the plan creates one `aws_cloudfront_public_key` and updates the key group in place. Verify: `aws cloudfront get-key-group --id "$(tofu output -raw cloudfront_key_group_id)" --query 'KeyGroup.KeyGroupConfig.Items'` lists two IDs.
+
+3. Switch signing in one step: set `cloudfront_active_key = "<YYYYMM>"` and apply (this updates the `CLOUDFRONT_KEY_PAIR_ID` parameter), upload the new private key, and redeploy right away:
+
+   ```bash
+   umask 077
+   printf 'CLOUDFRONT_PRIVATE_KEY=%s\n' "$(base64 -w0 cloudfront-<ENV>-<YYYYMM>-private.pem)" > infra/parameters/<ENV>-rotation.env
+   ```
+
+   On macOS use `base64 -i cloudfront-<ENV>-<YYYYMM>-private.pem | tr -d '\n'` instead of `base64 -w0 ...`. Then upload ([Upload owner parameters](#upload-owner-parameters)) and redeploy ([Redeploy with the current tag](#redeploy-with-the-current-tag)).
+
+   Verify: a media page on the web app plays video; the `CloudFront-Key-Pair-Id` cookie equals `tofu output -raw cloudfront_public_key_id`.
+
+4. Wait for the longest lifetime of a signed cookie or signed URL issued with the old key (set by the media and sharing modules in Phases 8 and 9; record it here when they ship).
+5. Remove the old label from `cloudfront_public_keys` and apply. Expected result: the plan removes one public key and updates the key group.
+6. Store the new private key in the password manager and delete local copies of both private keys.
+
+Until Phase 9 nothing signs with the key, so a rotation before then only needs steps 1, 2, 3 (without waiting) and 5.
+
+## 6. SSH deploy key
+
+GitHub Actions connects as `deploy` with the private key in the environment secret `DEPLOY_SSH_PRIVATE_KEY`. The public key reached the instance through cloud-init from `ci_ssh_public_key`, but the instance ignores later `user_data` changes (`ignore_changes = [ami, user_data]`), so updating `terraform.tfvars` alone changes nothing on the running instance.
+
+1. Generate the new key on your machine:
+
+   ```bash
+   ssh-keygen -t ed25519 -N '' -C motionile-<ENV>-deploy-<YYYYMM> -f motionile-<ENV>-deploy-<YYYYMM>
+   cat motionile-<ENV>-deploy-<YYYYMM>.pub
+   ```
+
+2. Add the public key on the instance next to the old one. Open a Session Manager shell and as `ssm-user` run (paste the full `.pub` line):
+
+   ```bash
+   echo '<NEW_PUBLIC_KEY_LINE>' | sudo -u deploy tee -a /home/deploy/.ssh/authorized_keys >/dev/null
+   sudo ssh-keygen -lf /home/deploy/.ssh/authorized_keys
+   ```
+
+   Expected result: two fingerprints, the old comment and `motionile-<ENV>-deploy-<YYYYMM>`.
+
+3. Update the GitHub secret:
+
+   ```bash
+   gh secret set DEPLOY_SSH_PRIVATE_KEY --repo <GITHUB_OWNER>/<REPO> --env <ENV> < motionile-<ENV>-deploy-<YYYYMM>
+   ```
+
+4. Run a deployment through GitHub Actions (Option A in [Redeploy with the current tag](#redeploy-with-the-current-tag)). Expected result: the `Run deploy.sh` step succeeds.
+5. Remove the old key. Check which line holds the old key before deleting, then delete by its exact comment:
+
+   ```bash
+   sudo grep -n -F ' motionile-<ENV>-deploy' /home/deploy/.ssh/authorized_keys
+   sudo sed -i '/ motionile-<ENV>-deploy$/d' /home/deploy/.ssh/authorized_keys
+   sudo ssh-keygen -lf /home/deploy/.ssh/authorized_keys
+   ```
+
+   Expected result: only the `motionile-<ENV>-deploy-<YYYYMM>` fingerprint is left. Adjust the pattern if the old key had a different comment.
+
+6. Set `ci_ssh_public_key` in `infra/aws/envs/<ENV>/terraform.tfvars` to the new public key so a rebuilt instance gets it. `tofu plan` shows no change for this, which is expected.
+7. Run another deployment to prove the remaining key works, then delete the private key file from your machine.
+
+## 7. Turnstile secret key
+
+1. In the Cloudflare dashboard open **Turnstile**, select the widget of this environment's web host, open its settings and choose **Rotate secret key**. Do not choose to invalidate the old secret immediately; Cloudflare keeps it valid for two hours.
+2. Write the new secret to `infra/parameters/<ENV>-rotation.env` as `TURNSTILE_SECRET_KEY=<NEW_SECRET>`, upload ([Upload owner parameters](#upload-owner-parameters)) and redeploy ([Redeploy with the current tag](#redeploy-with-the-current-tag)) within those two hours. The site key does not change.
+3. Verify: readiness `ok`. From Phase 4, register or log in on the web app (Turnstile protects those routes) and confirm the API logs show no Turnstile verification failures.
+
+## 8. Pagination cursor secret
+
+`SECURITY_PAGINATION_SECRET` signs list cursors. Rotating it only invalidates cursors already handed out: a client that requests the next page with an old cursor gets `422` with code `invalid_cursor` and starts again from the first page. Nothing stored depends on it.
+
+```bash
+umask 077
+printf 'SECURITY_PAGINATION_SECRET=%s\n' "$(openssl rand -hex 32)" > infra/parameters/<ENV>-rotation.env
+```
+
+Upload ([Upload owner parameters](#upload-owner-parameters)) and redeploy ([Redeploy with the current tag](#redeploy-with-the-current-tag)). The server refuses to start with fewer than 32 characters; the command produces 64.
+
+Verify: readiness `ok`, and a paginated list on the web app loads its first and second pages.

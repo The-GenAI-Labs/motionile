@@ -102,11 +102,11 @@ Staging and production must set `DATABASE_URL`, `REDIS_URL`, `CORS_ALLOWED_ORIGI
 
 ## Branching
 
-| Branch    | Purpose                                                                                                 |
-| --------- | ------------------------------------------------------------------------------------------------------- |
-| `init`    | Snapshot of the initial repository setup. Not used for new work.                                        |
-| `develop` | Integration branch. Feature and phase branches merge here through pull requests; it deploys to staging. |
-| `prod`    | Production. Receives release pull requests from `develop` only.                                         |
+| Branch    | Purpose                                                                                                                                                 |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init`    | Snapshot of the initial repository setup. Not used for new work.                                                                                        |
+| `develop` | Integration branch. Feature and phase branches merge here through pull requests; it deploys to staging.                                                 |
+| `prod`    | Production. Only ever fast-forwarded to a commit already deployed from `develop`; see [`docs/runbooks/github-setup.md`](docs/runbooks/github-setup.md). |
 
 Work on `phase-<n>/<slug>` or `feat/<slug>` branches cut from `develop`. Commits follow [Conventional Commits](https://www.conventionalcommits.org/) and must be signed so they show as **Verified** on GitHub. Pull requests merge only when the `ci-ok` check is green.
 
@@ -116,4 +116,6 @@ Work on `phase-<n>/<slug>` or `feat/<slug>` branches cut from `develop`. Commits
 - [`docs/roadmap.md`](docs/roadmap.md): the twelve phases and their "done when" criteria
 - [`docs/adr/`](docs/adr/): architecture decision records
 - [`docs/db/conventions.md`](docs/db/conventions.md): database conventions
+- [`docs/infrastructure.md`](docs/infrastructure.md): AWS, Vercel and Neon topology and the deployment flow
+- [`docs/runbooks/`](docs/runbooks/): step-by-step setup, deployment, operations, backups, secret rotation and platform applications
 - [`AGENTS.md`](AGENTS.md): rules for coding agents and contributors

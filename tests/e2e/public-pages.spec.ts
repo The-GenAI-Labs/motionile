@@ -18,6 +18,11 @@ const PUBLIC_PAGES: PublicPage[] = [
     heading: "Refund and Cancellation Policy",
     title: /^Refund and Cancellation Policy · Motionile$/,
   },
+  {
+    path: "/legal/data-deletion",
+    heading: "Data Deletion",
+    title: /^Data Deletion · Motionile$/,
+  },
 ];
 
 interface LinkedData {
@@ -78,7 +83,12 @@ test("home page publishes Organization and SoftwareApplication JSON-LD", async (
 });
 
 test("legal pages are flagged as drafts pending legal review", async ({ page }) => {
-  for (const path of ["/legal/terms", "/legal/privacy", "/legal/refund-policy"]) {
+  for (const path of [
+    "/legal/terms",
+    "/legal/privacy",
+    "/legal/refund-policy",
+    "/legal/data-deletion",
+  ]) {
     await page.goto(path);
 
     await expect(page.getByText(/pending legal review/i).first()).toBeVisible();
@@ -122,6 +132,7 @@ test("header and footer navigation reach every public page", async ({ page }) =>
     ["Terms of Service", "/legal/terms"],
     ["Privacy Policy", "/legal/privacy"],
     ["Refund and Cancellation Policy", "/legal/refund-policy"],
+    ["Data Deletion", "/legal/data-deletion"],
   ] as const) {
     await page.getByRole("contentinfo").getByRole("link", { name }).click();
     await expect(page).toHaveURL(new RegExp(`${path}$`));

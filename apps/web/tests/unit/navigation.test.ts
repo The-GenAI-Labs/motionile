@@ -47,6 +47,7 @@ describe("navigation config", () => {
       "/legal/terms",
       "/legal/privacy",
       "/legal/refund-policy",
+      "/legal/data-deletion",
     ]);
     expect(footerNavigation.find((group) => group.title === "Legal")?.links).toBe(legalLinks);
   });

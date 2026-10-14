@@ -18,6 +18,12 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], baseURL: webBaseUrl },
     },
     {
+      name: "smoke",
+      testDir: "./e2e",
+      testMatch: "smoke.spec.ts",
+      use: { ...devices["Desktop Chrome"], baseURL: webBaseUrl },
+    },
+    {
       name: "security",
       testDir: "./security/api",
       use: { baseURL: apiBaseUrl },

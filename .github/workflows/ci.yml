@@ -34,6 +34,7 @@ jobs:
       contract: ${{ steps.filter.outputs.contract }}
       images: ${{ steps.filter.outputs.images }}
       stack: ${{ steps.filter.outputs.stack }}
+      infra: ${{ steps.filter.outputs.infra }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -76,6 +77,61 @@ jobs:
               - "tests/**"
               - "deploy/**"
               - "pnpm-lock.yaml"
+            infra:
+              - *workflow
+              - "infra/**"
+              - "deploy/**"
+              - "scripts/**"
+              - "tests/**/*.sh"
+              - ".shellcheckrc"
+              - ".trivyignore.yaml"
+
+  infra:
+    name: infra
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: opentofu/setup-opentofu@v2.0.2
+        with:
+          tofu_version: 1.13.1
+          tofu_wrapper: false
+      - name: tofu fmt
+        run: tofu fmt -check -recursive -diff infra
+      - name: tofu validate
+        run: |
+          for root in bootstrap envs/staging envs/production; do
+            echo "::group::$root"
+            tofu -chdir="infra/aws/$root" init -backend=false -input=false -lockfile=readonly
+            tofu -chdir="infra/aws/$root" validate
+            echo "::endgroup::"
+          done
+      - uses: terraform-linters/setup-tflint@v6.3.2
+        with:
+          tflint_version: v0.64.0
+      - name: tflint
+        working-directory: infra/aws
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          tflint --init --config "$PWD/.tflint.hcl"
+          tflint --recursive --config "$PWD/.tflint.hcl" --format compact
+      - name: Trivy configuration scan
+        run: |
+          for target in infra deploy; do
+            docker run --rm --volume "$PWD:/src" --workdir /src aquasec/trivy:0.75.0 \
+              config --severity HIGH,CRITICAL --exit-code 1 --ignorefile /src/.trivyignore.yaml "$target"
+          done
+      - name: shellcheck
+        run: |
+          mapfile -t scripts < <(git ls-files '*.sh')
+          docker run --rm --volume "$PWD:/mnt" --workdir /mnt koalaman/shellcheck:v0.11.0 -x "${scripts[@]}"
+      - name: actionlint
+        run: docker run --rm --volume "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
 
   lint:
     name: lint
@@ -211,6 +267,7 @@ jobs:
         run: >-
           docker run --rm --volume "$PWD:/repo" aquasec/trivy:0.75.0
           fs /repo --scanners vuln,secret,misconfig --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
+          --ignorefile /repo/.trivyignore.yaml
           --skip-dirs "**/node_modules" --skip-dirs "**/.venv" --skip-dirs "**/tests/fixtures"
 
   build:
@@ -365,6 +422,7 @@ jobs:
     needs:
       [
         changes,
+        infra,
         lint,
         typecheck,
         unit,

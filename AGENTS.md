@@ -26,9 +26,10 @@ Operational rules for any coding agent working in this repository. `docs/context
 | `packages/config`       | Shared ESLint (including the `no-comments` rule), TypeScript and Prettier configs         |
 | `packages/api-contract` | TypeScript types and Zod schemas generated from `apps/server/openapi.json`                |
 | `tests`                 | Playwright e2e and security suites, ZAP baseline, k6 load scenarios                       |
-| `deploy`                | Compose files and Caddyfile                                                               |
+| `deploy`                | Compose files, Caddyfile, deployment scripts, systemd units and `parameters.csv`          |
+| `infra`                 | OpenTofu for AWS (`infra/aws`) and `put-parameters.sh`                                    |
 | `scripts`               | Repository checks: comments, module boundaries, API contract, gitleaks                    |
-| `docs`                  | Context, roadmap, ADRs, database conventions                                              |
+| `docs`                  | Context, roadmap, ADRs, database conventions, infrastructure and runbooks                 |
 
 ## Commands
 
@@ -49,8 +50,8 @@ Operational rules for any coding agent working in this repository. `docs/context
 
 ## No comments
 
-- Never write comments in Python, TypeScript, JavaScript, CSS, YAML, TOML, shell, Dockerfiles or SQL. Express intent through names and structure.
-- The only allowed exceptions are machine directives: `# noqa: <code>`, `# type: ignore[<code>]`, `# pragma: no cover`, shebang lines, `// eslint-disable-next-line <rule>`, `// @ts-expect-error <reason>` and triple-slash references.
+- Never write comments in Python, TypeScript, JavaScript, CSS, YAML, TOML, shell, Dockerfiles, SQL, Lua, OpenTofu (`.tf`, `.hcl`) or templates (`.tftpl`). Express intent through names and structure; justify scanner exceptions in `.trivyignore.yaml` `statement` fields.
+- The only allowed exceptions are machine directives: `# noqa: <code>`, `# type: ignore[<code>]`, `# pragma: no cover`, shebang lines, the `#cloud-config` header, `// eslint-disable-next-line <rule>`, `// @ts-expect-error <reason>` and triple-slash references.
 - Never leave commented-out code, TODOs or dead code. Open an issue instead.
 - `scripts/check_no_comments.py` and the `motionile/no-comments` ESLint rule enforce this. Never weaken either to make a check pass.
 
@@ -102,6 +103,15 @@ Operational rules for any coding agent working in this repository. `docs/context
 - Authorize in the service layer and always include the owner in resource lookups.
 - Never trust client-supplied prices, amounts, roles or user IDs.
 - Never read `.env` files other than `.env.example`.
+
+## Infrastructure
+
+- Change AWS resources only through `infra/aws`. Staging and production call the same `environment` module and differ only by variables; never add environment-specific resources to an `envs/*` root.
+- Pin OpenTofu (`~> 1.13.1`) and the AWS provider exactly in roots; commit `.terraform.lock.hcl` with hashes for every platform. Never commit `*.tfvars`, state or plans.
+- Never put a secret in OpenTofu: secrets are SecureString parameters listed with source `owner` in `deploy/parameters.csv` and uploaded with `infra/scripts/put-parameters.sh`. Non-secret values OpenTofu knows are written as `infra` parameters.
+- Scope every IAM policy to ARNs and conditions; `*` resources only where AWS supports nothing narrower.
+- Run `tofu fmt`, `tofu validate`, tflint and the Trivy configuration scan before pushing; the `infra` CI job enforces them along with shellcheck and actionlint.
+- Update the runbook in `docs/runbooks/` in the same pull request as any change to how infrastructure is applied or operated.
 
 ## Billing
 

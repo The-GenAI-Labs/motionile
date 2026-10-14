@@ -18,6 +18,11 @@ describe("sitemap", () => {
         changeFrequency: "yearly",
         priority: 0.3,
       },
+      {
+        url: "https://motionile.test/legal/data-deletion",
+        changeFrequency: "yearly",
+        priority: 0.3,
+      },
     ]);
   });
 });

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import * as about from "@/app/(public)/about/page";
 import * as contact from "@/app/(public)/contact/page";
+import * as dataDeletion from "@/app/(public)/legal/data-deletion/page";
 import * as privacy from "@/app/(public)/legal/privacy/page";
 import * as refundPolicy from "@/app/(public)/legal/refund-policy/page";
 import * as terms from "@/app/(public)/legal/terms/page";
@@ -24,6 +25,7 @@ const pages: [string, string, PageModule][] = [
   ["/legal/terms", "Terms of Service", terms],
   ["/legal/privacy", "Privacy Policy", privacy],
   ["/legal/refund-policy", "Refund and Cancellation Policy", refundPolicy],
+  ["/legal/data-deletion", "Data Deletion", dataDeletion],
 ];
 
 const legalPages = pages.filter(([path]) => path.startsWith("/legal"));
@@ -107,6 +109,38 @@ describe("public pages", () => {
     expect(screen.getByRole("heading", { name: /Failed generations/ })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Chargebacks/ })).toBeInTheDocument();
     expect(screen.getAllByText(/original payment method/).length).toBeGreaterThan(0);
+  });
+
+  it("explains how to delete data and revoke connected platforms", () => {
+    render(<dataDeletion.default />);
+
+    for (const heading of [
+      /What you can delete/,
+      /How to request deletion/,
+      /Removing Motionile from a connected platform/,
+      /What we retain and why/,
+      /Grievance Officer/,
+    ]) {
+      expect(screen.getByRole("heading", { level: 2, name: heading })).toBeInTheDocument();
+    }
+    expect(screen.getAllByRole("link", { name: "privacy@motionile.com" })[0]).toHaveAttribute(
+      "href",
+      "mailto:privacy@motionile.com",
+    );
+    expect(screen.getByRole("link", { name: "grievance@motionile.com" })).toHaveAttribute(
+      "href",
+      "mailto:grievance@motionile.com",
+    );
+    for (const text of [
+      /Settings → Account → Delete account/,
+      /within 30 days/,
+      /confirmation code/,
+      /Central Goods and Services Tax Act, 2017/,
+      /anonymised/,
+      /backup retention period/,
+    ]) {
+      expect(screen.getAllByText(text).length).toBeGreaterThan(0);
+    }
   });
 
   it("does not invent prices on the pricing page", () => {

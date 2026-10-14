@@ -12,6 +12,7 @@ const publicPaths = [
   "/legal/terms",
   "/legal/privacy",
   "/legal/refund-policy",
+  "/legal/data-deletion",
 ];
 
 export const options = loadOptions();

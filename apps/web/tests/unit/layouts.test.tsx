@@ -81,6 +81,10 @@ describe("public layout", () => {
     expect(
       within(legal).getByRole("link", { name: "Refund and Cancellation Policy" }),
     ).toHaveAttribute("href", "/legal/refund-policy");
+    expect(within(legal).getByRole("link", { name: "Data Deletion" })).toHaveAttribute(
+      "href",
+      "/legal/data-deletion",
+    );
     expect(screen.getByRole("navigation", { name: "Product" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Company" })).toBeInTheDocument();
   });

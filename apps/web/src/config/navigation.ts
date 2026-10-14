@@ -56,6 +56,7 @@ export const legalLinks = [
   { title: "Terms of Service", href: "/legal/terms" },
   { title: "Privacy Policy", href: "/legal/privacy" },
   { title: "Refund and Cancellation Policy", href: "/legal/refund-policy" },
+  { title: "Data Deletion", href: "/legal/data-deletion" },
 ] as const satisfies readonly PublicLink[];
 
 export const publicNavigation = [
@@ -90,6 +91,7 @@ export const publicPages = [
   { path: "/legal/terms", changeFrequency: "yearly", priority: 0.3 },
   { path: "/legal/privacy", changeFrequency: "yearly", priority: 0.3 },
   { path: "/legal/refund-policy", changeFrequency: "yearly", priority: 0.3 },
+  { path: "/legal/data-deletion", changeFrequency: "yearly", priority: 0.3 },
 ] as const satisfies readonly PublicPage[];
 
 export const userNavigation = {

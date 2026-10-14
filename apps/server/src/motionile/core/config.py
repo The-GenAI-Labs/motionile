@@ -4,6 +4,7 @@ import json
 from enum import StrEnum
 from functools import lru_cache
 from typing import Annotated, Self
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import BaseModel, BeforeValidator, Field, SecretStr, ValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -12,6 +13,7 @@ LOCAL_DATABASE_URL = "postgresql://motionile:motionile@localhost:5432/motionile"
 LOCAL_REDIS_URL = "redis://localhost:6379/0"
 ASYNCPG_SCHEME = "postgresql+asyncpg"
 PSYCOPG_SCHEME = "postgresql+psycopg"
+LIBPQ_ONLY_PARAMETERS = frozenset({"channel_binding", "options", "target_session_attrs", "gssencmode"})
 POSTGRES_SCHEMES = ("postgresql://", "postgres://")
 DEVELOPMENT_CURSOR_SIGNING_SEED = "motionile-development-pagination-secret-not-for-production"
 DEVELOPMENT_ENCRYPTION_KEY = base64.b64encode(b"motionile-dev-encryption-key-32b").decode()
@@ -45,6 +47,16 @@ TEST_ROUTE_ENVIRONMENTS = frozenset({AppEnv.LOCAL, AppEnv.CI})
 def with_driver(url: str, scheme: str) -> str:
     _, _, remainder = url.partition("://")
     return f"{scheme}://{remainder}"
+
+
+def for_asyncpg(url: str) -> str:
+    parts = urlsplit(with_driver(url, ASYNCPG_SCHEME))
+    query: list[tuple[str, str]] = []
+    for name, value in parse_qsl(parts.query, keep_blank_values=True):
+        if name in LIBPQ_ONLY_PARAMETERS:
+            continue
+        query.append(("ssl" if name == "sslmode" else name, value))
+    return urlunsplit(parts._replace(query=urlencode(query)))
 
 
 def split_csv(value: object) -> object:
@@ -106,11 +118,11 @@ class DatabaseSettings(GroupSettings):
 
     @property
     def async_url(self) -> str:
-        return with_driver(self.url, ASYNCPG_SCHEME)
+        return for_asyncpg(self.url)
 
     @property
     def direct_async_url(self) -> str:
-        return with_driver(self.migration_url, ASYNCPG_SCHEME)
+        return for_asyncpg(self.migration_url)
 
     @property
     def sqlalchemy_migration_url(self) -> str:

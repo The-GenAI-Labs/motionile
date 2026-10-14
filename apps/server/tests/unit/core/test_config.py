@@ -18,6 +18,7 @@ from motionile.core.config import (
     RedisSettings,
     SecuritySettings,
     Settings,
+    for_asyncpg,
     get_settings,
     with_driver,
 )
@@ -180,3 +181,23 @@ def test_blank_secrets_from_env_files_are_treated_as_unset(monkeypatch: pytest.M
     assert settings.turnstile.secret_key is None
     assert settings.storage.access_key_id is None
     assert settings.storage.endpoint_url is None
+
+
+def test_asyncpg_urls_translate_libpq_parameters() -> None:
+    neon = "postgresql://app:secret@ep-x-pooler.ap-southeast-1.aws.neon.tech/motionile?sslmode=require&channel_binding=require"
+
+    assert for_asyncpg(neon) == (
+        "postgresql+asyncpg://app:secret@ep-x-pooler.ap-southeast-1.aws.neon.tech/motionile?ssl=require"
+    )
+    assert for_asyncpg("postgresql://u@h/d") == "postgresql+asyncpg://u@h/d"
+
+
+def test_database_settings_accept_neon_connection_strings_unchanged() -> None:
+    database = DatabaseSettings(
+        url="postgresql://app:pw@ep-x-pooler.example.neon.tech/motionile?sslmode=require&channel_binding=require",
+        direct_url="postgresql://app:pw@ep-x.example.neon.tech/motionile?sslmode=require&channel_binding=require",
+    )
+
+    assert database.async_url.endswith("/motionile?ssl=require")
+    assert database.direct_async_url == "postgresql+asyncpg://app:pw@ep-x.example.neon.tech/motionile?ssl=require"
+    assert database.sqlalchemy_migration_url.endswith("?sslmode=require&channel_binding=require")

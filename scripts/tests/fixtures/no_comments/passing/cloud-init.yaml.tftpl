@@ -1,0 +1,13 @@
+#cloud-config
+package_update: true
+runcmd:
+  - echo "${greeting} #1"
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg
+%{ for name in users ~}
+  - echo ${name}
+%{ endfor ~}
+write_files:
+  - path: /usr/local/sbin/example
+    content: |
+      #!/usr/bin/env bash
+      echo ready

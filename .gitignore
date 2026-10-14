@@ -36,3 +36,13 @@ zap-report/
 .idea/
 *.log
 .import_linter_cache/
+
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+*.tfplan
+infra/parameters/

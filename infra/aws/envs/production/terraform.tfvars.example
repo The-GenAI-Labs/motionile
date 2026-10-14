@@ -1,0 +1,22 @@
+domain                  = "<PRODUCTION_DOMAIN>"
+web_origin              = "https://<PRODUCTION_DOMAIN>"
+additional_cors_origins = []
+instance_type           = "c7i.2xlarge"
+alert_email             = "<ALERT_EMAIL>"
+acme_email              = "<ACME_EMAIL>"
+github_repository       = "<GITHUB_OWNER>/<GITHUB_REPOSITORY>"
+ci_ssh_public_key       = "<CONTENTS_OF_PRODUCTION_DEPLOY_KEY_PUB>"
+enable_cdn              = false
+manage_dns              = false
+route53_zone_id         = null
+enable_rds              = false
+create_oidc_provider = false
+oidc_provider_arn    = "<OIDC_PROVIDER_ARN_FROM_STAGING_OUTPUT>"
+promotion_source_repository_arns = [
+  "<STAGING_MOTIONILE_API_REPOSITORY_ARN>",
+  "<STAGING_MOTIONILE_WORKER_REPOSITORY_ARN>",
+]
+
+cloudfront_public_key_pem = <<-EOT
+<CONTENTS_OF_CLOUDFRONT_PRODUCTION_PUBLIC_PEM>
+EOT

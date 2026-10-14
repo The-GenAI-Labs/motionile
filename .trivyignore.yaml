@@ -1,0 +1,16 @@
+misconfigurations:
+  - id: AWS-0104
+    paths:
+      - "aws/modules/compute/main.tf"
+    statement: >-
+      The single application instance has no NAT gateway and must reach provider APIs, ECR, SSM, Docker
+      and Ubuntu mirrors over the internet. Outbound requests from the application go through SafeHttpClient,
+      which blocks private, loopback, link-local and metadata ranges; the render sandbox has no network.
+  - id: AWS-0132
+    paths:
+      - "aws/bootstrap/main.tf"
+      - "aws/modules/storage/main.tf"
+    statement: >-
+      Buckets use SSE-S3 by design: no secrets are stored in state, media is served through CloudFront
+      origin access control, and SSE-KMS would add a per-request KMS cost and key policy coupling with
+      CloudFront without changing who can read the objects, which bucket policies already restrict.

@@ -1,0 +1,30 @@
+name,source,required,description
+APP_ENV,infra,yes,Environment name: staging or production
+PROVIDERS_MODE,infra,yes,Always live in deployed environments
+LOG_LEVEL,infra,yes,Server log level
+AWS_REGION,infra,yes,Region of every regional resource
+API_DOMAIN,infra,yes,Host name Caddy serves the API on
+MCP_DOMAIN,infra,yes,Host name Caddy serves the MCP server on
+CDN_DOMAIN,infra,yes,Host name of the CloudFront media distribution
+ACME_EMAIL,infra,yes,Contact address for Let's Encrypt certificates
+CORS_ALLOWED_ORIGINS,infra,yes,Comma-separated https origins of the web app
+TURNSTILE_EXPECTED_HOSTNAMES,infra,yes,Comma-separated host names Turnstile tokens must come from
+STORAGE_BUCKET,infra,yes,Private media bucket
+STORAGE_REGION,infra,yes,Region of the media bucket
+STORAGE_FORCE_PATH_STYLE,infra,yes,false for AWS S3
+BACKUP_BUCKET,infra,yes,Bucket for Redis backups
+IMAGE_REPOSITORY_API,infra,yes,ECR repository URL of motionile-api
+IMAGE_REPOSITORY_WORKER,infra,yes,ECR repository URL of motionile-worker
+ECR_REGISTRY,infra,yes,ECR registry host used for docker login
+CLOUDWATCH_LOG_GROUP,infra,yes,Log group the awslogs driver writes container logs to
+SES_CONFIGURATION_SET,infra,yes,SES configuration set used for every message
+EMAIL_FROM_DOMAIN,infra,yes,Verified SES sending domain
+DATABASE_STATEMENT_CACHE_SIZE,infra,yes,0 behind a transaction-mode pooler such as Neon's
+CLOUDFRONT_KEY_PAIR_ID,infra,no,ID of the CloudFront public key; present once the CDN is enabled
+DATABASE_URL,owner,yes,"Pooled PostgreSQL URL used by the application, postgresql://..."
+DATABASE_DIRECT_URL,owner,yes,"Direct PostgreSQL URL used by migrations and workers, postgresql://..."
+REDIS_PASSWORD,owner,yes,Password of the Compose Redis service
+SECURITY_PAGINATION_SECRET,owner,yes,At least 32 random characters that sign pagination cursors
+ENCRYPTION_KEYS,owner,yes,"JSON map of key version to base64 32-byte AES-GCM key, for example {""1"":""<base64>""}"
+TURNSTILE_SECRET_KEY,owner,yes,Cloudflare Turnstile secret key of this environment
+CLOUDFRONT_PRIVATE_KEY,owner,no,PEM private key that signs CloudFront cookies and URLs; used from Phase 9

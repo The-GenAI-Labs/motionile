@@ -1,0 +1,17 @@
+domain                  = "<STAGING_DOMAIN>"
+web_origin              = "https://<STAGING_DOMAIN>"
+additional_cors_origins = []
+instance_type           = "c7i.xlarge"
+alert_email             = "<ALERT_EMAIL>"
+acme_email              = "<ACME_EMAIL>"
+github_repository       = "<GITHUB_OWNER>/<GITHUB_REPOSITORY>"
+ci_ssh_public_key       = "<CONTENTS_OF_STAGING_DEPLOY_KEY_PUB>"
+enable_cdn              = false
+manage_dns              = false
+route53_zone_id         = null
+enable_rds              = false
+create_oidc_provider = true
+
+cloudfront_public_key_pem = <<-EOT
+<CONTENTS_OF_CLOUDFRONT_STAGING_PUBLIC_PEM>
+EOT

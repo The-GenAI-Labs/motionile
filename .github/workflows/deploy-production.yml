@@ -1,0 +1,27 @@
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - prod
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production-pipeline
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  deploy:
+    name: promote and deploy
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      environment: production
+      image-tag: ${{ github.sha }}
+      promote-from: staging
+    secrets: inherit

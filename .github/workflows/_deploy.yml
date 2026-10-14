@@ -1,0 +1,184 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: GitHub environment to deploy, staging or production.
+        type: string
+        required: true
+      image-tag:
+        description: Tag of the motionile-api and motionile-worker images, the commit SHA.
+        type: string
+        required: true
+      promote-from:
+        description: Environment whose ECR repositories hold the images to promote before deploying.
+        type: string
+        required: false
+        default: ""
+
+permissions: {}
+
+jobs:
+  deploy:
+    name: deploy ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ vars.WEB_URL }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    env:
+      TARGET_ENVIRONMENT: ${{ inputs.environment }}
+      PROMOTE_FROM: ${{ inputs.promote-from }}
+      IMAGE_TAG: ${{ inputs.image-tag }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+      SECURITY_GROUP_ID: ${{ vars.EC2_SECURITY_GROUP_ID }}
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      API_URL: ${{ vars.API_URL }}
+      MCP_URL: ${{ vars.MCP_URL }}
+      WEB_URL: ${{ vars.WEB_URL }}
+    steps:
+      - name: Validate inputs
+        run: |
+          [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::image-tag must be a full commit SHA"; exit 1; }
+          for name in AWS_REGION ECR_REGISTRY SECURITY_GROUP_ID DEPLOY_HOST API_URL MCP_URL WEB_URL; do
+            [[ -n "${!name}" ]] || { echo "::error::environment variable $name is not set on the $TARGET_ENVIRONMENT GitHub environment"; exit 1; }
+          done
+
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Assume the deploy role
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: deploy-${{ inputs.environment }}-${{ github.run_id }}
+          aws-region: ${{ vars.AWS_REGION }}
+          mask-aws-account-id: true
+
+      - name: Log in to ECR
+        run: aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+      - name: Promote images from ${{ inputs.promote-from }}
+        if: inputs.promote-from != ''
+        run: |
+          for image in motionile-api motionile-worker; do
+            source_repository="$PROMOTE_FROM/$image"
+            target_repository="$TARGET_ENVIRONMENT/$image"
+            if ! aws ecr describe-images --repository-name "$source_repository" --image-ids "imageTag=$IMAGE_TAG" >/dev/null 2>&1; then
+              echo "::error::$source_repository has no image tagged $IMAGE_TAG. The $TARGET_ENVIRONMENT branch must be fast-forwarded from a commit that was already deployed to $PROMOTE_FROM; images are promoted, never rebuilt."
+              exit 1
+            fi
+            if aws ecr describe-images --repository-name "$target_repository" --image-ids "imageTag=$IMAGE_TAG" >/dev/null 2>&1; then
+              echo "$target_repository:$IMAGE_TAG already exists"
+              continue
+            fi
+            docker buildx imagetools create \
+              --tag "$ECR_REGISTRY/$target_repository:$IMAGE_TAG" \
+              "$ECR_REGISTRY/$source_repository:$IMAGE_TAG"
+            echo "promoted $source_repository:$IMAGE_TAG to $target_repository"
+          done
+
+      - name: Check images exist
+        run: |
+          for image in motionile-api motionile-worker; do
+            aws ecr describe-images --repository-name "$TARGET_ENVIRONMENT/$image" --image-ids "imageTag=$IMAGE_TAG" >/dev/null \
+              || { echo "::error::$TARGET_ENVIRONMENT/$image:$IMAGE_TAG does not exist"; exit 1; }
+          done
+
+      - name: Allow this runner on port 22
+        run: |
+          runner_ip=$(curl --fail --silent --show-error https://checkip.amazonaws.com | tr -d '[:space:]')
+          [[ "$runner_ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || { echo "::error::could not determine the runner IP"; exit 1; }
+          echo "RUNNER_IP=$runner_ip" >> "$GITHUB_ENV"
+          aws ec2 authorize-security-group-ingress \
+            --group-id "$SECURITY_GROUP_ID" \
+            --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=${runner_ip}/32,Description=github-run-${GITHUB_RUN_ID}}]" \
+            >/dev/null
+
+      - name: Configure SSH with the pinned host key
+        env:
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ vars.DEPLOY_SSH_KNOWN_HOSTS }}
+        run: |
+          [[ -n "$DEPLOY_SSH_PRIVATE_KEY" ]] || { echo "::error::DEPLOY_SSH_PRIVATE_KEY is not set"; exit 1; }
+          [[ -n "$DEPLOY_SSH_KNOWN_HOSTS" ]] || { echo "::error::DEPLOY_SSH_KNOWN_HOSTS is not set"; exit 1; }
+          install -m 700 -d ~/.ssh
+          install -m 600 /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<CONFIG
+          Host motionile-target
+            HostName ${DEPLOY_HOST}
+            User deploy
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            UserKnownHostsFile ~/.ssh/known_hosts
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 4
+          CONFIG
+          chmod 600 ~/.ssh/config
+          for attempt in $(seq 1 12); do
+            if ssh motionile-target true; then
+              exit 0
+            fi
+            echo "waiting for SSH (attempt $attempt)"
+            sleep 5
+          done
+          echo "::error::could not reach $DEPLOY_HOST over SSH"
+          exit 1
+
+      - name: Upload the deploy bundle
+        run: rsync --archive --compress --delete --chmod=Du=rwx,Dg=rx,Do=,Fu=rw,Fg=r,Fo= --executability deploy/ motionile-target:/srv/motionile/bundle/
+
+      - name: Run deploy.sh
+        run: printf '%s\n' "$IMAGE_TAG" | ssh motionile-target 'read -r tag && /srv/motionile/bundle/scripts/deploy.sh "$tag"'
+
+      - name: Check API and MCP health over HTTPS
+        run: |
+          curl --fail --silent --show-error --retry 10 --retry-delay 6 --retry-all-errors "$API_URL/health/ready"
+          curl --fail --silent --show-error --retry 10 --retry-delay 6 --retry-all-errors "$MCP_URL/health/live"
+
+      - uses: ./.github/actions/setup
+        with:
+          python: "false"
+
+      - name: Install Chromium
+        run: pnpm --filter @motionile/tests exec playwright install --with-deps chromium
+
+      - name: Playwright smoke test against ${{ vars.WEB_URL }}
+        env:
+          CI: "true"
+          WEB_BASE_URL: ${{ vars.WEB_URL }}
+        run: pnpm --filter @motionile/tests run smoke
+
+      - name: Revoke port 22 for this runner
+        if: always() && env.RUNNER_IP != ''
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id "$SECURITY_GROUP_ID" \
+            --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=${RUNNER_IP}/32}]" \
+            >/dev/null
+
+      - name: Remove SSH credentials
+        if: always()
+        run: rm -rf ~/.ssh
+
+      - uses: actions/upload-artifact@v7.0.2
+        if: failure()
+        with:
+          name: deploy-${{ inputs.environment }}-playwright-report
+          path: tests/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14

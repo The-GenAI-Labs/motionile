@@ -10,6 +10,7 @@ Type=oneshot
 User=deploy
 Group=deploy
 EnvironmentFile=/etc/motionile/environment
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
 ExecStart=/srv/motionile/bundle/scripts/backup-redis.sh
 Nice=10
 IOSchedulingClass=best-effort

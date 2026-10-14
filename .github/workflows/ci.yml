@@ -267,6 +267,7 @@ jobs:
         run: >-
           docker run --rm --volume "$PWD:/repo" aquasec/trivy:0.75.0
           fs /repo --scanners vuln,secret,misconfig --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
+          --ignorefile /repo/.trivyignore.yaml
           --skip-dirs "**/node_modules" --skip-dirs "**/.venv" --skip-dirs "**/tests/fixtures"
 
   build:

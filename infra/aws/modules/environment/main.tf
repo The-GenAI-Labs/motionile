@@ -152,7 +152,8 @@ module "cdn" {
   enabled                           = var.enable_cdn
   media_bucket_regional_domain_name = module.storage.media_bucket_regional_domain_name
   log_bucket_arn                    = module.storage.backup_bucket_arn
-  public_key_pem                    = var.cloudfront_public_key_pem
+  public_keys                       = var.cloudfront_public_keys
+  active_public_key                 = var.cloudfront_active_key
   web_acl_arn                       = var.enable_cdn ? module.waf[0].web_acl_arn : null
 }
 

@@ -40,6 +40,6 @@ output "key_group_id" {
 }
 
 output "public_key_id" {
-  description = "ID of the CloudFront public key; signed cookies send it as CloudFront-Key-Pair-Id."
-  value       = aws_cloudfront_public_key.signing.id
+  description = "ID of the active CloudFront public key; signed cookies send it as CloudFront-Key-Pair-Id."
+  value       = aws_cloudfront_public_key.signing[var.active_public_key].id
 }

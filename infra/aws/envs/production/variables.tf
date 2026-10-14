@@ -55,9 +55,15 @@ variable "ci_ssh_public_key" {
   type        = string
 }
 
-variable "cloudfront_public_key_pem" {
-  description = "PEM public key that verifies signed cookies and URLs."
+variable "cloudfront_public_keys" {
+  description = "PEM public keys that verify signed cookies and URLs, keyed by label; add the new key next to the old one when rotating."
+  type        = map(string)
+}
+
+variable "cloudfront_active_key" {
+  description = "Label in cloudfront_public_keys the application signs with."
   type        = string
+  default     = "initial"
 }
 
 variable "enable_cdn" {

@@ -68,8 +68,13 @@ variable "ci_ssh_public_key" {
   type        = string
 }
 
-variable "cloudfront_public_key_pem" {
-  description = "PEM public key that CloudFront uses to verify signed cookies and URLs."
+variable "cloudfront_public_keys" {
+  description = "PEM public keys CloudFront trusts for signed cookies and URLs, keyed by label."
+  type        = map(string)
+}
+
+variable "cloudfront_active_key" {
+  description = "Label in cloudfront_public_keys that the application signs with."
   type        = string
 }
 

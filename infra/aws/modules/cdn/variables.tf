@@ -29,8 +29,18 @@ variable "log_bucket_arn" {
   type        = string
 }
 
-variable "public_key_pem" {
-  description = "PEM public key that verifies signed cookies and URLs. The private key never enters OpenTofu."
+variable "public_keys" {
+  description = "PEM public keys trusted for signed cookies and URLs, keyed by a short label. Keep the old key here during a rotation. Private keys never enter OpenTofu."
+  type        = map(string)
+
+  validation {
+    condition     = length(var.public_keys) > 0 && alltrue([for label in keys(var.public_keys) : can(regex("^[a-z0-9-]{1,32}$", label))])
+    error_message = "public_keys needs at least one key, labelled with 1-32 lowercase letters, digits or dashes."
+  }
+}
+
+variable "active_public_key" {
+  description = "Label of the key whose ID the application signs with."
   type        = string
 }
 

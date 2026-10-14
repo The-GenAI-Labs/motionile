@@ -17,19 +17,24 @@ resource "aws_acm_certificate_validation" "cdn" {
 }
 
 resource "aws_cloudfront_public_key" "signing" {
-  name        = "${var.name}-signing"
-  comment     = "Verifies Motionile signed cookies and URLs"
-  encoded_key = trimspace(var.public_key_pem)
+  for_each = var.public_keys
 
-  lifecycle {
-    create_before_destroy = true
-  }
+  name        = "${var.name}-signing-${each.key}"
+  comment     = "Verifies Motionile signed cookies and URLs (${each.key})"
+  encoded_key = trimspace(each.value)
 }
 
 resource "aws_cloudfront_key_group" "signing" {
   name    = "${var.name}-signing"
   comment = "Keys trusted for /media and /share"
-  items   = [aws_cloudfront_public_key.signing.id]
+  items   = [for label in sort(keys(var.public_keys)) : aws_cloudfront_public_key.signing[label].id]
+
+  lifecycle {
+    precondition {
+      condition     = contains(keys(var.public_keys), var.active_public_key)
+      error_message = "active_public_key must be one of the labels in public_keys."
+    }
+  }
 }
 
 resource "aws_cloudfront_origin_access_control" "media" {

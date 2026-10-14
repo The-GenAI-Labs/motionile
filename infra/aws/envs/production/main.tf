@@ -16,7 +16,8 @@ module "environment" {
   data_volume_size_gb              = var.data_volume_size_gb
   snapshot_retention_days          = var.snapshot_retention_days
   ci_ssh_public_key                = var.ci_ssh_public_key
-  cloudfront_public_key_pem        = var.cloudfront_public_key_pem
+  cloudfront_public_keys           = var.cloudfront_public_keys
+  cloudfront_active_key            = var.cloudfront_active_key
   enable_cdn                       = var.enable_cdn
   manage_dns                       = var.manage_dns
   route53_zone_id                  = var.route53_zone_id

@@ -12,6 +12,9 @@ route53_zone_id         = null
 enable_rds              = false
 create_oidc_provider = true
 
-cloudfront_public_key_pem = <<-EOT
-<CONTENTS_OF_CLOUDFRONT_STAGING_PUBLIC_PEM>
-EOT
+cloudfront_active_key = "initial"
+cloudfront_public_keys = {
+  initial = <<-EOT
+  <CONTENTS_OF_CLOUDFRONT_STAGING_PUBLIC_PEM>
+  EOT
+}

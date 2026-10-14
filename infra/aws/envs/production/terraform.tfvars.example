@@ -17,6 +17,9 @@ promotion_source_repository_arns = [
   "<STAGING_MOTIONILE_WORKER_REPOSITORY_ARN>",
 ]
 
-cloudfront_public_key_pem = <<-EOT
-<CONTENTS_OF_CLOUDFRONT_PRODUCTION_PUBLIC_PEM>
-EOT
+cloudfront_active_key = "initial"
+cloudfront_public_keys = {
+  initial = <<-EOT
+  <CONTENTS_OF_CLOUDFRONT_PRODUCTION_PUBLIC_PEM>
+  EOT
+}

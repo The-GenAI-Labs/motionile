@@ -18,8 +18,18 @@ TASK_QUEUE_TABLES = {
     "procrastinate_periodic_defers",
     "procrastinate_workers",
 }
-APPLICATION_TABLES = {"audit_log", "idempotency_records"}
-HEAD_REVISION = "0002"
+APPLICATION_TABLES = {
+    "audit_log",
+    "idempotency_records",
+    "users",
+    "user_contacts",
+    "roles",
+    "user_roles",
+    "credentials",
+    "oauth_identities",
+    "sessions",
+}
+HEAD_REVISION = "0003"
 
 
 @pytest.fixture
@@ -98,6 +108,7 @@ def test_models_match_the_migrated_schema(scratch_database_url: str, engine: Eng
     assert schema_drift(engine) == []
     assert constraint_names(engine, "idempotency_records") == {
         "pk_idempotency_records",
+        "fk_idempotency_records_user_id_users",
         "uq_idempotency_records_scope_user_id_key",
         "ck_idempotency_records_status",
         "ck_idempotency_records_scope_length",

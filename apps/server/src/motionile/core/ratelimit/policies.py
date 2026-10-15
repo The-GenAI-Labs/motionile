@@ -35,6 +35,12 @@ class RateLimitPolicy:
 
 DEFAULT_POLICIES: tuple[RateLimitPolicy, ...] = (
     RateLimitPolicy(
+        "auth.register",
+        (RateLimitRule(3, HOUR, RateLimitScope.IP), RateLimitRule(3, HOUR, RateLimitScope.IDENTIFIER)),
+        fail_closed=True,
+    ),
+    RateLimitPolicy("auth.password.change", (RateLimitRule(5, HOUR, RateLimitScope.USER),), fail_closed=True),
+    RateLimitPolicy(
         "auth.login",
         (
             RateLimitRule(5, MINUTE, RateLimitScope.IP_IDENTIFIER),

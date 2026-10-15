@@ -5,6 +5,7 @@ from typing import cast
 
 import orjson
 import structlog
+from structlog.tracebacks import ExceptionDictTransformer
 from structlog.typing import EventDict, Processor, WrappedLogger
 
 from motionile.core.config import Settings
@@ -74,9 +75,14 @@ def _json_dumps(event: object, **_: object) -> bytes:
 def configure_logging(settings: Settings) -> None:
     level = logging.getLevelNamesMapping()[settings.logging.level.value]
     logging.basicConfig(level=level, stream=sys.stdout, format="%(message)s", force=True)
+    for name in ("httpx", "httpcore", "botocore", "boto3", "urllib3", "uvicorn.access"):
+        logging.getLogger(name).setLevel(logging.WARNING)
     if settings.is_local:
         structlog.configure(
-            processors=[*_shared_processors(), structlog.dev.ConsoleRenderer()],
+            processors=[
+                *_shared_processors(),
+                structlog.dev.ConsoleRenderer(exception_formatter=structlog.dev.plain_traceback),
+            ],
             wrapper_class=structlog.make_filtering_bound_logger(level),
             logger_factory=structlog.PrintLoggerFactory(sys.stdout),
             cache_logger_on_first_use=False,
@@ -85,7 +91,7 @@ def configure_logging(settings: Settings) -> None:
     structlog.configure(
         processors=[
             *_shared_processors(),
-            structlog.processors.dict_tracebacks,
+            structlog.processors.ExceptionRenderer(ExceptionDictTransformer(show_locals=False)),
             structlog.processors.JSONRenderer(serializer=_json_dumps),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(level),

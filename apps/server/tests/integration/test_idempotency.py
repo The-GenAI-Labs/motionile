@@ -20,6 +20,7 @@ from motionile.core.idempotency import (
     request_fingerprint,
 )
 from motionile.core.ids import new_id
+from motionile.modules.users import User
 
 CONCURRENT_CLAIMS = 25
 HASH_A = request_fingerprint("POST", "/v1/things", b'{"a":1}')
@@ -127,8 +128,13 @@ async def test_release_frees_the_key(database: Database) -> None:
 async def test_keys_are_scoped_per_user_and_null_users_collide(database: Database) -> None:
     service = service_at(database, FrozenClock(FIXED_NOW))
 
-    first_user = await service.begin(scope_for("shared", new_id()), HASH_A)
-    second_user = await service.begin(scope_for("shared", new_id()), HASH_A)
+    user_ids = [new_id(), new_id()]
+    async with database.transaction() as session:
+        session.add_all(
+            [User(id=user_id, status="active", created_at=FIXED_NOW, updated_at=FIXED_NOW) for user_id in user_ids]
+        )
+    first_user = await service.begin(scope_for("shared", user_ids[0]), HASH_A)
+    second_user = await service.begin(scope_for("shared", user_ids[1]), HASH_A)
     anonymous = await service.begin(scope_for("shared"), HASH_A)
 
     assert isinstance(first_user, Claimed)

@@ -9,6 +9,7 @@ from motionile.core.config import (
     LOCAL_DATABASE_URL,
     AppEnv,
     AppSettings,
+    AuthSettings,
     CorsSettings,
     DatabaseSettings,
     EncryptionSettings,
@@ -201,3 +202,17 @@ def test_database_settings_accept_neon_connection_strings_unchanged() -> None:
     assert database.async_url.endswith("/motionile?ssl=require")
     assert database.direct_async_url == "postgresql+asyncpg://app:pw@ep-x.example.neon.tech/motionile?ssl=require"
     assert database.sqlalchemy_migration_url.endswith("?sslmode=require&channel_binding=require")
+
+
+@pytest.mark.parametrize(
+    "origin",
+    ["https://example.com/path", "https://user:secret@example.com", "https://example.com?next=evil", "//example.com"],
+)
+def test_auth_origins_cannot_inject_redirect_components(origin: str) -> None:
+    with pytest.raises(ValidationError):
+        AuthSettings(web_origin=origin)
+
+
+def test_auth_signing_key_must_be_selected() -> None:
+    with pytest.raises(ValidationError, match="CURRENT_KID"):
+        AuthSettings(jwt_keys={"new": ENCRYPTION_KEY}, jwt_current_kid="missing")

@@ -11,7 +11,7 @@ import orjson
 from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from sqlalchemy import CheckConstraint, Index, SmallInteger, UniqueConstraint, delete, select, update
+from sqlalchemy import CheckConstraint, ForeignKey, Index, SmallInteger, UniqueConstraint, delete, select, update
 from sqlalchemy.dialects.postgresql import JSONB, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -45,7 +45,7 @@ class IdempotencyRecord(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     scope: Mapped[str]
-    user_id: Mapped[UUID | None]
+    user_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     key: Mapped[str]
     request_hash: Mapped[bytes]
     status: Mapped[str] = mapped_column(server_default="in_progress")

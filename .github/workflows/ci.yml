@@ -372,6 +372,8 @@ jobs:
         with:
           python: "false"
       - uses: ./.github/actions/start-stack
+        with:
+          services: api mcp worker-default
       - name: Playwright security suite
         env:
           CI: "true"

@@ -5,6 +5,74 @@ export type ClientOptions = {
 };
 
 /**
+ * ChallengeResponse
+ */
+export type ChallengeResponse = {
+    /**
+     * Channel
+     */
+    channel: 'email' | 'whatsapp';
+    /**
+     * Destination
+     */
+    destination: string;
+    /**
+     * Expiresin
+     */
+    expiresIn?: number;
+    /**
+     * Resendafter
+     */
+    resendAfter?: number;
+};
+
+/**
+ * ChangePasswordRequest
+ */
+export type ChangePasswordRequest = {
+    /**
+     * Currentpassword
+     */
+    currentPassword: string;
+    /**
+     * Newpassword
+     */
+    newPassword: string;
+};
+
+/**
+ * CodeRequest
+ */
+export type CodeRequest = {
+    /**
+     * Code
+     */
+    code: string;
+};
+
+/**
+ * ContactResponse
+ */
+export type ContactResponse = {
+    /**
+     * Destination
+     */
+    destination: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Primary
+     */
+    primary: boolean;
+    /**
+     * Verified
+     */
+    verified: boolean;
+};
+
+/**
  * DependencyStatus
  */
 export type DependencyStatus = 'ok' | 'unavailable';
@@ -28,6 +96,28 @@ export type FieldError = {
 };
 
 /**
+ * IdentifierRequest
+ */
+export type IdentifierRequest = {
+    /**
+     * Identifier
+     */
+    identifier: string;
+};
+
+/**
+ * JwksResponse
+ */
+export type JwksResponse = {
+    /**
+     * Keys
+     */
+    keys: Array<{
+        [key: string]: string;
+    }>;
+};
+
+/**
  * LivenessResponse
  */
 export type LivenessResponse = {
@@ -35,6 +125,16 @@ export type LivenessResponse = {
      * Status
      */
     status: 'ok';
+};
+
+/**
+ * LoginRequest
+ */
+export type LoginRequest = {
+    /**
+     * Identifier
+     */
+    identifier: string;
 };
 
 /**
@@ -95,9 +195,239 @@ export type ReadinessResponse = {
 };
 
 /**
+ * RegisterRequest
+ */
+export type RegisterRequest = {
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Phone
+     */
+    phone?: string | null;
+};
+
+/**
+ * ResetPasswordRequest
+ */
+export type ResetPasswordRequest = {
+    /**
+     * Code
+     */
+    code: string;
+};
+
+/**
+ * SessionResponse
+ */
+export type SessionResponse = {
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Current
+     */
+    current: boolean;
+    /**
+     * Devicelabel
+     */
+    deviceLabel: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Ip
+     */
+    ip: string | null;
+    /**
+     * Lastusedat
+     */
+    lastUsedAt: string;
+};
+
+/**
+ * SessionUser
+ */
+export type SessionUser = {
+    /**
+     * Contacts
+     */
+    contacts: Array<ContactResponse>;
+    /**
+     * Haspassword
+     */
+    hasPassword: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Linkedproviders
+     */
+    linkedProviders: Array<string>;
+    /**
+     * Name
+     */
+    name: string | null;
+    /**
+     * Roles
+     */
+    roles: Array<string>;
+    /**
+     * Status
+     */
+    status: string;
+};
+
+/**
+ * SessionsResponse
+ */
+export type SessionsResponse = {
+    /**
+     * Items
+     */
+    items: Array<SessionResponse>;
+    /**
+     * Nextcursor
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * VerificationProblem
+ */
+export type VerificationProblem = {
+    challenge: ChallengeResponse;
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Detail
+     */
+    detail?: string | null;
+    /**
+     * Errors
+     */
+    errors?: Array<FieldError> | null;
+    /**
+     * Instance
+     */
+    instance?: string | null;
+    /**
+     * Requestid
+     */
+    requestId?: string | null;
+    /**
+     * Status
+     */
+    status: number;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Type
+     */
+    readonly type: string;
+};
+
+/**
+ * LoginRequest
+ */
+export type LoginRequestWritable = {
+    /**
+     * Identifier
+     */
+    identifier: string;
+    /**
+     * Password
+     */
+    password: string;
+};
+
+/**
  * ProblemDetails
  */
 export type ProblemDetailsWritable = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Detail
+     */
+    detail?: string | null;
+    /**
+     * Errors
+     */
+    errors?: Array<FieldError> | null;
+    /**
+     * Instance
+     */
+    instance?: string | null;
+    /**
+     * Requestid
+     */
+    requestId?: string | null;
+    /**
+     * Status
+     */
+    status: number;
+    /**
+     * Title
+     */
+    title: string;
+};
+
+/**
+ * RegisterRequest
+ */
+export type RegisterRequestWritable = {
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Password
+     */
+    password: string;
+    /**
+     * Phone
+     */
+    phone?: string | null;
+};
+
+/**
+ * ResetPasswordRequest
+ */
+export type ResetPasswordRequestWritable = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Newpassword
+     */
+    newPassword: string;
+};
+
+/**
+ * VerificationProblem
+ */
+export type VerificationProblemWritable = {
+    challenge: ChallengeResponse;
     /**
      * Code
      */
@@ -181,3 +511,1175 @@ export type HealthReadyResponses = {
 };
 
 export type HealthReadyResponse = HealthReadyResponses[keyof HealthReadyResponses];
+
+export type AuthJwksData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/jwks.json';
+};
+
+export type AuthJwksErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthJwksError = AuthJwksErrors[keyof AuthJwksErrors];
+
+export type AuthJwksResponses = {
+    /**
+     * Successful Response
+     */
+    200: JwksResponse;
+};
+
+export type AuthJwksResponse = AuthJwksResponses[keyof AuthJwksResponses];
+
+export type AuthLoginData = {
+    body: LoginRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/login';
+};
+
+export type AuthLoginErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Response 403 Auth Login
+     *
+     * verification_required (with challenge) or account_suspended
+     */
+    403: VerificationProblem | ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthLoginError = AuthLoginErrors[keyof AuthLoginErrors];
+
+export type AuthLoginResponses = {
+    /**
+     * Successful Response
+     */
+    200: SessionUser;
+};
+
+export type AuthLoginResponse = AuthLoginResponses[keyof AuthLoginResponses];
+
+export type AuthLogoutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/logout';
+};
+
+export type AuthLogoutErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthLogoutError = AuthLogoutErrors[keyof AuthLogoutErrors];
+
+export type AuthLogoutResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthLogoutResponse = AuthLogoutResponses[keyof AuthLogoutResponses];
+
+export type AuthLogoutAllData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/logout-all';
+};
+
+export type AuthLogoutAllErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthLogoutAllError = AuthLogoutAllErrors[keyof AuthLogoutAllErrors];
+
+export type AuthLogoutAllResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthLogoutAllResponse = AuthLogoutAllResponses[keyof AuthLogoutAllResponses];
+
+export type AuthMeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/me';
+};
+
+export type AuthMeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthMeError = AuthMeErrors[keyof AuthMeErrors];
+
+export type AuthMeResponses = {
+    /**
+     * Successful Response
+     */
+    200: SessionUser;
+};
+
+export type AuthMeResponse = AuthMeResponses[keyof AuthMeResponses];
+
+export type AuthUnlinkOauthData = {
+    body?: never;
+    path: {
+        /**
+         * Provider
+         */
+        provider: 'google' | 'github' | 'microsoft';
+    };
+    query?: never;
+    url: '/v1/auth/oauth/{provider}';
+};
+
+export type AuthUnlinkOauthErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthUnlinkOauthError = AuthUnlinkOauthErrors[keyof AuthUnlinkOauthErrors];
+
+export type AuthUnlinkOauthResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthUnlinkOauthResponse = AuthUnlinkOauthResponses[keyof AuthUnlinkOauthResponses];
+
+export type AuthOauthCallbackData = {
+    body?: never;
+    path: {
+        /**
+         * Provider
+         */
+        provider: 'google' | 'github' | 'microsoft';
+    };
+    query?: {
+        /**
+         * State
+         */
+        state?: string;
+        /**
+         * Code
+         */
+        code?: string;
+        /**
+         * Error
+         */
+        error?: string | null;
+        /**
+         * Error Description
+         */
+        error_description?: string | null;
+        /**
+         * Error Uri
+         */
+        error_uri?: string | null;
+        /**
+         * Scope
+         */
+        scope?: string | null;
+        /**
+         * Authuser
+         */
+        authuser?: string | null;
+        /**
+         * Prompt
+         */
+        prompt?: string | null;
+        /**
+         * Session State
+         */
+        session_state?: string | null;
+    };
+    url: '/v1/auth/oauth/{provider}/callback';
+};
+
+export type AuthOauthCallbackErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthOauthCallbackError = AuthOauthCallbackErrors[keyof AuthOauthCallbackErrors];
+
+export type AuthOauthStartData = {
+    body?: never;
+    path: {
+        /**
+         * Provider
+         */
+        provider: 'google' | 'github' | 'microsoft';
+    };
+    query?: {
+        /**
+         * Next
+         */
+        next?: string;
+        /**
+         * Intent
+         */
+        intent?: 'login' | 'link';
+    };
+    url: '/v1/auth/oauth/{provider}/start';
+};
+
+export type AuthOauthStartErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthOauthStartError = AuthOauthStartErrors[keyof AuthOauthStartErrors];
+
+export type AuthRequestOtpData = {
+    body: IdentifierRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/otp/request';
+};
+
+export type AuthRequestOtpErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthRequestOtpError = AuthRequestOtpErrors[keyof AuthRequestOtpErrors];
+
+export type AuthRequestOtpResponses = {
+    /**
+     * Successful Response
+     */
+    202: ChallengeResponse;
+};
+
+export type AuthRequestOtpResponse = AuthRequestOtpResponses[keyof AuthRequestOtpResponses];
+
+export type AuthResendOtpData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/otp/resend';
+};
+
+export type AuthResendOtpErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthResendOtpError = AuthResendOtpErrors[keyof AuthResendOtpErrors];
+
+export type AuthResendOtpResponses = {
+    /**
+     * Successful Response
+     */
+    202: ChallengeResponse;
+};
+
+export type AuthResendOtpResponse = AuthResendOtpResponses[keyof AuthResendOtpResponses];
+
+export type AuthVerifyOtpData = {
+    body: CodeRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/otp/verify';
+};
+
+export type AuthVerifyOtpErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthVerifyOtpError = AuthVerifyOtpErrors[keyof AuthVerifyOtpErrors];
+
+export type AuthVerifyOtpResponses = {
+    /**
+     * Successful Response
+     */
+    200: SessionUser;
+};
+
+export type AuthVerifyOtpResponse = AuthVerifyOtpResponses[keyof AuthVerifyOtpResponses];
+
+export type AuthChangePasswordData = {
+    body: ChangePasswordRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/password/change';
+};
+
+export type AuthChangePasswordErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthChangePasswordError = AuthChangePasswordErrors[keyof AuthChangePasswordErrors];
+
+export type AuthChangePasswordResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthChangePasswordResponse = AuthChangePasswordResponses[keyof AuthChangePasswordResponses];
+
+export type AuthForgotPasswordData = {
+    body: IdentifierRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/password/forgot';
+};
+
+export type AuthForgotPasswordErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthForgotPasswordError = AuthForgotPasswordErrors[keyof AuthForgotPasswordErrors];
+
+export type AuthForgotPasswordResponses = {
+    /**
+     * Successful Response
+     */
+    202: ChallengeResponse;
+};
+
+export type AuthForgotPasswordResponse = AuthForgotPasswordResponses[keyof AuthForgotPasswordResponses];
+
+export type AuthResetPasswordData = {
+    body: ResetPasswordRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/password/reset';
+};
+
+export type AuthResetPasswordErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthResetPasswordError = AuthResetPasswordErrors[keyof AuthResetPasswordErrors];
+
+export type AuthResetPasswordResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthResetPasswordResponse = AuthResetPasswordResponses[keyof AuthResetPasswordResponses];
+
+export type AuthSetPasswordData = {
+    body: ResetPasswordRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/password/set';
+};
+
+export type AuthSetPasswordErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthSetPasswordError = AuthSetPasswordErrors[keyof AuthSetPasswordErrors];
+
+export type AuthSetPasswordResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthSetPasswordResponse = AuthSetPasswordResponses[keyof AuthSetPasswordResponses];
+
+export type AuthRequestPasswordData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/password/set/request';
+};
+
+export type AuthRequestPasswordErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthRequestPasswordError = AuthRequestPasswordErrors[keyof AuthRequestPasswordErrors];
+
+export type AuthRequestPasswordResponses = {
+    /**
+     * Successful Response
+     */
+    202: ChallengeResponse;
+};
+
+export type AuthRequestPasswordResponse = AuthRequestPasswordResponses[keyof AuthRequestPasswordResponses];
+
+export type AuthRefreshData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/refresh';
+};
+
+export type AuthRefreshErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthRefreshError = AuthRefreshErrors[keyof AuthRefreshErrors];
+
+export type AuthRefreshResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthRefreshResponse = AuthRefreshResponses[keyof AuthRefreshResponses];
+
+export type AuthRegisterData = {
+    body: RegisterRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/register';
+};
+
+export type AuthRegisterErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthRegisterError = AuthRegisterErrors[keyof AuthRegisterErrors];
+
+export type AuthRegisterResponses = {
+    /**
+     * Successful Response
+     */
+    202: ChallengeResponse;
+};
+
+export type AuthRegisterResponse = AuthRegisterResponses[keyof AuthRegisterResponses];
+
+export type AuthSessionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/v1/auth/sessions';
+};
+
+export type AuthSessionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthSessionsError = AuthSessionsErrors[keyof AuthSessionsErrors];
+
+export type AuthSessionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SessionsResponse;
+};
+
+export type AuthSessionsResponse = AuthSessionsResponses[keyof AuthSessionsResponses];
+
+export type AuthRevokeSessionData = {
+    body?: never;
+    path: {
+        /**
+         * Sessionid
+         */
+        sessionId: string;
+    };
+    query?: never;
+    url: '/v1/auth/sessions/{sessionId}';
+};
+
+export type AuthRevokeSessionErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthRevokeSessionError = AuthRevokeSessionErrors[keyof AuthRevokeSessionErrors];
+
+export type AuthRevokeSessionResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthRevokeSessionResponse = AuthRevokeSessionResponses[keyof AuthRevokeSessionResponses];
+
+export type AuthVerifyData = {
+    body: CodeRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/verify';
+};
+
+export type AuthVerifyErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthVerifyError = AuthVerifyErrors[keyof AuthVerifyErrors];
+
+export type AuthVerifyResponses = {
+    /**
+     * Successful Response
+     */
+    200: SessionUser;
+};
+
+export type AuthVerifyResponse = AuthVerifyResponses[keyof AuthVerifyResponses];

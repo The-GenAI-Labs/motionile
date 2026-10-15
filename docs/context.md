@@ -81,7 +81,7 @@ A single dark monochrome theme. There is no light mode, no theme toggle and no t
 | Storage | S3 API only, with configurable endpoint (AWS S3, MinIO, R2) |
 | Media delivery | CloudFront signed cookies plus WAF Referer rule; presigned-URL fallback for non-AWS |
 | Publishing | Official platform APIs only |
-| Cloud | AWS, with no lock-in: configuration by environment variables, AWS SDK used only inside storage and media-delivery adapters, OpenTofu only under `infra/aws` |
+| Cloud | AWS, with no lock-in: configuration by environment variables, AWS SDK used only inside storage, SES email and media-delivery adapters, OpenTofu only under `infra/aws` |
 | Code comments | None. Code must explain itself through naming and structure |
 
 Each of these has an ADR in `docs/adr/`.
@@ -99,7 +99,7 @@ Each of these has an ADR in `docs/adr/`.
 | Frontend | Next.js (latest stable), React 19 with React Compiler, TypeScript strict, Tailwind CSS v4, shadcn/ui, Zod, Axios, TanStack Query, TanStack Virtual, react-hook-form, Zustand (UI state only), `@marsidev/react-turnstile`, `@microsoft/fetch-event-source` |
 | API contract | FastAPI OpenAPI → `@hey-api/openapi-ts` generating TypeScript types and Zod schemas into `packages/api-contract` |
 | Backend | FastAPI, Pydantic v2, pydantic-settings, SQLAlchemy 2 async, asyncpg, Alembic, redis-py, httpx, structlog, orjson, `uuid-utils` (UUIDv7) |
-| Security | argon2-cffi, PyJWT with cryptography (EdDSA), Authlib, phonenumbers, email-validator |
+| Security | argon2-cffi, PyJWT with cryptography (EdDSA), provider protocols, phonenumbers, email-validator |
 | Jobs | procrastinate |
 | AI | LangGraph with Postgres checkpointer, LiteLLM, pgvector, Tavily or Exa, DeepEval, Langfuse |
 | Media | Playwright (Chromium), ffmpeg, GSAP (bundled locally), ElevenLabs and OpenAI TTS behind a provider interface |
@@ -173,7 +173,9 @@ apps/web/
 │   │   │   └── settings/  profile/  security/  voices/  connections/  integrations/  memory/
 │   │   ├── (super-admin)/admin/
 │   │   │   ├── layout.tsx  page.tsx
-│   │   │   ├── users/[userId]/  roles/  analytics/  audit-logs/
+│   │   │   ├── users/
+│   │   ├── access/
+│   │   ├── notifications/[userId]/  roles/  analytics/  audit-logs/
 │   │   │   ├── billing/  payments/  refunds/  webhooks/
 │   │   │   ├── catalog/  prompts/  skills/  platforms/  settings/
 │   │   ├── forbidden.tsx  not-found.tsx  error.tsx  global-error.tsx  providers.tsx
@@ -341,28 +343,41 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 
 ## 7. Auth
 
+### Ownership
+
+`users` owns `users` and `user_contacts`; `access` owns `roles` and `user_roles` (permissions and role permissions arrive in Phase 6); `auth` owns credentials, OAuth identities and sessions; `notifications` owns transactional email and WhatsApp delivery with no tables. Modules communicate through public interfaces and domain events.
+
 ### Tokens and cookies
 
 | Cookie | Content | Attributes | Lifetime |
 |---|---|---|---|
-| `__Secure-mo_at` | Access JWT (EdDSA) with `sub`, `sid`, `roles`, `iss`, `aud`, `iat`, `exp` | `Domain=.<root>`, HttpOnly, Secure, SameSite=Lax, Path=/ | 15 minutes |
+| `__Secure-mo_at` | Access JWT (EdDSA) with `sub`, `sid`, `roles`, `iss`, `aud`, `iat`, `exp`, `jti` | `Domain=.<root>`, HttpOnly, Secure, SameSite=Lax, Path=/ | 15 minutes |
 | `__Secure-mo_rt` | Opaque 256-bit refresh token; only its SHA-256 hash is stored | Host-only on the API, HttpOnly, Secure, SameSite=Strict, `Path=/v1/auth` | 7 days idle, 60 days absolute |
 | `__Secure-mo_vt` | Verification ticket for first-time OTP | Host-only on the API, HttpOnly, Secure, SameSite=Strict, `Path=/v1/auth` | 10 minutes |
+| `__Secure-mo_oauth` | Browser binding for single-use OAuth state | Host-only, HttpOnly, Secure, SameSite=Lax, Path=/v1/auth | 10 minutes |
 | `mo_csrf` | CSRF token, HMAC-bound to the session | `Domain=.<root>`, Secure, SameSite=Lax, readable by JS | Session |
 | `mo_auth` | Access token expiry timestamp only (a hint, not a secret) | `Domain=.<root>`, Secure, SameSite=Lax, readable by JS | Matches the access token |
 
 - The Next.js server verifies the access JWT with the API's public key from `/v1/auth/jwks.json`.
 - Every refresh rotates the refresh token. The successor's idle expiry is `min(now + 7 days, absolute_expires_at)`.
 - Presenting an already-rotated refresh token outside a 10-second grace window revokes the whole session family.
-- Revoked session families are added to a Redis denylist for 15 minutes so logout is immediate.
+- `sid` always identifies the session family, including after rotation. Revoked families are denied in Redis for 15 minutes plus the five-second JWT verification leeway.
+- Concurrent refreshes within ten seconds return `refresh_conflict` without revocation; older reuse revokes the family immediately.
+- The OAuth binding cookie is separate from the Strict OTP ticket so cross-site provider callbacks can present it ([ADR 0016](adr/0016-oauth-browser-binding.md)).
 
 ### Flows
 - **Register:** email or phone plus password and Turnstile → user `pending_verification` → OTP sent (email via SES, phone via WhatsApp authentication template) → verification ticket cookie → verify code → user `active` → session.
 - **Login with password:** Turnstile → argon2id check → if the contact is unverified, respond `403 verification_required`, set a ticket and send an OTP → otherwise create a session.
 - **OTP login:** for verified contacts; 6 digits, HMAC-hashed in Redis for 5 minutes, at most 5 attempts, 60-second resend cooldown.
-- **OAuth:** Google, GitHub, Microsoft with PKCE, state and nonce in Redis for 10 minutes, redirect target allowlist, account linking only on a provider-verified email.
-- **Password reset:** single-use hashed token, 30 minutes.
+- **OAuth:** Google, GitHub, Microsoft with PKCE, state and nonce in Redis for 10 minutes, redirect target allowlist, account linking only on a provider-verified email. Microsoft subjects are tenant-qualified and signing-key issuers must match the token tenant.
+- **Password reset:** six-digit OTP, HMAC-hashed with a server pepper, five-minute expiry and five attempts, referenced by the ten-minute verification ticket. Reset revokes every family; authenticated password change keeps only the current family ([ADR 0015](adr/0015-otp-password-reset.md)).
 - **Sessions:** list active sessions, revoke one, revoke all.
+
+### Delivery and abuse controls
+
+Transactional notifications are encrypted before being queued after commit on `default`, with retries and higher OTP priority. SES v2 uses the instance role; local live email uses SMTP/Mailpit. WhatsApp uses approved authentication and security-notice templates through an allowlisted SafeHttpClient. Fake deliveries expose an expiring inbox only in local/CI ([ADR 0014](adr/0014-transactional-notifications.md)).
+
+Password login uses argon2id and a dummy verification for unknown accounts. Ten failures in an hour lock password login for fifteen minutes without blocking OTP. New passwords use the HIBP k-anonymity API, failing open with a redacted warning on provider failure. Public registration, OTP requests and forgot-password use the same challenge shape for known and unknown contacts. Correct credentials may disclose verification or suspension status. All contacts in session responses are masked.
 
 ### Frontend session handling
 - Proactive refresh 60 seconds before `mo_auth` expiry while the tab is visible, guarded by a Web Lock across tabs.
@@ -372,7 +387,7 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 - Server guard in `(user)/layout.tsx`: valid JWT renders; expired JWT with the hint cookie redirects to `/refresh?next=`; `/refresh` attempts exactly one refresh and falls back to `/login`, never looping.
 
 ### Request protection
-- **CSRF:** SameSite cookies, Origin check on every unsafe method, double-submit `mo_csrf` cookie matched against `X-CSRF-Token`.
+- **CSRF:** SameSite cookies, a required allowlisted Origin (Referer fallback) on every unsafe auth request, and a family-bound HMAC double-submit token. Refresh checks CSRF against its refresh-token family even after access expiry. Only register, login, contact verification, OTP request/verify/resend, forgot and reset omit double-submit; refresh is checked inside the session service. OAuth linking start also requires CSRF.
 - **CORS:** explicit origin allowlist (`CORS_ALLOWED_ORIGINS`, https only when deployed), credentials allowed, no wildcards.
 - **Origin guard:** state-changing requests from non-allowlisted origins are rejected (Referer as fallback).
 - **SSRF:** https only, DNS resolved and private, loopback, link-local and metadata ranges blocked, redirects re-validated, timeouts and size caps. EC2 requires IMDSv2 with a hop limit of 2 so containers can use the instance role ([ADR 0011](adr/0011-imdsv2-hop-limit-two.md)); `SafeHttpClient` blocks the metadata addresses and the render sandbox blocks all network access except the bundled runtime.
@@ -383,6 +398,8 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 
 | Policy | Limit |
 |---|---|
+| `auth.register` | 3/hour per IP and per normalized identifier |
+| `auth.password.change` | 5/hour per user |
 | `auth.login` | 5/min per IP+identifier, 30/hour per IP |
 | `auth.otp.send` | 1/60 s and 5/hour per destination, 15/hour per IP |
 | `auth.otp.verify` | 5 attempts per code |

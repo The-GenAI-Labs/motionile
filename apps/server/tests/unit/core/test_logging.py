@@ -106,3 +106,15 @@ def test_redact_walks_nested_structures() -> None:
 
     assert redact(value) == {"outer": [{"token": REDACTED, "safe": 1}], "password": REDACTED}
     assert redact("plain") == "plain"
+
+
+def test_exception_logs_never_capture_frame_locals(capfd: pytest.CaptureFixture[str]) -> None:
+    configure_logging(settings_for(AppEnv.CI))
+    confidential = "sensitive-frame-value-938251"
+    try:
+        raise RuntimeError("safe failure")
+    except RuntimeError:
+        structlog.get_logger().exception("test.failure")
+    output = capfd.readouterr().out
+    assert confidential not in output
+    assert "safe failure" in output

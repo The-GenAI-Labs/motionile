@@ -28,3 +28,28 @@ SECURITY_PAGINATION_SECRET,owner,yes,At least 32 random characters that sign pag
 ENCRYPTION_KEYS,owner,yes,"JSON map of key version to base64 32-byte AES-GCM key, for example {""1"":""<base64>""}"
 TURNSTILE_SECRET_KEY,owner,yes,Cloudflare Turnstile secret key of this environment
 CLOUDFRONT_PRIVATE_KEY,owner,no,PEM private key that signs CloudFront cookies and URLs; used from Phase 9
+AUTH_JWT_KEYS,owner,yes,JSON map of key ID to base64 32-byte Ed25519 private seed
+AUTH_JWT_CURRENT_KID,owner,yes,ID of the active signing key
+AUTH_JWT_ISSUER,owner,yes,HTTPS API issuer
+AUTH_JWT_AUDIENCE,owner,yes,Access token audience
+AUTH_COOKIE_DOMAIN,owner,yes,Shared registrable cookie domain prefixed with a dot
+AUTH_WEB_ORIGIN,owner,yes,HTTPS web origin also present in CORS_ALLOWED_ORIGINS
+AUTH_API_ORIGIN,owner,yes,HTTPS public API origin for provider callbacks
+AUTH_OTP_PEPPER,owner,yes,At least 32 random characters for OTP HMAC
+AUTH_CSRF_SECRET,owner,yes,At least 32 random characters for session-bound CSRF
+AUTH_HIBP_ENABLED,owner,yes,true to check new passwords with the range API
+NOTIFICATIONS_EMAIL_BACKEND,owner,yes,ses in deployed environments
+NOTIFICATIONS_SENDER,owner,yes,Verified SES sender address
+NOTIFICATIONS_SES_REGION,owner,yes,SES region ap-south-1
+NOTIFICATIONS_WHATSAPP_TOKEN,owner,yes,Meta system-user access token
+NOTIFICATIONS_WHATSAPP_PHONE_NUMBER_ID,owner,yes,Meta business phone number ID
+NOTIFICATIONS_WHATSAPP_TEMPLATE,owner,yes,Approved authentication template name
+NOTIFICATIONS_WHATSAPP_NOTICE_TEMPLATE,owner,yes,Approved security utility template with one body parameter
+NOTIFICATIONS_WHATSAPP_LANGUAGE,owner,yes,Approved template language
+NOTIFICATIONS_WHATSAPP_API_VERSION,owner,yes,Pinned supported Graph API version
+AUTH_GOOGLE_CLIENT_ID,owner,yes,GOOGLE OAuth client id
+AUTH_GOOGLE_CLIENT_SECRET,owner,yes,GOOGLE OAuth client secret
+AUTH_GITHUB_CLIENT_ID,owner,yes,GITHUB OAuth client id
+AUTH_GITHUB_CLIENT_SECRET,owner,yes,GITHUB OAuth client secret
+AUTH_MICROSOFT_CLIENT_ID,owner,yes,MICROSOFT OAuth client id
+AUTH_MICROSOFT_CLIENT_SECRET,owner,yes,MICROSOFT OAuth client secret

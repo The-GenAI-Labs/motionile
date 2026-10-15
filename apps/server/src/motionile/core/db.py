@@ -60,6 +60,7 @@ def create_engine(settings: DatabaseSettings, *, application_name: str, direct: 
         pool_timeout=settings.pool_timeout_seconds,
         pool_recycle=settings.pool_recycle_seconds,
         pool_pre_ping=True,
+        hide_parameters=True,
         connect_args={
             "timeout": settings.connect_timeout_seconds,
             "statement_cache_size": settings.statement_cache_size,

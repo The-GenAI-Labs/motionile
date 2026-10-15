@@ -11,6 +11,13 @@ from motionile.core.resources import Resources, build_resources
 from motionile.core.tasks.app import create_task_app, open_for_deferring
 from motionile.entrypoints.http_app import HttpAppSpec, Lifespan, build_http_app
 from motionile.entrypoints.test_support import test_support_router
+from motionile.modules.auth import (
+    AuthRuntime,
+    VerificationRequiredError,
+    auth_router,
+    identify_for_rate_limit,
+    verification_required_response,
+)
 
 API_TITLE = "Motionile API"
 APPLICATION_NAME = "motionile-api"
@@ -19,13 +26,14 @@ APPLICATION_NAME = "motionile-api"
 def build_v1_router(*, include_test_routes: bool) -> APIRouter:
     router = APIRouter(
         prefix="/v1",
-        dependencies=[Depends(rate_limit("api.default"))],
+        dependencies=[Depends(identify_for_rate_limit), Depends(rate_limit("api.default"))],
         responses=problem_responses(
             status.HTTP_429_TOO_MANY_REQUESTS,
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             status.HTTP_503_SERVICE_UNAVAILABLE,
         ),
     )
+    router.include_router(auth_router)
     if include_test_routes:
         router.include_router(test_support_router)
     return router
@@ -54,11 +62,15 @@ def create_app(
         routers=(build_v1_router(include_test_routes=with_test_routes and resolved.test_routes_enabled),),
         lifespan_extra=task_lifespan(resolved),
     )
-    return build_http_app(
+    app = build_http_app(
         spec,
         settings=resolved,
         resources=resources or build_resources(resolved, application_name=APPLICATION_NAME),
     )
+
+    app.add_exception_handler(VerificationRequiredError, verification_required_response)
+    app.state.auth_runtime = AuthRuntime(app.state.resources)
+    return app
 
 
 app = create_app()

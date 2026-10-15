@@ -43,7 +43,7 @@ class AccessLogMiddleware:
             logger.info(
                 "http.request",
                 method=scope.get("method"),
-                path=scope.get("path"),
+                path=route_template(scope) or scope.get("path"),
                 route=route_template(scope),
                 status=status_code,
                 duration_ms=duration_ms,

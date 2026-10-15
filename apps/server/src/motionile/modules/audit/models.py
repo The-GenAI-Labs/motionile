@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, Index
+from sqlalchemy import CheckConstraint, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -27,7 +27,7 @@ class AuditLogEntry(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
         Index("ix_audit_log_action_created_at", "action", "created_at"),
     )
 
-    actor_user_id: Mapped[UUID | None]
+    actor_user_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     actor_type: Mapped[str]
     action: Mapped[str]
     target_type: Mapped[str | None]

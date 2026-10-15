@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 
 from redis.asyncio import Redis
@@ -36,8 +36,11 @@ class Resources:
     http_client: SafeHttpClient
     turnstile: TurnstileVerifier
     events: EventBus
+    provider_clients: dict[str, SafeHttpClient] = field(default_factory=dict[str, SafeHttpClient])
 
     async def aclose(self) -> None:
+        for client in self.provider_clients.values():
+            await client.aclose()
         await self.http_client.aclose()
         await self.redis.aclose()
         await self.database.dispose()
@@ -86,4 +89,14 @@ def build_resources(settings: Settings, *, application_name: str, clock: Clock |
         http_client=http_client,
         turnstile=build_turnstile(settings, turnstile_client),
         events=event_bus,
+        provider_clients={
+            "turnstile": turnstile_client,
+            "hibp": SafeHttpClient(settings.outbound_http, allowed_hosts=("api.pwnedpasswords.com",)),
+            "whatsapp": SafeHttpClient(settings.outbound_http, allowed_hosts=("graph.facebook.com",)),
+            "google": SafeHttpClient(
+                settings.outbound_http, allowed_hosts=("oauth2.googleapis.com", "www.googleapis.com")
+            ),
+            "github": SafeHttpClient(settings.outbound_http, allowed_hosts=("github.com", "api.github.com")),
+            "microsoft": SafeHttpClient(settings.outbound_http, allowed_hosts=("login.microsoftonline.com",)),
+        },
     )

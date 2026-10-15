@@ -1,17 +1,19 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import Field
 
 from motionile.core.dependencies import ResourcesDep
-from motionile.core.errors import problem_responses, request_id_of
+from motionile.core.errors import NotFoundError, problem_responses, request_id_of
 from motionile.core.idempotency import IdempotencyGuard, idempotent
 from motionile.core.ids import new_id
 from motionile.core.ratelimit.limiter import rate_limit
 from motionile.core.schemas import ResponseModel, StrictModel
 from motionile.modules.audit import ActorType, AuditEvent, context_from_request, record
+from motionile.modules.auth import FakeGrant, FakeOAuthProvider, ProviderIdentity, ProviderName
+from motionile.modules.notifications import FakeDelivery, Notification
 
 TEST_IDEMPOTENCY_SCOPE = "test.idempotent"
 
@@ -95,3 +97,48 @@ async def create_idempotent_item(
         status_code=status.HTTP_201_CREATED,
         headers={"Location": f"/v1/_test/idempotent/{item_id}"},
     )
+
+
+class InboxResponse(ResponseModel):
+    messages: list[Notification]
+
+
+class FakeAuthorizeQuery(StrictModel):
+    state: str = Field(min_length=1, max_length=256)
+    challenge: str = Field(min_length=1, max_length=256)
+    nonce: str = Field(min_length=1, max_length=256)
+    email: str = Field(default="oauth@example.com", max_length=254)
+    verified: bool = True
+
+
+@test_support_router.get(
+    "/inbox/{destination}",
+    response_model=InboxResponse,
+    status_code=200,
+    summary="Read the fake delivery inbox",
+)
+async def inbox(destination: str, resources: ResourcesDep) -> InboxResponse:
+    if not resources.settings.is_fake_providers:
+        raise NotFoundError
+    return InboxResponse(messages=await FakeDelivery(resources.redis_store).inbox(destination))
+
+
+@test_support_router.get(
+    "/oauth/{provider}/authorize",
+    response_model=None,
+    status_code=302,
+    summary="Authorize through the local fake provider",
+    dependencies=[Depends(rate_limit("api.default"))],
+)
+async def fake_authorize(
+    provider: ProviderName, query: Annotated[FakeAuthorizeQuery, Query()], resources: ResourcesDep
+) -> RedirectResponse:
+    if not resources.settings.is_fake_providers:
+        raise NotFoundError
+    adapter = FakeOAuthProvider(provider, resources.settings.auth.api_origin, resources.redis_store)
+    grant = FakeGrant(
+        challenge=query.challenge,
+        nonce=query.nonce,
+        identity=ProviderIdentity(subject=query.email, email=query.email, email_verified=query.verified),
+    )
+    return RedirectResponse(await adapter.authorize(query.state, grant), status_code=302)

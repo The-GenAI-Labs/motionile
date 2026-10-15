@@ -5,11 +5,12 @@ from enum import StrEnum
 import structlog
 from procrastinate import Blueprint, JobContext, RetryStrategy
 from procrastinate.tasks import Task
+from procrastinate.types import JSONValue
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.db import after_commit
 
-TASK_MODULES: tuple[str, ...] = ("motionile.core.events",)
+TASK_MODULES: tuple[str, ...] = ("motionile.core.events", "motionile.modules.notifications.tasks")
 
 logger = structlog.get_logger(__name__)
 blueprint = Blueprint()
@@ -54,8 +55,10 @@ def task(
     return register
 
 
-def defer_after_commit(session: AsyncSession, registered: RegisteredTask, **arguments: object) -> None:
+def defer_after_commit(
+    session: AsyncSession, registered: RegisteredTask, *, priority: int = 0, **arguments: JSONValue
+) -> None:
     async def enqueue() -> None:
-        await registered.defer_async(**arguments)
+        await registered.configure(priority=priority).defer_async(**arguments)
 
     after_commit(session, enqueue)

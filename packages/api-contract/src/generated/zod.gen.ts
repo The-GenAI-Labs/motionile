@@ -3,6 +3,41 @@
 import * as z from 'zod';
 
 /**
+ * ChallengeResponse
+ */
+export const zChallengeResponse = z.object({
+    channel: z.enum(['email', 'whatsapp']),
+    destination: z.string(),
+    expiresIn: z.int().optional().default(300),
+    resendAfter: z.int().optional().default(60)
+});
+
+/**
+ * ChangePasswordRequest
+ */
+export const zChangePasswordRequest = z.object({
+    currentPassword: z.string().min(1).max(128),
+    newPassword: z.string().min(10).max(128)
+});
+
+/**
+ * CodeRequest
+ */
+export const zCodeRequest = z.object({
+    code: z.string().regex(/^[0-9]{6}$/)
+});
+
+/**
+ * ContactResponse
+ */
+export const zContactResponse = z.object({
+    destination: z.string(),
+    kind: z.string(),
+    primary: z.boolean(),
+    verified: z.boolean()
+});
+
+/**
  * DependencyStatus
  */
 export const zDependencyStatus = z.enum(['ok', 'unavailable']);
@@ -17,10 +52,31 @@ export const zFieldError = z.object({
 });
 
 /**
+ * IdentifierRequest
+ */
+export const zIdentifierRequest = z.object({
+    identifier: z.string().min(3).max(254)
+});
+
+/**
+ * JwksResponse
+ */
+export const zJwksResponse = z.object({
+    keys: z.array(z.record(z.string(), z.string()))
+});
+
+/**
  * LivenessResponse
  */
 export const zLivenessResponse = z.object({
     status: z.literal('ok')
+});
+
+/**
+ * LoginRequest
+ */
+export const zLoginRequest = z.object({
+    identifier: z.string().min(3).max(254)
 });
 
 /**
@@ -54,9 +110,113 @@ export const zReadinessResponse = z.object({
 });
 
 /**
+ * RegisterRequest
+ */
+export const zRegisterRequest = z.object({
+    email: z.string().min(3).max(254).nullish(),
+    name: z.string().min(1).max(120),
+    phone: z.string().min(7).max(32).nullish()
+});
+
+/**
+ * ResetPasswordRequest
+ */
+export const zResetPasswordRequest = z.object({
+    code: z.string().regex(/^[0-9]{6}$/)
+});
+
+/**
+ * SessionResponse
+ */
+export const zSessionResponse = z.object({
+    createdAt: z.iso.datetime(),
+    current: z.boolean(),
+    deviceLabel: z.string().nullable(),
+    id: z.uuid(),
+    ip: z.string().nullable(),
+    lastUsedAt: z.iso.datetime()
+});
+
+/**
+ * SessionUser
+ */
+export const zSessionUser = z.object({
+    contacts: z.array(zContactResponse),
+    hasPassword: z.boolean(),
+    id: z.uuid(),
+    linkedProviders: z.array(z.string()),
+    name: z.string().nullable(),
+    roles: z.array(z.string()),
+    status: z.string()
+});
+
+/**
+ * SessionsResponse
+ */
+export const zSessionsResponse = z.object({
+    items: z.array(zSessionResponse),
+    nextCursor: z.string().nullish()
+});
+
+/**
+ * VerificationProblem
+ */
+export const zVerificationProblem = z.object({
+    challenge: zChallengeResponse,
+    code: z.string(),
+    detail: z.string().nullish(),
+    errors: z.array(zFieldError).nullish(),
+    instance: z.string().nullish(),
+    requestId: z.string().nullish(),
+    status: z.int(),
+    title: z.string(),
+    type: z.string().readonly()
+});
+
+/**
+ * LoginRequest
+ */
+export const zLoginRequestWritable = z.object({
+    identifier: z.string().min(3).max(254),
+    password: z.string().min(1).max(128)
+});
+
+/**
  * ProblemDetails
  */
 export const zProblemDetailsWritable = z.object({
+    code: z.string(),
+    detail: z.string().nullish(),
+    errors: z.array(zFieldError).nullish(),
+    instance: z.string().nullish(),
+    requestId: z.string().nullish(),
+    status: z.int(),
+    title: z.string()
+});
+
+/**
+ * RegisterRequest
+ */
+export const zRegisterRequestWritable = z.object({
+    email: z.string().min(3).max(254).nullish(),
+    name: z.string().min(1).max(120),
+    password: z.string().min(10).max(128),
+    phone: z.string().min(7).max(32).nullish()
+});
+
+/**
+ * ResetPasswordRequest
+ */
+export const zResetPasswordRequestWritable = z.object({
+    code: z.string().regex(/^[0-9]{6}$/),
+    newPassword: z.string().min(10).max(128)
+});
+
+/**
+ * VerificationProblem
+ */
+export const zVerificationProblemWritable = z.object({
+    challenge: zChallengeResponse,
     code: z.string(),
     detail: z.string().nullish(),
     errors: z.array(zFieldError).nullish(),
@@ -75,3 +235,166 @@ export const zHealthLiveResponse = zLivenessResponse;
  * Successful Response
  */
 export const zHealthReadyResponse = zReadinessResponse;
+
+/**
+ * Successful Response
+ */
+export const zAuthJwksResponse = zJwksResponse;
+
+export const zAuthLoginBody = zLoginRequestWritable;
+
+/**
+ * Successful Response
+ */
+export const zAuthLoginResponse = zSessionUser;
+
+/**
+ * Successful Response
+ */
+export const zAuthLogoutResponse = z.void();
+
+/**
+ * Successful Response
+ */
+export const zAuthLogoutAllResponse = z.void();
+
+/**
+ * Successful Response
+ */
+export const zAuthMeResponse = zSessionUser;
+
+export const zAuthUnlinkOauthPath = z.object({
+    provider: z.enum([
+        'google',
+        'github',
+        'microsoft'
+    ])
+});
+
+/**
+ * Successful Response
+ */
+export const zAuthUnlinkOauthResponse = z.void();
+
+export const zAuthOauthCallbackPath = z.object({
+    provider: z.enum([
+        'google',
+        'github',
+        'microsoft'
+    ])
+});
+
+export const zAuthOauthCallbackQuery = z.object({
+    state: z.string().max(256).optional().default(''),
+    code: z.string().max(2048).optional().default(''),
+    error: z.string().max(128).nullish(),
+    error_description: z.string().max(1024).nullish(),
+    error_uri: z.string().max(2048).nullish(),
+    scope: z.string().max(2048).nullish(),
+    authuser: z.string().max(32).nullish(),
+    prompt: z.string().max(128).nullish(),
+    session_state: z.string().max(256).nullish()
+});
+
+export const zAuthOauthStartPath = z.object({
+    provider: z.enum([
+        'google',
+        'github',
+        'microsoft'
+    ])
+});
+
+export const zAuthOauthStartQuery = z.object({
+    next: z.string().max(1024).optional().default('/dashboard'),
+    intent: z.enum(['login', 'link']).optional().default('login')
+});
+
+export const zAuthRequestOtpBody = zIdentifierRequest;
+
+/**
+ * Successful Response
+ */
+export const zAuthRequestOtpResponse = zChallengeResponse;
+
+/**
+ * Successful Response
+ */
+export const zAuthResendOtpResponse = zChallengeResponse;
+
+export const zAuthVerifyOtpBody = zCodeRequest;
+
+/**
+ * Successful Response
+ */
+export const zAuthVerifyOtpResponse = zSessionUser;
+
+export const zAuthChangePasswordBody = zChangePasswordRequest;
+
+/**
+ * Successful Response
+ */
+export const zAuthChangePasswordResponse = z.void();
+
+export const zAuthForgotPasswordBody = zIdentifierRequest;
+
+/**
+ * Successful Response
+ */
+export const zAuthForgotPasswordResponse = zChallengeResponse;
+
+export const zAuthResetPasswordBody = zResetPasswordRequestWritable;
+
+/**
+ * Successful Response
+ */
+export const zAuthResetPasswordResponse = z.void();
+
+export const zAuthSetPasswordBody = zResetPasswordRequestWritable;
+
+/**
+ * Successful Response
+ */
+export const zAuthSetPasswordResponse = z.void();
+
+/**
+ * Successful Response
+ */
+export const zAuthRequestPasswordResponse = zChallengeResponse;
+
+/**
+ * Successful Response
+ */
+export const zAuthRefreshResponse = z.void();
+
+export const zAuthRegisterBody = zRegisterRequestWritable;
+
+/**
+ * Successful Response
+ */
+export const zAuthRegisterResponse = zChallengeResponse;
+
+export const zAuthSessionsQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20)
+});
+
+/**
+ * Successful Response
+ */
+export const zAuthSessionsResponse = zSessionsResponse;
+
+export const zAuthRevokeSessionPath = z.object({
+    sessionId: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAuthRevokeSessionResponse = z.void();
+
+export const zAuthVerifyBody = zCodeRequest;
+
+/**
+ * Successful Response
+ */
+export const zAuthVerifyResponse = zSessionUser;

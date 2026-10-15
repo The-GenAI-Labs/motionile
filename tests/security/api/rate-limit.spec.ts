@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { AuthApi } from "../../support/auth.js";
 import {
   clientHeaders,
   type Problem,
@@ -69,4 +70,33 @@ test("the window slides and capacity returns", async ({ request }) => {
 
   expect(limited.status()).toBe(429);
   expect(recovered.status()).toBe(200);
+});
+
+test("registration and destination OTP policies enforce limits", async ({ request }) => {
+  const api = new AuthApi(request);
+  const first = await api.send("POST", "/v1/auth/otp/request", { identifier: api.email });
+  expect(first.status()).toBe(202);
+  const limited = await api.send("POST", "/v1/auth/otp/request", { identifier: api.email });
+  expect(limited.status()).toBe(429);
+  expect(limited.headers()["retry-after"]).toBeDefined();
+  expect(limited.headers()["ratelimit-limit"]).toBe("1");
+  const registration = new AuthApi(request);
+  for (let i = 0; i < 3; i += 1) {
+    const email = "registration-" + String(i) + registration.email;
+    expect(
+      (
+        await registration.send("POST", "/v1/auth/register", {
+          name: "Rate test",
+          email,
+          password: registration.password,
+        })
+      ).status(),
+    ).toBe(202);
+  }
+  const exhausted = await registration.send("POST", "/v1/auth/register", {
+    name: "Rate test",
+    email: registration.email,
+    password: registration.password,
+  });
+  expect(exhausted.status()).toBe(429);
 });

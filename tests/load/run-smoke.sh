@@ -21,5 +21,6 @@ for scenario in "${scenarios[@]}"; do
     --env "API_BASE_URL=${API_BASE_URL:-http://localhost:8000}" \
     --env "WEB_BASE_URL=${WEB_BASE_URL:-http://localhost:3000}" \
     --env "LOAD_PROFILE=${LOAD_PROFILE:-smoke}" \
+    --env AUTH_LOAD_ACCOUNTS \
     "$image" run --summary-export "/reports/${scenario}.json" "/load/scenarios/${scenario}.js"
 done

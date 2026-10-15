@@ -70,6 +70,14 @@ Operational rules for any coding agent working in this repository. `docs/context
 - Send asynchronous side effects across modules through `core/events.py`.
 - `pnpm check:boundaries` runs `scripts/check_module_boundaries.py` and import-linter.
 
+## Auth module ownership
+
+- `users` owns users and contacts; `access` owns roles and user roles, with permissions deferred to Phase 6.
+- `auth` owns credentials, OAuth identities and sessions; `notifications` owns queued email and WhatsApp delivery and no tables.
+- Access JWT `sid` is the session family ID. Revocation denies the family for the access lifetime plus verification leeway.
+- Password reset uses OTP and a verification ticket. Refresh requires family-bound CSRF; OAuth uses a separate ten-minute Lax binding cookie.
+- Notifications carry encrypted queue payloads, use after-commit enqueueing, and never log codes or destinations. SES v2 is the additional instance-role AWS SDK adapter.
+
 ## API design
 
 - Version routes under `/v1`. Health checks live at `/health/live` and `/health/ready`.
@@ -95,6 +103,8 @@ Operational rules for any coding agent working in this repository. `docs/context
 - Details live in [`docs/db/conventions.md`](docs/db/conventions.md).
 
 ## Security
+
+- Microsoft OAuth subjects include the tenant ID; validate the signing-key issuer against that tenant.
 
 - Send all outbound HTTP through `SafeHttpClient`.
 - Read secrets only as `SecretStr` settings; add every value without a safe default to `Settings.deployment_problems()`.

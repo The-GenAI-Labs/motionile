@@ -8,6 +8,7 @@ x-dev-storage: &dev-storage
   STORAGE_BUCKET: motionile-local
   STORAGE_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-motionile}
   STORAGE_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-motionile-dev-secret}
+  NOTIFICATIONS_SMTP_HOST: mailpit
 
 services:
   proxy:

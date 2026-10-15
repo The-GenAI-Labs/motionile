@@ -163,7 +163,7 @@ Indexes:
 
 ### `user_contacts`
 
-Module `auth` · Phase 4 · Mutable
+Module `users` · Phase 4 · Mutable
 
 Email addresses and phone numbers that identify a user and receive OTPs.
 
@@ -254,8 +254,8 @@ One row per refresh token. Rotation inserts a child row with the same `family_id
 
 | Column                | Type          | Null | Default | Notes                                                                                   |
 | --------------------- | ------------- | ---- | ------- | --------------------------------------------------------------------------------------- |
-| `id`                  | `uuid`        | no   | -       | UUIDv7; also the `sid` claim                                                            |
-| `family_id`           | `uuid`        | no   | -       | Shared by every rotation of one login                                                   |
+| `id`                  | `uuid`        | no   | -       | UUIDv7; the first row also identifies the family                                        |
+| `family_id`           | `uuid`        | no   | -       | The JWT `sid`; shared by every rotation of one login                                    |
 | `user_id`             | `uuid`        | no   | -       |                                                                                         |
 | `token_hash`          | `bytea`       | no   | -       | SHA-256 of the opaque refresh token                                                     |
 | `parent_id`           | `uuid`        | yes  | -       | Session this one rotated from                                                           |
@@ -293,7 +293,7 @@ Indexes:
 
 ### `roles`
 
-Module `users` · Phase 4 · Mutable · Seeded with `user`, `admin`, `super_admin`
+Module `access` · Phase 4 · Mutable · Seeded with `user`, `admin`, `super_admin`
 
 | Column        | Type          | Null | Default | Notes                                     |
 | ------------- | ------------- | ---- | ------- | ----------------------------------------- |
@@ -313,7 +313,7 @@ Keys and constraints:
 
 ### `user_roles`
 
-Module `users` · Phase 4 · Insert and delete only
+Module `access` · Phase 4 · Insert and delete only
 
 Association rows are never updated; revoking a role deletes the row. They carry `granted_at` as their creation timestamp and no `updated_at`.
 
@@ -343,7 +343,7 @@ Indexes:
 
 ### `permissions`
 
-Module `users` · Phase 6 · Mutable · Seeded
+Module `access` · Phase 6 · Mutable · Seeded
 
 | Column        | Type          | Null | Default | Notes                           |
 | ------------- | ------------- | ---- | ------- | ------------------------------- |
@@ -358,7 +358,7 @@ Module `users` · Phase 6 · Mutable · Seeded
 
 ### `role_permissions`
 
-Module `users` · Phase 6 · Insert and delete only
+Module `access` · Phase 6 · Insert and delete only
 
 | Column          | Type          | Null | Default | Notes |
 | --------------- | ------------- | ---- | ------- | ----- |

@@ -54,6 +54,28 @@ async def test_registration_verification_and_logout(auth_service: AuthService, a
     assert all(row.revoked_at is not None for row in auth_state.sessions.values())
 
 
+async def test_short_access_lifetime_matches_token_and_cookies(
+    auth_service: AuthService, auth_state: AuthState, auth_clock: FrozenClock
+) -> None:
+    settings = auth_service.resources.settings
+    auth_settings = settings.auth.model_copy(update={"test_access_seconds": 75})
+    auth_service.resources.settings = settings.model_copy(update={"auth": auth_settings})
+    auth_service.runtime.tokens.settings = auth_settings
+    _, cookies = await registered(auth_service, auth_state)
+    claims = auth_service.runtime.tokens.decode(cookies.access)
+    assert claims.exp - claims.iat == 75
+    assert cookies.access_max_age == 75
+    assert cookies.expires_at == auth_clock.now() + timedelta(seconds=75)
+    auth_clock.advance(timedelta(seconds=81))
+    with pytest.raises(UnauthorizedError) as expired:
+        await principal(auth_service, cookies)
+    assert expired.value.code == "token_expired"
+    refreshed = await auth_service.refresh(cookies.refresh, cookies.csrf, cookies.csrf)
+    assert refreshed.access_max_age == 75
+    assert refreshed.expires_at == auth_clock.now() + timedelta(seconds=75)
+    await principal(auth_service, refreshed)
+
+
 async def test_refresh_grace_then_reuse_denies_access(
     auth_service: AuthService, auth_state: AuthState, auth_clock: FrozenClock
 ) -> None:

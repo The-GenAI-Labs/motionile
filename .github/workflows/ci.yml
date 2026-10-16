@@ -331,6 +331,7 @@ jobs:
       - uses: ./.github/actions/start-stack
         with:
           services: api mcp worker-default worker-render
+          browser-auth: "true"
       - name: Confirm both workers keep running
         run: |
           sleep 15
@@ -345,6 +346,7 @@ jobs:
           CI: "true"
           WEB_BASE_URL: http://127.0.0.1:3000
           API_BASE_URL: http://127.0.0.1:8000
+          AUTH_WEB_BASE_URL: https://localhost:3443
         run: pnpm --filter @motionile/tests run e2e
       - name: Stack logs
         if: failure()

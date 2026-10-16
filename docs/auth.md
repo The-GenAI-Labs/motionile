@@ -201,3 +201,13 @@ Errors use application/problem+json and urn:motionile:problem:<code>. Request ID
 Notification payloads are AES-GCM encrypted before queue insertion. Delivery runs after commit on the default queue, retries failures and prioritizes OTP jobs. The existing after-commit dispatcher has a crash window between commit and queue insertion; ADR 0014 documents this limitation and resend recovery.
 
 The local/CI fake inbox is /v1/_test/inbox/{destination}; deployed apps and exported contracts omit it. Unit tests use fakes and a frozen clock; integration tests use testcontainers; root Playwright tests exercise the API and worker. Root tests wait out real cooldowns. The auth load scenario exercises login and repeated refresh. See the [auth runbook](runbooks/auth.md) for SSM, provider setup, Mailpit, key rotation and staging delivery acceptance.
+
+## Web client
+
+Auth screens are statically rendered with noindex metadata. Protected layouts verify EdDSA access tokens against cached remote JWKS and validate issuer and audience. API requests remain the authoritative authorization check, including the revocation denylist. The proxy uses cookie presence only for navigation and forwards the sanitized requested path to the server guard.
+
+Browser requests attach family CSRF on unsafe methods. A shared promise and Web Lock coordinate refresh; after acquiring the lock, the tab checks both the expiry hint and a non-secret refresh generation marker to avoid rotating twice within one second. Failed refresh clears cached user data and redirects once. The refresh bridge also records a per-tab ten-second attempt guard. BroadcastChannel messages coordinate sign-in, sign-out, expiry and keepalive without transmitting tokens.
+
+OAuth linking uses POST `/v1/auth/oauth/{provider}/start`, returning `{url}` after session and CSRF checks. The browser navigates to that URL. GET start remains the ordinary provider sign-in redirect.
+
+`AUTH_TEST_ACCESS_SECONDS` is restricted to local/CI with fake providers and updates both JWT and cookie lifetimes. Browser CI uses HTTPS because Secure cookie attributes are never relaxed.

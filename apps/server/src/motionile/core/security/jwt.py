@@ -11,7 +11,6 @@ from motionile.core.config import AuthSettings
 from motionile.core.errors import UnauthorizedError
 from motionile.core.ids import new_id
 from motionile.core.redis import RedisStore
-from motionile.core.security.cookies import ACCESS_SECONDS
 from motionile.core.security.rbac import Principal, PrincipalKind
 from motionile.core.security.tokens import base64url, token_hash
 
@@ -52,7 +51,7 @@ class AccessTokens:
             iss=self.settings.jwt_issuer,
             aud=self.settings.jwt_audience,
             iat=now,
-            exp=now + ACCESS_SECONDS,
+            exp=now + self.settings.access_seconds,
             jti=str(new_id()),
         )
         return jwt.encode(
@@ -86,7 +85,7 @@ class AccessTokens:
             UUID(claims.sid)
             UUID(claims.jti)
             now = int(self.clock.now().timestamp())
-            if claims.iat > now + JWT_LEEWAY or claims.exp - claims.iat != ACCESS_SECONDS:
+            if claims.iat > now + JWT_LEEWAY or claims.exp - claims.iat != self.settings.access_seconds:
                 raise ValueError
         except (jwt.InvalidTokenError, ValueError, ValidationError, TypeError) as error:
             raise UnauthorizedError(code="unauthenticated") from error
@@ -105,7 +104,9 @@ class AccessTokens:
 
     async def revoke(self, family_id: UUID) -> None:
         await self.store.set(
-            self.store.keys.key("auth.revoked", family_id), "1", ttl=timedelta(seconds=ACCESS_SECONDS + JWT_LEEWAY)
+            self.store.keys.key("auth.revoked", family_id),
+            "1",
+            ttl=timedelta(seconds=self.settings.access_seconds + JWT_LEEWAY),
         )
 
     def jwks(self) -> list[dict[str, str]]:

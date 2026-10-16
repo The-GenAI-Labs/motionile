@@ -11,6 +11,8 @@ export const httpUrlSchema = z.url({ protocol: /^https?$/ }).transform(stripTrai
 export const publicEnvSchema = z.object({
   NEXT_PUBLIC_SITE_URL: httpUrlSchema,
   NEXT_PUBLIC_API_URL: z.preprocess(emptyToUndefined, httpUrlSchema.default(DEFAULT_API_URL)),
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  NEXT_PUBLIC_JWKS_URL: z.preprocess(emptyToUndefined, httpUrlSchema.optional()),
   NEXT_PUBLIC_CDN_URL: z.preprocess(emptyToUndefined, httpUrlSchema.optional()),
 });
 
@@ -29,6 +31,8 @@ export const readPublicEnv = (): PublicEnv =>
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_CDN_URL: process.env.NEXT_PUBLIC_CDN_URL,
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+    NEXT_PUBLIC_JWKS_URL: process.env.NEXT_PUBLIC_JWKS_URL,
   });
 
 export const serverEnvSchema = z.object({

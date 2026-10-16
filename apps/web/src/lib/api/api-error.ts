@@ -1,4 +1,9 @@
-import { type FieldError, zProblemDetails } from "@motionile/api-contract";
+import {
+  type FieldError,
+  type zChallengeResponse,
+  zProblemDetails,
+  zVerificationProblem,
+} from "@motionile/api-contract";
 import { type AxiosError, AxiosHeaders, isAxiosError, isCancel } from "axios";
 import { z } from "zod";
 
@@ -60,6 +65,7 @@ const looseErrorBodySchema = z
   .loose();
 
 export interface ApiErrorInit {
+  challenge?: z.output<typeof zChallengeResponse>;
   kind: ApiErrorKind;
   status: number | null;
   code: string;
@@ -112,6 +118,7 @@ const emptyToNull = (value: string | null | undefined): string | null =>
   value === undefined || value === null || value === "" ? null : value;
 
 export class ApiError extends Error {
+  readonly challenge: z.output<typeof zChallengeResponse> | undefined;
   readonly kind: ApiErrorKind;
   readonly status: number | null;
   readonly code: string;
@@ -125,6 +132,7 @@ export class ApiError extends Error {
 
   constructor(init: ApiErrorInit) {
     super(init.detail ?? init.title, { cause: init.cause });
+    this.challenge = init.challenge;
     this.name = "ApiError";
     this.kind = init.kind;
     this.status = init.status;
@@ -174,12 +182,14 @@ export class ApiError extends Error {
     const parsedBody = normalizeBody(body);
     const headerRequestId = emptyToNull(getHeader(REQUEST_ID_HEADER));
     const retryAfterSeconds = parseRetryAfter(getHeader("retry-after"));
+    const verification = zVerificationProblem.safeParse(parsedBody);
     const problem = zProblemDetails.safeParse(parsedBody);
     if (problem.success) {
       return new ApiError({
         kind: "http",
         status,
         code: problem.data.code,
+        ...(verification.success ? { challenge: verification.data.challenge } : {}),
         title: problem.data.title,
         detail: emptyToNull(problem.data.detail),
         type: problem.data.type,

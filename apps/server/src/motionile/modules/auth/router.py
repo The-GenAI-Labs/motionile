@@ -39,6 +39,7 @@ from motionile.modules.auth.schemas import (
     LoginRequest,
     OAuthCallbackQuery,
     OAuthStartQuery,
+    OAuthStartResponse,
     RegisterRequest,
     ResetPasswordRequest,
     SessionListQuery,
@@ -526,6 +527,28 @@ async def oauth_start(
     response = RedirectResponse(location, status_code=302)
     cookies.set_oauth(response, browser)
     return response
+
+
+@auth_router.post(
+    "/oauth/{provider}/start",
+    response_model=OAuthStartResponse,
+    status_code=200,
+    summary="Begin an authenticated provider flow without following redirects",
+    dependencies=policies("api.default"),
+    openapi_extra=protection(
+        "api.default", csrf="session", errors={401: ["unauthenticated"], 422: ["invalid_redirect"]}, turnstile=None
+    ),
+)
+async def oauth_start_authenticated(
+    provider: ProviderName,
+    body: OAuthStartQuery,
+    response: Response,
+    principal: CurrentPrincipalDep,
+    service: AuthServiceDep,
+) -> OAuthStartResponse:
+    location, browser = await OAuthService(service).start(provider, body.next, body.intent, principal)
+    CookieManager(service.resources.settings.auth.cookie_domain).set_oauth(response, browser)
+    return OAuthStartResponse(url=location)
 
 
 @auth_router.get(

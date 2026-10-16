@@ -291,6 +291,7 @@ class AuthSettings(GroupSettings):
     jwt_current_kid: str = Field(default="local", min_length=1, max_length=64)
     jwt_issuer: str = "https://api.motionile.local"
     jwt_audience: str = "motionile"
+    test_access_seconds: int | None = Field(default=None, ge=10, le=900)
     cookie_domain: OptionalText = None
     web_origin: str = "http://localhost:3000"
     api_origin: str = "https://localhost:8000"
@@ -356,6 +357,10 @@ class AuthSettings(GroupSettings):
             return selected.get_secret_value().encode()
         return f"motionile-local-{purpose}-not-for-deployment".encode()
 
+    @property
+    def access_seconds(self) -> int:
+        return self.test_access_seconds or 900
+
 
 class NotificationSettings(GroupSettings):
     model_config = SettingsConfigDict(env_prefix="NOTIFICATIONS_")
@@ -396,6 +401,10 @@ class Settings(BaseModel):
 
     @model_validator(mode="after")
     def require_safe_values_when_deployed(self) -> Self:
+        if self.auth.test_access_seconds is not None and (
+            self.app.env not in TEST_ROUTE_ENVIRONMENTS or self.app.providers_mode is not ProvidersMode.FAKE
+        ):
+            raise ValueError("AUTH_TEST_ACCESS_SECONDS requires local or CI with fake providers")
         if self.app.env not in DEPLOYED_ENVIRONMENTS:
             return self
         problems = list(self.deployment_problems())

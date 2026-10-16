@@ -90,6 +90,40 @@ async def test_oauth_browser_binding_flow(client: AsyncClient, auth_service: Aut
     assert (await client.get(provider.headers["location"])).headers["location"].endswith("error=oauth_failed")
 
 
+async def test_authenticated_oauth_start_requires_csrf_and_returns_navigation_url(client: AsyncClient) -> None:
+    start = await client.get("/v1/auth/oauth/google/start")
+    provider = await client.get(start.headers["location"])
+    await client.get(provider.headers["location"])
+    body = {"next": "/settings/security", "intent": "link"}
+    blocked = await client.post("/v1/auth/oauth/github/start", json=body)
+    assert blocked.status_code == 403
+    assert blocked.json()["code"] == "csrf_failed"
+    response = await client.post(
+        "/v1/auth/oauth/github/start", json=body, headers={"X-CSRF-Token": client.cookies["mo_csrf"]}
+    )
+    assert response.status_code == 200
+    provider = await client.get(response.json()["url"])
+    callback = await client.get(provider.headers["location"])
+    assert callback.headers["location"] == "http://localhost:3000/settings/security"
+    user = await client.get("/v1/auth/me")
+    assert set(user.json()["linkedProviders"]) == {"google", "github"}
+
+
+async def test_authenticated_oauth_start_rejects_anonymous_and_external_next(client: AsyncClient) -> None:
+    response = await client.post("/v1/auth/oauth/google/start", json={"intent": "link"})
+    assert response.status_code == 401
+    start = await client.get("/v1/auth/oauth/google/start")
+    provider = await client.get(start.headers["location"])
+    await client.get(provider.headers["location"])
+    response = await client.post(
+        "/v1/auth/oauth/github/start",
+        json={"next": "//evil.example", "intent": "link"},
+        headers={"X-CSRF-Token": client.cookies["mo_csrf"]},
+    )
+    assert response.status_code == 422
+    assert response.json()["code"] == "invalid_redirect"
+
+
 @pytest.mark.parametrize("body", [[], "invalid", 1])
 async def test_non_object_requests_are_validation_errors(client: AsyncClient, body: object) -> None:
     response = await client.post("/v1/auth/login", json=body)

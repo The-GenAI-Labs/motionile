@@ -33,6 +33,9 @@ services:
       <<: *dev-storage
       FORWARDED_ALLOW_IPS: "*"
       PYTHONPATH: /app/src
+      AUTH_WEB_ORIGIN: ${AUTH_WEB_ORIGIN:-http://localhost:3000}
+      AUTH_API_ORIGIN: ${AUTH_API_ORIGIN:-https://localhost:8000}
+      AUTH_TEST_ACCESS_SECONDS: ${AUTH_TEST_ACCESS_SECONDS:-900}
     ports:
       - "8000:8000"
     volumes:

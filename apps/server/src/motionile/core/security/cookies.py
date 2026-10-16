@@ -20,6 +20,7 @@ class SessionCookies:
     csrf: str
     expires_at: datetime
     refresh_max_age: int
+    access_max_age: int = ACCESS_SECONDS
 
 
 class CookieManager:
@@ -30,7 +31,7 @@ class CookieManager:
         response.set_cookie(
             ACCESS_COOKIE,
             tokens.access,
-            max_age=ACCESS_SECONDS,
+            max_age=tokens.access_max_age,
             domain=self.domain,
             secure=True,
             httponly=True,
@@ -49,7 +50,7 @@ class CookieManager:
         response.set_cookie(
             HINT_COOKIE,
             str(int(tokens.expires_at.timestamp())),
-            max_age=ACCESS_SECONDS,
+            max_age=tokens.access_max_age,
             domain=self.domain,
             secure=True,
             samesite="lax",

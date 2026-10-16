@@ -1,4 +1,7 @@
 {
   "extends": "@motionile/config/typescript/library.json",
-  "include": ["playwright.config.ts", "e2e", "security"]
+  "include": ["playwright.config.ts", "e2e", "security"],
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM"]
+  }
 }

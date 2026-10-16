@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { type AppArea, appNavigation, isActivePath } from "@/config/navigation";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { cn } from "@/lib/utils/cn";
 
 interface SidebarNavProps {
@@ -14,10 +15,16 @@ interface SidebarNavProps {
 export function SidebarNav({ area, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
   const navigation = appNavigation[area];
+  const currentUser = useCurrentUser();
+  const permissions = currentUser.data?.permissions ?? [];
+  const items = navigation.items.filter(
+    (item) =>
+      area !== "admin" || item.permission === undefined || permissions.includes(item.permission),
+  );
   return (
     <nav aria-label={navigation.label}>
       <ul className="flex flex-col gap-1">
-        {navigation.items.map((item) => {
+        {items.map((item) => {
           const active = isActivePath(pathname, item.href, navigation.homeHref);
           const Icon = item.icon;
           return (

@@ -3,4 +3,10 @@ import "server-only";
 import { env } from "@/config/env";
 import { parseServerEnv } from "@/config/env-schema";
 
-export const serverEnv = parseServerEnv({ API_INTERNAL_URL: process.env.API_INTERNAL_URL }, env);
+export const serverEnv = parseServerEnv(
+  {
+    API_INTERNAL_URL: process.env.API_INTERNAL_URL,
+    CATALOG_REVALIDATION_SECRET: process.env.CATALOG_REVALIDATION_SECRET,
+  },
+  env,
+);

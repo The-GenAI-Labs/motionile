@@ -47,6 +47,7 @@ const user = {
   id: "0199aabb-1111-7111-8111-111111111111",
   name: "Asha",
   roles: ["user"],
+  permissions: [],
   status: "active",
   contacts: [{ destination: "a***@example.com", kind: "email", primary: true, verified: true }],
   hasPassword: true,

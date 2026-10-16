@@ -37,10 +37,12 @@ export const readPublicEnv = (): PublicEnv =>
 
 export const serverEnvSchema = z.object({
   API_INTERNAL_URL: z.preprocess(emptyToUndefined, httpUrlSchema.optional()),
+  CATALOG_REVALIDATION_SECRET: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
 });
 
 export interface ServerEnv {
   apiBaseUrl: string;
+  catalogRevalidationSecret?: string;
 }
 
 export const parseServerEnv = (
@@ -51,5 +53,10 @@ export const parseServerEnv = (
   if (!result.success) {
     throw new Error(`Invalid server environment variables:\n${z.prettifyError(result.error)}`);
   }
-  return { apiBaseUrl: result.data.API_INTERNAL_URL ?? publicEnv.NEXT_PUBLIC_API_URL };
+  return {
+    apiBaseUrl: result.data.API_INTERNAL_URL ?? publicEnv.NEXT_PUBLIC_API_URL,
+    ...(result.data.CATALOG_REVALIDATION_SECRET === undefined
+      ? {}
+      : { catalogRevalidationSecret: result.data.CATALOG_REVALIDATION_SECRET }),
+  };
 };

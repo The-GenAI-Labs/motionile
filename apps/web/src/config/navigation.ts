@@ -1,15 +1,11 @@
 import {
-  BarChart3,
-  Clapperboard,
   CreditCard,
-  FileText,
   FolderTree,
   Gauge,
   History,
   LayoutDashboard,
   Library,
   type LucideIcon,
-  MessageSquareCode,
   PlusCircle,
   Settings,
   Share2,
@@ -36,6 +32,7 @@ export interface AppNavigationItem {
   title: string;
   href: AppPath;
   icon: LucideIcon;
+  permission?: string;
 }
 
 export interface AppNavigationArea {
@@ -60,6 +57,7 @@ export const legalLinks = [
 ] as const satisfies readonly PublicLink[];
 
 export const publicNavigation = [
+  { title: "Explore", href: "/explore" },
   { title: "Pricing", href: "/pricing" },
   { title: "About", href: "/about" },
   { title: "Contact", href: "/contact" },
@@ -70,6 +68,7 @@ export const footerNavigation = [
     title: "Product",
     links: [
       { title: "Home", href: "/" },
+      { title: "Explore", href: "/explore" },
       { title: "Pricing", href: "/pricing" },
     ],
   },
@@ -85,6 +84,7 @@ export const footerNavigation = [
 
 export const publicPages = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
+  { path: "/explore", changeFrequency: "weekly", priority: 0.9 },
   { path: "/pricing", changeFrequency: "monthly", priority: 0.8 },
   { path: "/about", changeFrequency: "monthly", priority: 0.6 },
   { path: "/contact", changeFrequency: "yearly", priority: 0.5 },
@@ -104,7 +104,7 @@ export const userNavigation = {
     { title: "Publications", href: "/publications", icon: Share2 },
     { title: "Skills", href: "/skills", icon: Sparkles },
     { title: "Billing", href: "/billing", icon: CreditCard },
-    { title: "Settings", href: "/settings/security", icon: Settings },
+    { title: "Settings", href: "/settings/profile", icon: Settings },
   ],
 } as const satisfies AppNavigationArea;
 
@@ -112,17 +112,18 @@ export const adminNavigation = {
   label: "Admin",
   homeHref: "/admin",
   items: [
-    { title: "Overview", href: "/admin", icon: Gauge },
-    { title: "Users", href: "/admin/users", icon: Users },
-    { title: "Roles", href: "/admin/roles", icon: Shield },
-    { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-    { title: "Audit logs", href: "/admin/audit-logs", icon: History },
-    { title: "Billing", href: "/admin/billing", icon: CreditCard },
-    { title: "Catalog", href: "/admin/catalog", icon: FolderTree },
-    { title: "Prompts", href: "/admin/prompts", icon: MessageSquareCode },
-    { title: "Skills", href: "/admin/skills", icon: Clapperboard },
-    { title: "Platforms", href: "/admin/platforms", icon: FileText },
-    { title: "Settings", href: "/admin/settings", icon: SlidersHorizontal },
+    { title: "Overview", href: "/admin", icon: Gauge, permission: "analytics.read" },
+    { title: "Users", href: "/admin/users", icon: Users, permission: "users.read" },
+    { title: "Roles", href: "/admin/roles", icon: Shield, permission: "roles.read" },
+    { title: "Audit logs", href: "/admin/audit-logs", icon: History, permission: "audit.read" },
+    { title: "Catalog", href: "/admin/catalog", icon: FolderTree, permission: "catalog.manage" },
+    { title: "Feature flags", href: "/admin/flags", icon: Sparkles, permission: "flags.manage" },
+    {
+      title: "Settings",
+      href: "/admin/settings",
+      icon: SlidersHorizontal,
+      permission: "settings.read",
+    },
   ],
 } as const satisfies AppNavigationArea;
 

@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SessionRuntime } from "@/features/auth/components/session-runtime";
 import { getQueryClient } from "@/lib/query/query-client";
 
 const ReactQueryDevtools =
@@ -20,6 +21,7 @@ export function Providers({ children }: Readonly<{ children: ReactNode }>) {
   const queryClient = getQueryClient();
   return (
     <QueryClientProvider client={queryClient}>
+      <SessionRuntime />
       <TooltipProvider>
         {children}
         <Toaster />

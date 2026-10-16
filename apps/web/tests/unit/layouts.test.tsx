@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+﻿import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,6 +7,13 @@ import { AdminShell } from "@/components/layouts/admin-shell";
 import { PublicFooter } from "@/components/layouts/public-footer";
 import { PublicHeader } from "@/components/layouts/public-header";
 import { UserShell } from "@/components/layouts/user-shell";
+
+vi.mock("@/features/auth/hooks/use-current-user", () => ({
+  useCurrentUser: () => ({ data: { name: "Test user" } }),
+}));
+vi.mock("@/features/auth/hooks/use-auth-mutations", () => ({
+  useLogout: () => ({ mutate: vi.fn(), isPending: false }),
+}));
 
 const pathname = vi.hoisted(() => ({ current: "/" }));
 
@@ -153,7 +160,7 @@ describe("user shell", () => {
     );
     expect(within(menu).getByRole("menuitem", { name: "Settings" })).toHaveAttribute(
       "href",
-      "/settings",
+      "/settings/security",
     );
     expect(within(menu).getByRole("menuitem", { name: "Back to site" })).toHaveAttribute(
       "href",

@@ -14,12 +14,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { AppArea } from "@/config/navigation";
+import { LogoutButton } from "@/features/auth/components/logout-button";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 
 interface AccountMenuProps {
   area: AppArea;
 }
 
 export function AccountMenu({ area }: AccountMenuProps) {
+  const user = useCurrentUser();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -32,7 +35,7 @@ export function AccountMenu({ area }: AccountMenuProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuLabel>Account</DropdownMenuLabel>
+        <DropdownMenuLabel>{user.data?.name ?? "Account"}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {area === "admin" ? (
           <DropdownMenuItem asChild>
@@ -56,7 +59,7 @@ export function AccountMenu({ area }: AccountMenuProps) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href={{ pathname: "/settings" }}>
+          <Link href={{ pathname: "/settings/security" }}>
             <Settings aria-hidden="true" />
             Settings
           </Link>
@@ -68,6 +71,8 @@ export function AccountMenu({ area }: AccountMenuProps) {
             Back to site
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <LogoutButton menuItem />
       </DropdownMenuContent>
     </DropdownMenu>
   );

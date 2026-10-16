@@ -65,3 +65,9 @@ Use request IDs and auth audit events. Never paste codes, tokens or passwords in
 Observe notification retries on the default queue. After-commit enqueue has the crash window described in ADR 0014; resend is the recovery path. Do not manually replay captured OTP payloads.
 
 After staging deploys, check health/readiness, JWKS, registration with a real delivered SES code, verification, me, refresh and logout. Test each real OAuth client and security notices; inspect SES/WhatsApp delivery evidence. Record deployment SHA and results in the PR. Local tests do not replace these environment-dependent acceptance checks.
+
+## Frontend deployment verification
+
+Set the Vercel API and site origins, Turnstile site key, and matching AUTH_JWT_ISSUER and AUTH_JWT_AUDIENCE. Leave NEXT_PUBLIC_JWKS_URL unset to use the public API JWKS path, or configure its explicit server-reachable URL. Keep AUTH_COOKIE_DOMAIN empty on localhost and set the shared staging domain on deployed instances.
+
+Browser CI uses the HTTPS reverse proxy and AUTH_TEST_ACCESS_SECONDS=75 with fake providers. Never configure this test override on staging or production; startup rejects it. After deploying Phase 5, register a staging account through real email OTP, sign out and back in, wait for silent refresh, revoke another session, and check account linking. CI and local fakes do not replace this real-delivery acceptance check.

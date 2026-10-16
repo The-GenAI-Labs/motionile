@@ -119,3 +119,13 @@ Work on `phase-<n>/<slug>` or `feat/<slug>` branches cut from `develop`. Commits
 - [`docs/infrastructure.md`](docs/infrastructure.md): AWS, Vercel and Neon topology and the deployment flow
 - [`docs/runbooks/`](docs/runbooks/): step-by-step setup, deployment, operations, backups, secret rotation and platform applications
 - [`AGENTS.md`](AGENTS.md): rules for coding agents and contributors
+
+### Auth frontend development
+
+Phase 5 provides `/login`, `/register`, `/verify`, `/forgot-password`, `/reset-password`, `/refresh`, `/dashboard` and `/settings/security`. The admin shell checks admin roles; management features arrive in Phase 6.
+
+Use an empty `AUTH_COOKIE_DOMAIN` locally. Cookies are host-only on `localhost` and shared between ports 3000 and 8000. All authentication cookies stay Secure, so test browser flows over HTTPS. CI uses `tests/support/https-proxy.mjs` on `https://localhost:3443` to proxy the web app and `/v1` API routes. Set `AUTH_WEB_ORIGIN`, `AUTH_API_ORIGIN`, `CORS_ALLOWED_ORIGINS`, `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_API_URL` to the matching HTTPS origin. Pass the certificate directory containing `key.pem` and `cert.pem` as the proxy script argument; never commit private certificates.
+
+Set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` to the Cloudflare test key in local/CI and to the deployed widget key on staging/production. `NEXT_PUBLIC_JWKS_URL` optionally points server-side verification at the API JWKS endpoint; it contains no secret. The web's `AUTH_JWT_ISSUER` and `AUTH_JWT_AUDIENCE` must match the backend.
+
+The `auth-browser` Playwright project runs real UI flows, cross-tab refresh, route guards, cookie and redirect security, and axe accessibility checks. `AUTH_TEST_ACCESS_SECONDS` shortens access lifetime only with fake providers in local/CI; deployed environments reject it.

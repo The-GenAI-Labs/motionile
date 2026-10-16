@@ -9,9 +9,22 @@ inputs:
     description: Build and serve the web app on port 3000.
     required: false
     default: "true"
+  browser-auth:
+    description: Serve the browser stack over local HTTPS with a short test access lifetime.
+    required: false
+    default: "false"
 runs:
   using: composite
   steps:
+    - name: Configure browser authentication
+      if: inputs.browser-auth == 'true'
+      shell: bash
+      run: |
+        echo 'APP_ENV=ci' >> "$GITHUB_ENV"
+        echo 'CORS_ALLOWED_ORIGINS=http://localhost:3000,https://localhost:3443' >> "$GITHUB_ENV"
+        echo 'AUTH_WEB_ORIGIN=https://localhost:3443' >> "$GITHUB_ENV"
+        echo 'AUTH_API_ORIGIN=https://localhost:3443' >> "$GITHUB_ENV"
+        echo 'AUTH_TEST_ACCESS_SECONDS=75' >> "$GITHUB_ENV"
     - name: Build server images
       shell: bash
       run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml build api ${{ contains(inputs.services, 'worker-render') && 'worker-render' || '' }}
@@ -28,7 +41,9 @@ runs:
       if: inputs.web == 'true'
       shell: bash
       env:
-        NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        NEXT_PUBLIC_SITE_URL: ${{ inputs.browser-auth == 'true' && 'https://localhost:3443' || 'http://localhost:3000' }}
+        NEXT_PUBLIC_API_URL: ${{ inputs.browser-auth == 'true' && 'https://localhost:3443' || 'http://localhost:8000' }}
+        NEXT_PUBLIC_JWKS_URL: http://127.0.0.1:8000/v1/auth/jwks.json
       run: pnpm --filter @motionile/web build
     - name: Serve web app
       if: inputs.web == 'true'
@@ -36,6 +51,9 @@ runs:
       env:
         PORT: "3000"
         HOSTNAME: 127.0.0.1
+        NEXT_PUBLIC_SITE_URL: ${{ inputs.browser-auth == 'true' && 'https://localhost:3443' || 'http://localhost:3000' }}
+        NEXT_PUBLIC_API_URL: ${{ inputs.browser-auth == 'true' && 'https://localhost:3443' || 'http://localhost:8000' }}
+        NEXT_PUBLIC_JWKS_URL: http://127.0.0.1:8000/v1/auth/jwks.json
       run: |
         cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
         nohup node apps/web/.next/standalone/apps/web/server.js > web-server.log 2>&1 &
@@ -43,3 +61,11 @@ runs:
     - name: Wait for the API
       shell: bash
       run: curl --silent --fail --retry 30 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/health/ready
+    - name: Serve browser HTTPS
+      if: inputs.browser-auth == 'true'
+      shell: bash
+      run: |
+        certificate_directory="$(mktemp -d)"
+        openssl req -x509 -newkey rsa:2048 -nodes -keyout "$certificate_directory/key.pem" -out "$certificate_directory/cert.pem" -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+        nohup node tests/support/https-proxy.mjs "$certificate_directory" > https-proxy.log 2>&1 &
+        curl --insecure --silent --fail --retry 30 --retry-connrefused --retry-delay 2 https://localhost:3443/api/health

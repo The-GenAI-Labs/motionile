@@ -104,7 +104,7 @@ export const userNavigation = {
     { title: "Publications", href: "/publications", icon: Share2 },
     { title: "Skills", href: "/skills", icon: Sparkles },
     { title: "Billing", href: "/billing", icon: CreditCard },
-    { title: "Settings", href: "/settings", icon: Settings },
+    { title: "Settings", href: "/settings/security", icon: Settings },
   ],
 } as const satisfies AppNavigationArea;
 
@@ -149,6 +149,7 @@ export const authPaths = [
 export const crawlerDisallowedPaths: readonly AppPath[] = [
   adminNavigation.homeHref,
   "/api/",
+  "/settings",
   ...userAreaPaths,
   ...authPaths,
 ];

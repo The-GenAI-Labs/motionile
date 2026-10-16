@@ -16,6 +16,9 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Configure catalog revalidation
+      shell: bash
+      run: echo 'CATALOG_REVALIDATION_SECRET=motionile-ci-catalog-revalidation-secret' >> "$GITHUB_ENV"
     - name: Configure browser authentication
       if: inputs.browser-auth == 'true'
       shell: bash
@@ -34,6 +37,9 @@ runs:
     - name: Run migrations
       shell: bash
       run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml run --rm migrate
+    - name: Seed catalog
+      shell: bash
+      run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml run --rm api python -m motionile.scripts.seed_catalog
     - name: Start application services
       shell: bash
       run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml up --detach --no-build --wait --wait-timeout 180 ${{ inputs.services }}

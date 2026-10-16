@@ -59,7 +59,7 @@ A single dark monochrome theme. There is no light mode, no theme toggle and no t
 - Title template `%s · Motionile`; default title "Motionile — AI Animated Explainer Videos".
 - One unique description per page, generated from catalog data where applicable.
 - Canonical URL on every page; lowercase kebab-case slugs.
-- Public explore pages (`/explore`, `/explore/[category]`, `/explore/[category]/[topic]`) are statically generated with ISR.
+- Public explore pages (`/explore`, `/explore/[category]`, `/explore/[category]/[subcategory]`, `/explore/[category]/[subcategory]/[topic]`) are statically generated with ISR.
 - `sitemap.ts` built from the catalog; `robots.ts` blocks `/admin`, the authenticated user area and auth pages.
 - Open Graph images per page via `next/og` in the brand style.
 - JSON-LD: `Organization` and `SoftwareApplication` on the home page, `BreadcrumbList` on explore pages, `VideoObject` on public video pages.
@@ -158,7 +158,7 @@ apps/web/
 │   │   ├── (public)/
 │   │   │   ├── layout.tsx  page.tsx
 │   │   │   ├── pricing/  about/  contact/
-│   │   │   ├── explore/  [category]/  [topic]/
+│   │   │   ├── explore/  [category]/  [subcategory]/  [topic]/
 │   │   │   ├── v/[shareId]/
 │   │   │   └── legal/  terms/  privacy/  refund-policy/
 │   │   ├── (auth)/
@@ -209,12 +209,12 @@ apps/server/
 │   │   ├── bot/              turnstile.py
 │   │   ├── http/             safe_client.py
 │   │   ├── storage/          base.py  s3.py
-│   │   ├── settings_store/   service.py
 │   │   └── tasks/            app.py  registry.py
 │   ├── modules/
 │   │   ├── auth/             router.py  schemas.py  service.py  repository.py  models.py  dependencies.py  exceptions.py  verification.py  oauth/  otp/
 │   │   ├── users/
 │   │   ├── catalog/
+│   │   ├── platform/
 │   │   ├── generation/       router.py  schemas.py  service.py  repository.py  models.py  tasks.py  stream.py  estimator.py
 │   │   ├── media/            router.py  service.py  renditions.py  delivery/
 │   │   ├── voices/
@@ -309,6 +309,7 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 - Secrets never appear in logs, errors, responses or the frontend bundle.
 - Tokens and third-party credentials are stored hashed (refresh tokens, OTPs) or encrypted with AES-GCM (OAuth tokens for connectors).
 - Authorization is checked in the service layer, not only in routers. Resource lookups always include the owner.
+- Authorization resolves current roles and permissions from a Redis cache backed by Postgres. Role and permission changes invalidate the affected cache entries immediately; token role claims are display hints only.
 - Never trust client-supplied prices, amounts, roles or user IDs.
 
 ### Billing
@@ -345,7 +346,7 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 
 ### Ownership
 
-`users` owns `users` and `user_contacts`; `access` owns `roles` and `user_roles` (permissions and role permissions arrive in Phase 6); `auth` owns credentials, OAuth identities and sessions; `notifications` owns transactional email and WhatsApp delivery with no tables. Modules communicate through public interfaces and domain events.
+`users` owns users, contacts and preferences; `access` owns roles, user roles, permissions and role permissions; `auth` owns credentials, OAuth identities and sessions; `platform` owns runtime system settings and feature flags; `catalog` owns the exact category → subcategory → topic hierarchy and slug history; `notifications` owns transactional email and WhatsApp delivery with no tables. Modules communicate through public interfaces and domain events.
 
 ### Tokens and cookies
 

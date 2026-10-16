@@ -135,12 +135,19 @@ erDiagram
     categories {
         uuid id PK
         uuid parent_id FK
+        text level
         text slug
     }
     topics {
         uuid id PK
         uuid category_id FK
         text slug
+    }
+    catalog_slug_history {
+        uuid id PK
+        text entity_type
+        uuid entity_id
+        text old_path
     }
     assets {
         uuid id PK

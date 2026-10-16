@@ -72,7 +72,8 @@ Operational rules for any coding agent working in this repository. `docs/context
 
 ## Auth module ownership
 
-- `users` owns users and contacts; `access` owns roles and user roles, with permissions deferred to Phase 6.
+- `users` owns users, contacts and preferences; `access` owns roles, user roles, permissions and role permissions; `platform` owns runtime settings and feature flags; `catalog` owns categories, subcategories, topics and slug history.
+- Authorization resolves live roles and permissions through a Redis cache backed by the database. Invalidate it on role changes; access-token role claims are display hints only.
 - `auth` owns credentials, OAuth identities and sessions; `notifications` owns queued email and WhatsApp delivery and no tables.
 - Access JWT `sid` is the session family ID. Revocation denies the family for the access lifetime plus verification leeway.
 - OAuth linking starts with the CSRF-protected POST endpoint; ordinary sign-in uses the GET redirect.

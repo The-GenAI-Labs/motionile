@@ -1,6 +1,8 @@
 # Authentication
 
-Motionile serves the Phase 4 API under /v1/auth. The generated contract records response models, cookie security, rate policies, Turnstile actions, CSRF requirements and error codes. Users owns users and user_contacts; access owns roles and user_roles; auth owns credentials, oauth_identities and sessions; notifications owns delivery. Permissions arrive in Phase 6.
+Motionile serves its authentication API under /v1/auth. The generated contract records response models, cookie security, rate policies, Turnstile actions, CSRF requirements and error codes. Users owns users, user_contacts and user_preferences; access owns roles, user_roles, permissions and role_permissions; auth owns credentials, oauth_identities and sessions; notifications owns delivery.
+
+Authorization resolves effective permissions from current database assignments through a Redis cache. Role and permission mutations invalidate affected entries, so changes apply to existing sessions immediately. The access token's roles claim is a display hint and never authorizes a request.
 
 ## Request protection and cookies
 

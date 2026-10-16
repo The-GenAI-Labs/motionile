@@ -31,7 +31,7 @@ Read [`conventions.md`](conventions.md) first; this file assumes it. Diagrams li
 | Platform (core)          | `audit_log`, `idempotency_records`                                                                                                                      | 2     |
 | Identity                 | `users`, `user_contacts`, `credentials`, `oauth_identities`, `sessions`, `roles`, `user_roles`                                                          | 4     |
 | Platform (configuration) | `permissions`, `role_permissions`, `user_preferences`, `system_settings`, `feature_flags`                                                               | 6     |
-| Catalog                  | `categories`, `topics`                                                                                                                                  | 6     |
+| Catalog                  | `categories`, `topics`, `catalog_slug_history`                                                                                                          | 6     |
 | Billing                  | `products`, `billing_customers`, `orders`, `payments`, `subscriptions`, `credit_wallets`, `credit_ledger`, `usage_records`, `refunds`, `webhook_events` | 7     |
 | Media and voices         | `assets`, `voices`, `voice_consents`                                                                                                                    | 8     |
 | Generation               | `jobs`, `storyboards`, `scenes`, `job_events`, `renditions`, `share_links`, `prompt_templates`, `prompt_versions`                                       | 9     |
@@ -400,7 +400,7 @@ Module `users` · Phase 6 · Mutable · One row per user
 
 ### `system_settings`
 
-Module `core` (`motionile.core.settings_store`) · Phase 6 · Mutable
+Module `platform` · Phase 6 · Mutable
 
 Configuration tables use stable string keys as primary keys instead of UUIDs, because the key is the identity code refers to.
 
@@ -422,24 +422,26 @@ Configuration tables use stable string keys as primary keys instead of UUIDs, be
 
 ### `feature_flags`
 
-Module `core` (`motionile.core.settings_store`) · Phase 6 · Mutable
+Module `platform` · Phase 6 · Mutable
 
-| Column               | Type          | Null | Default | Notes                                    |
-| -------------------- | ------------- | ---- | ------- | ---------------------------------------- |
-| `key`                | `text`        | no   | -       | Primary key                              |
-| `description`        | `text`        | yes  | -       |                                          |
-| `enabled`            | `boolean`     | no   | `false` | Master switch                            |
-| `rollout_percentage` | `smallint`    | no   | `0`     | Stable bucketing on the user ID hash     |
-| `rules`              | `jsonb`       | no   | `'[]'`  | Ordered targeting rules (role, user IDs) |
-| `updated_by`         | `uuid`        | yes  | -       |                                          |
-| `created_at`         | `timestamptz` | no   | `now()` |                                          |
-| `updated_at`         | `timestamptz` | no   | `now()` |                                          |
+| Column               | Type          | Null | Default | Notes                                         |
+| -------------------- | ------------- | ---- | ------- | --------------------------------------------- |
+| `key`                | `text`        | no   | -       | Primary key                                   |
+| `description`        | `text`        | yes  | -       |                                               |
+| `enabled`            | `boolean`     | no   | `false` | Master switch                                 |
+| `rollout_percentage` | `smallint`    | no   | `0`     | Stable bucketing on the user ID hash          |
+| `rules`              | `jsonb`       | no   | `'[]'`  | Ordered targeting rules (role, user IDs)      |
+| `version`            | `integer`     | no   | `1`     | Optimistic concurrency; incremented on update |
+| `updated_by`         | `uuid`        | yes  | -       |                                               |
+| `created_at`         | `timestamptz` | no   | `now()` |                                               |
+| `updated_at`         | `timestamptz` | no   | `now()` |                                               |
 
 - `pk_feature_flags` primary key (`key`).
 - `fk_feature_flags_updated_by_users` → `users.id` **ON DELETE SET NULL**.
 - `ck_feature_flags_key_format`: `key ~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$'`.
 - `ck_feature_flags_rollout_percentage_range`: `rollout_percentage BETWEEN 0 AND 100`.
 - `ck_feature_flags_rules_array`: `jsonb_typeof(rules) = 'array'`.
+- `ck_feature_flags_version_positive`: `version >= 1`.
 - `ix_feature_flags_updated_by` (`updated_by`): supports the foreign key.
 
 ---
@@ -450,26 +452,31 @@ Module `core` (`motionile.core.settings_store`) · Phase 6 · Mutable
 
 Module `catalog` · Phase 6 · Mutable
 
-| Column            | Type          | Null | Default | Notes                                       |
-| ----------------- | ------------- | ---- | ------- | ------------------------------------------- |
-| `id`              | `uuid`        | no   | -       | UUIDv7                                      |
-| `parent_id`       | `uuid`        | yes  | -       | Null for top-level categories               |
-| `slug`            | `text`        | no   | -       | Lowercase kebab-case, at most 80 characters |
-| `name`            | `text`        | no   | -       | At most 80 characters                       |
-| `description`     | `text`        | yes  | -       | At most 500 characters                      |
-| `icon`            | `text`        | yes  | -       | Icon name from the UI icon set              |
-| `sort_order`      | `integer`     | no   | `0`     |                                             |
-| `is_active`       | `boolean`     | no   | `true`  | Inactive categories are hidden publicly     |
-| `seo_title`       | `text`        | yes  | -       | At most 70 characters                       |
-| `seo_description` | `text`        | yes  | -       | At most 160 characters                      |
-| `created_at`      | `timestamptz` | no   | `now()` |                                             |
-| `updated_at`      | `timestamptz` | no   | `now()` |                                             |
+| Column            | Type          | Null | Default | Notes                                         |
+| ----------------- | ------------- | ---- | ------- | --------------------------------------------- |
+| `id`              | `uuid`        | no   | -       | UUIDv7                                        |
+| `parent_id`       | `uuid`        | yes  | -       | Null for top-level categories                 |
+| `level`           | `text`        | no   | -       | `category` or `subcategory`                   |
+| `slug`            | `text`        | no   | -       | Lowercase kebab-case, at most 80 characters   |
+| `name`            | `text`        | no   | -       | At most 80 characters                         |
+| `description`     | `text`        | yes  | -       | At most 500 characters                        |
+| `icon`            | `text`        | yes  | -       | Icon name from the UI icon set                |
+| `sort_order`      | `integer`     | no   | `0`     |                                               |
+| `is_active`       | `boolean`     | no   | `true`  | Inactive categories are hidden publicly       |
+| `version`         | `integer`     | no   | `1`     | Optimistic concurrency; incremented on update |
+| `seo_title`       | `text`        | yes  | -       | At most 70 characters                         |
+| `seo_description` | `text`        | yes  | -       | At most 160 characters                        |
+| `created_at`      | `timestamptz` | no   | `now()` |                                               |
+| `updated_at`      | `timestamptz` | no   | `now()` |                                               |
 
 - `pk_categories` primary key (`id`).
 - `fk_categories_parent_id_categories` → `categories.id` **ON DELETE RESTRICT**: a category with children cannot be deleted.
 - `uq_categories_parent_id_slug` unique (`parent_id`, `slug`) **NULLS NOT DISTINCT**: slugs are unique among siblings, including top-level ones; serves explore URL resolution and supports the foreign key.
 - `ck_categories_slug_format`: `slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND char_length(slug) <= 80`.
 - `ck_categories_not_own_parent`: `parent_id IS NULL OR parent_id <> id`.
+- `ck_categories_level`: `level IN ('category', 'subcategory')`.
+- `ck_categories_level_parent`: `(level = 'category' AND parent_id IS NULL) OR (level = 'subcategory' AND parent_id IS NOT NULL)`; the service also verifies that a subcategory's parent has level `category`.
+- `ck_categories_version_positive`: `version >= 1`.
 - `ck_categories_name_length`, `ck_categories_description_length`, `ck_categories_seo_title_length`, `ck_categories_seo_description_length` enforce the limits above.
 - `ix_categories_parent_id_sort_order` (`parent_id`, `sort_order`) `WHERE is_active`: ordered public navigation.
 
@@ -477,33 +484,54 @@ Module `catalog` · Phase 6 · Mutable
 
 Module `catalog` · Phase 6 · Mutable
 
-| Column                  | Type          | Null | Default      | Notes                                                                                                                      |
-| ----------------------- | ------------- | ---- | ------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `uuid`        | no   | -            | UUIDv7                                                                                                                     |
-| `category_id`           | `uuid`        | no   | -            |                                                                                                                            |
-| `slug`                  | `text`        | no   | -            | Kebab-case, at most 120 characters                                                                                         |
-| `title`                 | `text`        | no   | -            | At most 120 characters                                                                                                     |
-| `summary`               | `text`        | yes  | -            | At most 500 characters                                                                                                     |
-| `suggested_duration_ms` | `integer`     | no   | `60000`      | 10 to 120 seconds                                                                                                          |
-| `difficulty`            | `text`        | no   | `'beginner'` | `beginner`, `intermediate`, `advanced`                                                                                     |
-| `skill_hints`           | `text[]`      | no   | `'{}'`       | Skill slugs the router should prefer                                                                                       |
-| `is_active`             | `boolean`     | no   | `true`       |                                                                                                                            |
-| `sort_order`            | `integer`     | no   | `0`          |                                                                                                                            |
-| `seo_title`             | `text`        | yes  | -            | At most 70 characters                                                                                                      |
-| `seo_description`       | `text`        | yes  | -            | At most 160 characters                                                                                                     |
-| `search_vector`         | `tsvector`    | no   | generated    | `GENERATED ALWAYS AS (to_tsvector('english', title \|\| ' ' \|\| coalesce(summary, ''))) STORED`; added for explore search |
-| `created_at`            | `timestamptz` | no   | `now()`      |                                                                                                                            |
-| `updated_at`            | `timestamptz` | no   | `now()`      |                                                                                                                            |
+| Column                  | Type          | Null | Default      | Notes                                                        |
+| ----------------------- | ------------- | ---- | ------------ | ------------------------------------------------------------ |
+| `id`                    | `uuid`        | no   | -            | UUIDv7                                                       |
+| `category_id`           | `uuid`        | no   | -            | Subcategory ID; topics cannot attach to top-level categories |
+| `slug`                  | `text`        | no   | -            | Kebab-case, at most 120 characters                           |
+| `title`                 | `text`        | no   | -            | At most 120 characters                                       |
+| `summary`               | `text`        | yes  | -            | At most 500 characters                                       |
+| `suggested_duration_ms` | `integer`     | no   | `60000`      | 10 to 120 seconds                                            |
+| `difficulty`            | `text`        | no   | `'beginner'` | `beginner`, `intermediate`, `advanced`                       |
+| `skill_hints`           | `text[]`      | no   | `'{}'`       | Skill slugs the router should prefer                         |
+| `is_active`             | `boolean`     | no   | `true`       |                                                              |
+| `sort_order`            | `integer`     | no   | `0`          |                                                              |
+| `version`               | `integer`     | no   | `1`          | Optimistic concurrency; incremented on update                |
+| `seo_title`             | `text`        | yes  | -            | At most 70 characters                                        |
+| `seo_description`       | `text`        | yes  | -            | At most 160 characters                                       |
+| `created_at`            | `timestamptz` | no   | `now()`      |                                                              |
+| `updated_at`            | `timestamptz` | no   | `now()`      |                                                              |
 
 - `pk_topics` primary key (`id`).
-- `fk_topics_category_id_categories` → `categories.id` **ON DELETE RESTRICT**.
+- `fk_topics_category_id_categories` → `categories.id` **ON DELETE RESTRICT**; the service verifies that the referenced row has level `subcategory`.
 - `uq_topics_category_id_slug` unique (`category_id`, `slug`): explore URL resolution; supports the foreign key.
 - `ck_topics_slug_format`: `slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND char_length(slug) <= 120`.
 - `ck_topics_suggested_duration_ms_range`: `suggested_duration_ms BETWEEN 10000 AND 120000`.
 - `ck_topics_difficulty`: `difficulty IN ('beginner', 'intermediate', 'advanced')`.
+- `ck_topics_version_positive`: `version >= 1`.
 - `ck_topics_title_length`, `ck_topics_summary_length`, `ck_topics_seo_title_length`, `ck_topics_seo_description_length` enforce the limits above.
 - `ix_topics_category_id_sort_order` (`category_id`, `sort_order`) `WHERE is_active`: topics of a category in display order.
-- `ix_topics_search_vector` GIN (`search_vector`): free-text topic search.
+- `ix_topics_title_trgm` GIN (`title gin_trgm_ops`) and `ix_topics_summary_trgm` GIN (`summary gin_trgm_ops`): ranked typo-tolerant topic search through `pg_trgm`.
+
+### `catalog_slug_history`
+
+Module `catalog` · Phase 6 · Append only
+
+The catalog has exactly three public levels: category → subcategory → topic. A slug change stores the complete former explore path so lookup remains independent of later ancestor renames.
+
+| Column        | Type          | Null | Default | Notes                                           |
+| ------------- | ------------- | ---- | ------- | ----------------------------------------------- |
+| `id`          | `uuid`        | no   | -       | UUIDv7                                          |
+| `entity_type` | `text`        | no   | -       | `category`, `subcategory` or `topic`            |
+| `entity_id`   | `uuid`        | no   | -       | Polymorphic catalog entity ID                   |
+| `old_path`    | `text`        | no   | -       | Complete former path beginning with `/explore/` |
+| `created_at`  | `timestamptz` | no   | `now()` |                                                 |
+
+- `pk_catalog_slug_history` primary key (`id`).
+- `uq_catalog_slug_history_old_path` unique (`old_path`): one permanent destination is resolved for a former path.
+- `ck_catalog_slug_history_entity_type`: `entity_type IN ('category', 'subcategory', 'topic')`.
+- `ck_catalog_slug_history_old_path`: `old_path ~ '^/explore/[a-z0-9]+(-[a-z0-9]+)*(?:/[a-z0-9]+(-[a-z0-9]+)*){0,2}$'`.
+- `ix_catalog_slug_history_entity` (`entity_type`, `entity_id`): history lookup while changing ancestor slugs.
 
 ---
 

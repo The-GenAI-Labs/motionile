@@ -8,7 +8,7 @@ reports_dir="${K6_REPORTS_DIR:-$load_dir/../../k6-report}"
 if [[ $# -gt 0 ]]; then
   scenarios=("$@")
 else
-  scenarios=(smoke public)
+  scenarios=(smoke public explore)
 fi
 
 mkdir -p "$reports_dir"

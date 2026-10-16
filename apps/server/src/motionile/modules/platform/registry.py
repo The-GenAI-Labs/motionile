@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from typing import cast
 
 type SettingValue = bool | int | str | list[str]
 
@@ -108,9 +109,10 @@ def validate_setting(key: str, value: object) -> SettingValue:  # noqa: PLR0912
             raise ValueError("Setting is outside its allowed range")
         return value
     if expected == "array":
-        if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        values = cast("list[object]", value) if isinstance(value, list) else None
+        if values is None or not all(isinstance(item, str) for item in values):
             raise ValueError("Setting must be an array of strings")
-        strings = list(value)
+        strings = cast("list[str]", values)
         minimum_items = schema.get("minItems")
         maximum_items = schema.get("maxItems")
         if isinstance(minimum_items, int) and len(strings) < minimum_items:
@@ -121,10 +123,16 @@ def validate_setting(key: str, value: object) -> SettingValue:  # noqa: PLR0912
             raise ValueError("Setting items must be unique")
         item_schema = schema.get("items")
         if isinstance(item_schema, dict):
-            enum = item_schema.get("enum")
-            if isinstance(enum, list) and any(item not in enum for item in strings):
+            typed_item_schema = cast("dict[str, object]", item_schema)
+            enum = typed_item_schema.get("enum")
+            enum_values = cast("list[object]", enum) if isinstance(enum, list) else None
+            if (
+                enum_values is not None
+                and all(isinstance(item, str) for item in enum_values)
+                and any(item not in cast("list[str]", enum_values) for item in strings)
+            ):
                 raise ValueError("Setting contains an unsupported item")
-            pattern = item_schema.get("pattern")
+            pattern = typed_item_schema.get("pattern")
             if isinstance(pattern, str) and any(re.fullmatch(pattern, item) is None for item in strings):
                 raise ValueError("Setting contains an invalid item")
         return strings

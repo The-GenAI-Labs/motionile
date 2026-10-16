@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
@@ -46,12 +47,23 @@ async def resolve_access(
     key = access_cache_key(redis, user_id)
     cached = await redis.get(key) if use_cache else None
     if cached is not None:
-        value = json.loads(cached)
+        value = cast("object", json.loads(cached))
         if isinstance(value, dict):
-            roles = value.get("roles")
-            permissions = value.get("permissions")
-            if isinstance(roles, list) and isinstance(permissions, list):
-                return EffectiveAccess(frozenset(map(str, roles)), frozenset(map(str, permissions)))
+            payload = cast("dict[str, object]", value)
+            roles = payload.get("roles")
+            permissions = payload.get("permissions")
+            role_values = cast("list[object]", roles) if isinstance(roles, list) else None
+            permission_values = cast("list[object]", permissions) if isinstance(permissions, list) else None
+            if (
+                role_values is not None
+                and all(isinstance(role, str) for role in role_values)
+                and permission_values is not None
+                and all(isinstance(permission, str) for permission in permission_values)
+            ):
+                return EffectiveAccess(
+                    frozenset(cast("list[str]", role_values)),
+                    frozenset(cast("list[str]", permission_values)),
+                )
     roles, permissions = await AccessRepository(session).effective_access(user_id)
     result = EffectiveAccess(frozenset(roles), frozenset(permissions))
     await redis.set(
@@ -110,8 +122,8 @@ class AccessService:
         return result
 
     async def create_role(self, actor: Principal, body: RoleCreateRequest) -> RoleResponse:
-        permissions = self._validated_permissions(body.permissions)
-        await self._ensure_actor_can_grant(actor, permissions)
+        permissions = self.validated_permissions(body.permissions)
+        await self.ensure_actor_can_grant(actor, permissions)
         try:
             role = await self.repository.create_role(body.key, body.name, body.description)
             await self.repository.replace_permissions(role.id, permissions)
@@ -125,8 +137,8 @@ class AccessService:
             raise NotFoundError(code="role_not_found")
         permissions = set(await self.repository.permission_keys(role.id))
         if body.permissions is not None:
-            permissions = self._validated_permissions(body.permissions)
-            await self._ensure_actor_can_grant(actor, permissions)
+            permissions = self.validated_permissions(body.permissions)
+            await self.ensure_actor_can_grant(actor, permissions)
             affected = await self.repository.users_with_role(role.id)
             await self.repository.replace_permissions(role.id, permissions)
             for user_id in affected:
@@ -152,7 +164,7 @@ class AccessService:
         role = await self.repository.role(role_id)
         if role is None:
             raise NotFoundError(code="role_not_found")
-        await self._ensure_actor_can_grant(actor, set(await self.repository.permission_keys(role.id)))
+        await self.ensure_actor_can_grant(actor, set(await self.repository.permission_keys(role.id)))
         await self.repository.assign_role(user_id, role_id, actor.user_id)
         invalidate_user_access_after_commit(self.session, self.redis, user_id)
 
@@ -168,13 +180,13 @@ class AccessService:
         await self.repository.remove_role(user_id, role_id)
         invalidate_user_access_after_commit(self.session, self.redis, user_id)
 
-    def _validated_permissions(self, permissions: list[str]) -> set[str]:
+    def validated_permissions(self, permissions: list[str]) -> set[str]:
         result = set(permissions)
         if len(result) != len(permissions) or not result.issubset(PERMISSION_KEYS):
             raise ValidationAppError(code="invalid_permissions")
         return result
 
-    async def _ensure_actor_can_grant(self, actor: Principal, permissions: set[str]) -> None:
+    async def ensure_actor_can_grant(self, actor: Principal, permissions: set[str]) -> None:
         if actor.user_id is None:
             raise ForbiddenError(code="permission_denied")
         access = await self.effective(actor.user_id)

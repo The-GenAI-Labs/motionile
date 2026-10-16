@@ -1,4 +1,7 @@
+from typing import cast
+
 import orjson
+from procrastinate.types import JSONValue
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.config import get_settings
@@ -32,4 +35,4 @@ async def revalidate_catalog(tags: list[str]) -> None:
 
 
 def defer_revalidation(session: AsyncSession, tags: list[str]) -> None:
-    defer_after_commit(session, revalidate_catalog, tags=tags)
+    defer_after_commit(session, revalidate_catalog, tags=cast("JSONValue", tags))

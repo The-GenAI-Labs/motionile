@@ -122,8 +122,9 @@ class CatalogRepository:
                 update(Category)
                 .where(Category.id == entity_id, Category.version == version)
                 .values(sort_order=position, version=Category.version + 1)
+                .returning(Category.id)
             )
-            count += result.rowcount
+            count += result.scalar_one_or_none() is not None
         return count
 
     async def reorder_topics(self, positions: dict[UUID, tuple[int, int]]) -> int:
@@ -133,8 +134,9 @@ class CatalogRepository:
                 update(Topic)
                 .where(Topic.id == entity_id, Topic.version == version)
                 .values(sort_order=position, version=Topic.version + 1)
+                .returning(Topic.id)
             )
-            count += result.rowcount
+            count += result.scalar_one_or_none() is not None
         return count
 
     async def paths(self) -> list[tuple[Category, Category | None, Topic | None]]:
@@ -144,6 +146,8 @@ class CatalogRepository:
         rows: list[tuple[Category, Category | None, Topic | None]] = [(category, None, None) for category in top]
         by_id = {category.id: category for category in top}
         for subcategory in subcategories:
+            if subcategory.parent_id is None:
+                continue
             parent = by_id.get(subcategory.parent_id)
             if parent is None:
                 continue

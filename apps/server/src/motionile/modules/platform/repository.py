@@ -34,6 +34,6 @@ class PlatformRepository:
 
     async def delete_flag(self, key: str, version: int) -> bool:
         result = await self.session.execute(
-            delete(FeatureFlag).where(FeatureFlag.key == key, FeatureFlag.version == version)
+            delete(FeatureFlag).where(FeatureFlag.key == key, FeatureFlag.version == version).returning(FeatureFlag.key)
         )
-        return bool(result.rowcount)
+        return result.scalar_one_or_none() is not None

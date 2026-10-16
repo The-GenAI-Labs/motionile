@@ -51,17 +51,17 @@ def test_flag_rollout_is_deterministic_and_rules_override() -> None:
     service = object.__new__(PlatformService)
     user_id = UUID("0199eb00-0000-7000-8000-000000000111")
     rollout = FeatureFlag(key="phase6", enabled=True, rollout_percentage=50, rules=[])
-    results = {service._evaluate(rollout, user_id, frozenset()) for _ in range(20)}
+    results = {service.evaluate_flag(rollout, user_id, frozenset()) for _ in range(20)}
     assert len(results) == 1
     disabled = FeatureFlag(key="disabled", enabled=False, rollout_percentage=100, rules=[])
-    assert not service._evaluate(disabled, user_id, frozenset({"admin"}))
+    assert not service.evaluate_flag(disabled, user_id, frozenset({"admin"}))
     targeted = FeatureFlag(
         key="targeted",
         enabled=True,
         rollout_percentage=0,
         rules=[{"kind": "role", "values": ["admin"]}],
     )
-    assert service._evaluate(targeted, user_id, frozenset({"admin"}))
+    assert service.evaluate_flag(targeted, user_id, frozenset({"admin"}))
 
 
 def test_catalog_seed_has_required_shape() -> None:

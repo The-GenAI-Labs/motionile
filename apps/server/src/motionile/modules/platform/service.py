@@ -57,7 +57,7 @@ class PlatformService:
                 SettingResponse(
                     key=key,
                     value=validate_setting(key, row.value if row is not None else definition.default),
-                    schema=definition.schema,
+                    schema_=definition.schema,
                     description=definition.description,
                     public=definition.public,
                     version=row.version if row is not None else 1,
@@ -84,7 +84,7 @@ class PlatformService:
         return SettingResponse(
             key=key,
             value=validated,
-            schema=definition.schema,
+            schema_=definition.schema,
             description=definition.description,
             public=definition.public,
             version=row.version,
@@ -155,12 +155,12 @@ class PlatformService:
         if cached is not None:
             return EvaluatedFlagsResponse.model_validate_json(cached)
         result = EvaluatedFlagsResponse(
-            flags={flag.key: self._evaluate(flag, user_id, roles) for flag in await self.repository.flags()}
+            flags={flag.key: self.evaluate_flag(flag, user_id, roles) for flag in await self.repository.flags()}
         )
         await self.redis.set(cache_key, result.model_dump_json(), ttl=CACHE_TTL)
         return result
 
-    def _evaluate(self, flag: FeatureFlag, user_id: UUID | None, roles: frozenset[str]) -> bool:
+    def evaluate_flag(self, flag: FeatureFlag, user_id: UUID | None, roles: frozenset[str]) -> bool:
         if not flag.enabled:
             return False
         rules = [FlagRule.model_validate(rule) for rule in flag.rules]

@@ -1,8 +1,8 @@
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, Protocol, cast
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import Table, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.modules.audit import AuditLogEntry
@@ -10,6 +10,10 @@ from motionile.modules.auth import Session
 from motionile.modules.users.models import User, UserContact, UserPreference
 
 type UserExporter = Callable[[AsyncSession, UUID], Awaitable[object]]
+
+
+class TableBacked(Protocol):
+    __table__: Table
 
 
 class ExportRegistry:
@@ -26,7 +30,8 @@ class ExportRegistry:
 
 
 def serialize(row: object) -> dict[str, Any]:
-    return {column.name: getattr(row, column.key) for column in row.__table__.columns}
+    table = cast("TableBacked", row).__table__
+    return {column.name: getattr(row, column.key) for column in table.columns}
 
 
 async def export_profile(session: AsyncSession, user_id: UUID) -> object:

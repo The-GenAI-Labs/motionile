@@ -1,8 +1,9 @@
 import json
+from collections.abc import Sequence
 from datetime import timedelta
 from uuid import UUID
 
-from pydantic import TypeAdapter
+from pydantic import BaseModel, TypeAdapter
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -347,16 +348,12 @@ class CatalogService:
         value = await self.redis.get(key)
         return TypeAdapter(model).validate_json(value) if value is not None else None
 
-    async def _cache_set(self, part: str, value: object) -> None:
+    async def _cache_set(self, part: str, value: BaseModel | Sequence[BaseModel]) -> None:
         key = self.redis.keys.key("catalog.cache", await self._generation(), part)
-        if hasattr(value, "model_dump_json"):
+        if isinstance(value, BaseModel):
             serialized = value.model_dump_json()
-        elif isinstance(value, list):
-            serialized = json.dumps(
-                [item.model_dump(mode="json") if hasattr(item, "model_dump") else item for item in value]
-            )
         else:
-            serialized = json.dumps(value)
+            serialized = json.dumps([item.model_dump(mode="json") for item in value])
         await self.redis.set(key, serialized, ttl=CACHE_TTL)
 
     def _changed(self, tags: set[str]) -> None:

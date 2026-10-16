@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterable
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
@@ -298,7 +298,7 @@ class UsersService:
         contact = next((item for item in contacts if item.kind == "email"), contacts[0] if contacts else None)
         if contact is None:
             raise ConflictError(code="verified_contact_required")
-        identifier = Identifier(contact.kind, str(contact.value))
+        identifier = Identifier(cast("Literal['email', 'phone']", contact.kind), str(contact.value))
         ticket, _, code = await self._otp().issue("delete_account", identifier, user_id)
         enqueue_notification(
             resources,
@@ -354,7 +354,7 @@ class UsersService:
     def _contact(self, contact: UserContact) -> UserContactResponse:
         return UserContactResponse(
             id=contact.id,
-            kind=contact.kind,
+            kind=cast("Literal['email', 'phone']", contact.kind),
             value=str(contact.value),
             verified=contact.verified_at is not None,
             primary=contact.is_primary,

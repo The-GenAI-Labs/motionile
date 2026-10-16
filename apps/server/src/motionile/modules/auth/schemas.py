@@ -91,6 +91,10 @@ class OAuthStartQuery(StrictModel):
     intent: Literal["login", "link"] = "login"
 
 
+class OAuthStartResponse(ResponseModel):
+    url: str
+
+
 class OAuthCallbackQuery(StrictModel):
     state: str = Field(default="", max_length=256)
     code: str = Field(default="", max_length=2048)

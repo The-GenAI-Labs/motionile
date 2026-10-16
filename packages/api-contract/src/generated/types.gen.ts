@@ -138,6 +138,30 @@ export type LoginRequest = {
 };
 
 /**
+ * OAuthStartQuery
+ */
+export type OAuthStartQuery = {
+    /**
+     * Intent
+     */
+    intent?: 'login' | 'link';
+    /**
+     * Next
+     */
+    next?: string;
+};
+
+/**
+ * OAuthStartResponse
+ */
+export type OAuthStartResponse = {
+    /**
+     * Url
+     */
+    url: string;
+};
+
+/**
  * ProblemDetails
  */
 export type ProblemDetails = {
@@ -980,6 +1004,64 @@ export type AuthOauthStartErrors = {
 };
 
 export type AuthOauthStartError = AuthOauthStartErrors[keyof AuthOauthStartErrors];
+
+export type AuthOauthStartAuthenticatedData = {
+    body: OAuthStartQuery;
+    path: {
+        /**
+         * Provider
+         */
+        provider: 'google' | 'github' | 'microsoft';
+    };
+    query?: never;
+    url: '/v1/auth/oauth/{provider}/start';
+};
+
+export type AuthOauthStartAuthenticatedErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AuthOauthStartAuthenticatedError = AuthOauthStartAuthenticatedErrors[keyof AuthOauthStartAuthenticatedErrors];
+
+export type AuthOauthStartAuthenticatedResponses = {
+    /**
+     * Successful Response
+     */
+    200: OAuthStartResponse;
+};
+
+export type AuthOauthStartAuthenticatedResponse = AuthOauthStartAuthenticatedResponses[keyof AuthOauthStartAuthenticatedResponses];
 
 export type AuthRequestOtpData = {
     body: IdentifierRequest;

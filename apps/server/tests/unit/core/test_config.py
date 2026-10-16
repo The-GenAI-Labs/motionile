@@ -38,6 +38,24 @@ def test_defaults_target_local_development() -> None:
     assert settings.test_routes_enabled
 
 
+@pytest.mark.parametrize("environment", [AppEnv.LOCAL, AppEnv.CI])
+def test_short_access_lifetime_is_available_for_fake_browser_tests(environment: AppEnv) -> None:
+    settings = Settings(app=AppSettings(env=environment), auth=AuthSettings(test_access_seconds=75))
+    assert settings.auth.access_seconds == 75
+    assert AuthSettings().access_seconds == 900
+
+
+@pytest.mark.parametrize("environment", [AppEnv.STAGING, AppEnv.PRODUCTION])
+def test_short_access_lifetime_is_rejected_when_deployed(environment: AppEnv) -> None:
+    with pytest.raises(ValidationError, match="AUTH_TEST_ACCESS_SECONDS"):
+        Settings(app=AppSettings(env=environment), auth=AuthSettings(test_access_seconds=75))
+
+
+def test_short_access_lifetime_is_rejected_with_live_providers() -> None:
+    with pytest.raises(ValidationError, match="AUTH_TEST_ACCESS_SECONDS"):
+        Settings(app=AppSettings(providers_mode=ProvidersMode.LIVE), auth=AuthSettings(test_access_seconds=75))
+
+
 def test_reads_grouped_values_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("APP_ENV", "ci")
     monkeypatch.setenv("LOG_LEVEL", "DEBUG")

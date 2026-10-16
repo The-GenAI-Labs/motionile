@@ -7,7 +7,7 @@ from motionile.core.errors import ConflictError, ForbiddenError, NotFoundError, 
 from motionile.core.ids import new_id
 from motionile.core.pagination import Cursor, build_page
 from motionile.core.ratelimit.limiter import RateLimitIdentity
-from motionile.core.security.cookies import ACCESS_SECONDS, SessionCookies
+from motionile.core.security.cookies import SessionCookies
 from motionile.core.security.identifiers import Identifier, normalize_identifier
 from motionile.core.security.rbac import Principal, PrincipalKind
 from motionile.core.security.tokens import random_token, token_hash
@@ -221,7 +221,8 @@ class AuthService:
             access=self.runtime.tokens.issue(row.user_id, row.family_id, roles),
             refresh=refresh,
             csrf=self.runtime.csrf.issue(row.family_id),
-            expires_at=now + timedelta(seconds=ACCESS_SECONDS),
+            expires_at=now + timedelta(seconds=self.resources.settings.auth.access_seconds),
+            access_max_age=self.resources.settings.auth.access_seconds,
             refresh_max_age=max(0, int((row.idle_expires_at - now).total_seconds())),
         )
 

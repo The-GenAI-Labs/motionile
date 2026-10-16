@@ -75,6 +75,7 @@ Operational rules for any coding agent working in this repository. `docs/context
 - `users` owns users and contacts; `access` owns roles and user roles, with permissions deferred to Phase 6.
 - `auth` owns credentials, OAuth identities and sessions; `notifications` owns queued email and WhatsApp delivery and no tables.
 - Access JWT `sid` is the session family ID. Revocation denies the family for the access lifetime plus verification leeway.
+- OAuth linking starts with the CSRF-protected POST endpoint; ordinary sign-in uses the GET redirect.
 - Password reset uses OTP and a verification ticket. Refresh requires family-bound CSRF; OAuth uses a separate ten-minute Lax binding cookie.
 - Notifications carry encrypted queue payloads, use after-commit enqueueing, and never log codes or destinations. SES v2 is the additional instance-role AWS SDK adapter.
 

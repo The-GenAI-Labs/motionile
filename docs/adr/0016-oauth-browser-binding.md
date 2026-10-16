@@ -11,3 +11,5 @@ OAuth uses an additional host-only cookie, __Secure-mo_oauth, with HttpOnly, Sec
 ## Consequences
 
 The Strict verification ticket cannot accompany an external provider's top-level callback. A separate Lax cookie supports that callback without relaxing OTP or refresh cookies. This prevents login CSRF through attacker-generated authorization states. Callback URLs always use the configured web origin and validated relative paths. Provider failures redirect to a fixed login error URL.
+
+Browser account linking uses a CSRF-protected POST start endpoint returning the authorization URL, because a navigation link cannot attach the required CSRF header. GET start retains the redirect flow for provider sign-in.

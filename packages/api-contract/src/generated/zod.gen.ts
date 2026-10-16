@@ -80,6 +80,21 @@ export const zLoginRequest = z.object({
 });
 
 /**
+ * OAuthStartQuery
+ */
+export const zOAuthStartQuery = z.object({
+    intent: z.enum(['login', 'link']).optional().default('login'),
+    next: z.string().max(1024).optional().default('/dashboard')
+});
+
+/**
+ * OAuthStartResponse
+ */
+export const zOAuthStartResponse = z.object({
+    url: z.string()
+});
+
+/**
  * ProblemDetails
  */
 export const zProblemDetails = z.object({
@@ -308,6 +323,21 @@ export const zAuthOauthStartQuery = z.object({
     next: z.string().max(1024).optional().default('/dashboard'),
     intent: z.enum(['login', 'link']).optional().default('login')
 });
+
+export const zAuthOauthStartAuthenticatedBody = zOAuthStartQuery;
+
+export const zAuthOauthStartAuthenticatedPath = z.object({
+    provider: z.enum([
+        'google',
+        'github',
+        'microsoft'
+    ])
+});
+
+/**
+ * Successful Response
+ */
+export const zAuthOauthStartAuthenticatedResponse = zOAuthStartResponse;
 
 export const zAuthRequestOtpBody = zIdentifierRequest;
 

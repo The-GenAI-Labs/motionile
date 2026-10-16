@@ -15,7 +15,7 @@ def test_every_auth_operation_declares_protections(auth_service: AuthService) ->
         if path.startswith("/v1/auth/")
         for operation in methods.values()
     ]
-    assert len(operations) == 21
+    assert len(operations) == 22
     for operation in operations:
         assert operation["x-rate-limit-policy"]
         assert operation["x-csrf-protection"] in {"origin", "session", "refresh", "link", "none"}

@@ -358,6 +358,7 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 | `mo_csrf` | CSRF token, HMAC-bound to the session | `Domain=.<root>`, Secure, SameSite=Lax, readable by JS | Session |
 | `mo_auth` | Access token expiry timestamp only (a hint, not a secret) | `Domain=.<root>`, Secure, SameSite=Lax, readable by JS | Matches the access token |
 
+- Local/CI fake-provider tests may shorten access lifetime with `AUTH_TEST_ACCESS_SECONDS`; deployed environments reject it.
 - The Next.js server verifies the access JWT with the API's public key from `/v1/auth/jwks.json`.
 - Every refresh rotates the refresh token. The successor's idle expiry is `min(now + 7 days, absolute_expires_at)`.
 - Presenting an already-rotated refresh token outside a 10-second grace window revokes the whole session family.
@@ -384,6 +385,7 @@ Password login uses argon2id and a dummy verification for unknown accounts. Ten 
 - On `401 token_expired`, one shared refresh, then retry the original request once.
 - The refresh request never triggers another refresh.
 - If refresh fails, the session-expiry handler runs once: clear the query cache and redirect to `/login?next=<relative path>&reason=expired`.
+- OAuth linking starts with a CSRF-protected POST returning the authorization URL; ordinary sign-in uses GET redirects.
 - Server guard in `(user)/layout.tsx`: valid JWT renders; expired JWT with the hint cookie redirects to `/refresh?next=`; `/refresh` attempts exactly one refresh and falls back to `/login`, never looping.
 
 ### Request protection

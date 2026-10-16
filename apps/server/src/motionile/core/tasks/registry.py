@@ -10,7 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.db import after_commit
 
-TASK_MODULES: tuple[str, ...] = ("motionile.core.events", "motionile.modules.notifications.tasks")
+TASK_MODULES: tuple[str, ...] = (
+    "motionile.core.events",
+    "motionile.modules.catalog.tasks",
+    "motionile.modules.notifications.tasks",
+    "motionile.modules.users.tasks",
+)
 
 logger = structlog.get_logger(__name__)
 blueprint = Blueprint()

@@ -1,0 +1,69 @@
+from collections.abc import Awaitable, Callable
+from typing import Any
+from uuid import UUID
+
+from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from motionile.modules.audit import AuditLogEntry
+from motionile.modules.auth import Session
+from motionile.modules.users.models import User, UserContact, UserPreference
+
+type UserExporter = Callable[[AsyncSession, UUID], Awaitable[object]]
+
+
+class ExportRegistry:
+    def __init__(self) -> None:
+        self._exporters: dict[str, UserExporter] = {}
+
+    def register(self, name: str, exporter: UserExporter) -> None:
+        if name in self._exporters:
+            raise ValueError(f"exporter {name!r} already exists")
+        self._exporters[name] = exporter
+
+    async def export(self, session: AsyncSession, user_id: UUID) -> dict[str, object]:
+        return {name: await exporter(session, user_id) for name, exporter in self._exporters.items()}
+
+
+def serialize(row: object) -> dict[str, Any]:
+    return {column.name: getattr(row, column.key) for column in row.__table__.columns}
+
+
+async def export_profile(session: AsyncSession, user_id: UUID) -> object:
+    row = await session.get(User, user_id)
+    return serialize(row) if row is not None else None
+
+
+async def export_contacts(session: AsyncSession, user_id: UUID) -> object:
+    rows = await session.scalars(select(UserContact).where(UserContact.user_id == user_id))
+    return [serialize(row) for row in rows]
+
+
+async def export_preferences(session: AsyncSession, user_id: UUID) -> object:
+    row = await session.get(UserPreference, user_id)
+    return serialize(row) if row is not None else None
+
+
+async def export_sessions(session: AsyncSession, user_id: UUID) -> object:
+    rows = await session.scalars(select(Session).where(Session.user_id == user_id))
+    result = [serialize(row) for row in rows]
+    for item in result:
+        item.pop("token_hash", None)
+    return result
+
+
+async def export_audit(session: AsyncSession, user_id: UUID) -> object:
+    rows = await session.scalars(
+        select(AuditLogEntry).where(
+            or_(AuditLogEntry.actor_user_id == user_id, AuditLogEntry.target_id == str(user_id))
+        )
+    )
+    return [serialize(row) for row in rows]
+
+
+registry = ExportRegistry()
+registry.register("profile", export_profile)
+registry.register("contacts", export_contacts)
+registry.register("preferences", export_preferences)
+registry.register("sessions", export_sessions)
+registry.register("audit", export_audit)

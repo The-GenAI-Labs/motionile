@@ -44,6 +44,12 @@ class InMemoryStorage:
         validate_key(key)
         self.objects.pop(key, None)
 
+    async def delete_prefix(self, prefix: str) -> None:
+        validate_key(prefix.rstrip("/"))
+        for key in list(self.objects):
+            if key.startswith(prefix):
+                del self.objects[key]
+
     async def exists(self, key: str) -> bool:
         return await self.head(key) is not None
 

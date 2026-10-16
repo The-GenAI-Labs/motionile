@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import timedelta
+from urllib.parse import urlsplit
 
 from redis.asyncio import Redis
 
@@ -65,6 +66,11 @@ def build_resources(settings: Settings, *, application_name: str, clock: Clock |
     keys = RedisKeyBuilder(settings.redis.key_prefix)
     http_client = SafeHttpClient(settings.outbound_http)
     turnstile_client = SafeHttpClient(settings.outbound_http, allowed_hosts=TURNSTILE_HOSTS)
+    web_origin = settings.auth.web_origin.rstrip("/")
+    web_host = urlsplit(web_origin).hostname
+    if web_host is None:
+        raise ValueError("AUTH_WEB_ORIGIN requires a host")
+    web_test_origins = (web_origin,) if settings.is_local or settings.test_routes_enabled else ()
     return Resources(
         settings=settings,
         clock=resolved_clock,
@@ -98,5 +104,10 @@ def build_resources(settings: Settings, *, application_name: str, clock: Clock |
             ),
             "github": SafeHttpClient(settings.outbound_http, allowed_hosts=("github.com", "api.github.com")),
             "microsoft": SafeHttpClient(settings.outbound_http, allowed_hosts=("login.microsoftonline.com",)),
+            "catalog_revalidation": SafeHttpClient(
+                settings.outbound_http,
+                allowed_hosts=(web_host,),
+                insecure_test_origins=web_test_origins,
+            ),
         },
     )

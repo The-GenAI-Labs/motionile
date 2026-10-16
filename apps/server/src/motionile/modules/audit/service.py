@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.errors import request_id_of
 from motionile.core.logging import redact
+from motionile.modules.audit.models import AuditLogEntry
 from motionile.modules.audit.repository import AuditRepository
 from motionile.modules.audit.schemas import AuditContext, AuditEvent
 
@@ -32,3 +33,7 @@ async def record(session: AsyncSession, event: AuditEvent, context: AuditContext
     sanitized = event.model_copy(update={"metadata": redact(event.metadata)})
     entry = await AuditRepository(session).insert(sanitized, context or AuditContext())
     return entry.id
+
+
+async def recent_for_user(session: AsyncSession, user_id: UUID, limit: int = 20) -> list[AuditLogEntry]:
+    return await AuditRepository(session).recent_for_user(user_id, limit)

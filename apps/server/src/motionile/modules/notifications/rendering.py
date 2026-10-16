@@ -18,6 +18,11 @@ TEMPLATES: dict[TemplateName, tuple[str, str]] = {
         "Password sign-in temporarily locked",
         "Repeated failed password attempts temporarily locked password sign-in. You can still sign in using an OTP.",
     ),
+    "contact_verification": ("Verify your contact", "Use this code to verify your new Motionile contact."),
+    "contact_changed": ("Contact details changed", "Your Motionile contact details were changed."),
+    "account_deletion": ("Confirm account deletion", "Use this code to confirm deletion of your Motionile account."),
+    "account_restored": ("Account restored", "Your Motionile account was restored."),
+    "data_export_ready": ("Your data export is ready", "Your Motionile data export is ready for 24 hours."),
 }
 ENVIRONMENT = Environment(
     loader=FileSystemLoader(Path(__file__).with_name("templates")),
@@ -28,7 +33,7 @@ ENVIRONMENT = Environment(
 
 def render_email(notification: Notification) -> RenderedEmail:
     subject, message = TEMPLATES[notification.template]
-    values = {"subject": subject, "message": message, "code": notification.code}
+    values = {"subject": subject, "message": message, "code": notification.code, "link": notification.link}
     return RenderedEmail(
         subject=f"{subject} · Motionile",
         html=ENVIRONMENT.get_template("message.html.jinja").render(values),

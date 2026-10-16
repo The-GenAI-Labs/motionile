@@ -108,6 +108,21 @@ class S3Storage:
         validate_key(key)
         await asyncio.to_thread(self.client.delete_object, Bucket=self.bucket, Key=key)
 
+    async def delete_prefix(self, prefix: str) -> None:
+        validate_key(prefix.rstrip("/"))
+        continuation: str | None = None
+        while True:
+            arguments: dict[str, object] = {"Bucket": self.bucket, "Prefix": prefix}
+            if continuation is not None:
+                arguments["ContinuationToken"] = continuation
+            response = await asyncio.to_thread(self.client.list_objects_v2, **arguments)
+            keys = [{"Key": item["Key"]} for item in response.get("Contents", [])]
+            if keys:
+                await asyncio.to_thread(self.client.delete_objects, Bucket=self.bucket, Delete={"Objects": keys})
+            if not response.get("IsTruncated"):
+                return
+            continuation = str(response["NextContinuationToken"])
+
     async def head(self, key: str) -> ObjectInfo | None:
         validate_key(key)
         try:

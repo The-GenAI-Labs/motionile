@@ -6,6 +6,7 @@ from motionile.core.config import (
     AppEnv,
     AppSettings,
     AuthSettings,
+    CatalogSettings,
     CorsSettings,
     DatabaseSettings,
     EncryptionSettings,
@@ -54,6 +55,7 @@ def deployed_settings(env: AppEnv = AppEnv.PRODUCTION) -> Settings:
             microsoft_client_id="microsoft",
             microsoft_client_secret=STRONG_SECRET,
         ),
+        catalog=CatalogSettings(revalidation_secret=STRONG_SECRET),
         notifications=NotificationSettings(
             email_backend="ses",
             sender="hello@motionile.com",

@@ -58,3 +58,25 @@ class UserContact(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     value: Mapped[str] = mapped_column(CITEXT())
     verified_at: Mapped[datetime | None]
     is_primary: Mapped[bool] = mapped_column(server_default=text("false"))
+
+
+class UserPreference(TimestampMixin, Base):
+    __tablename__ = "user_preferences"
+    __table_args__ = (
+        CheckConstraint("pace IN ('slow', 'normal', 'fast')", name="pace"),
+        CheckConstraint("depth IN ('overview', 'standard', 'deep')", name="depth"),
+        CheckConstraint("default_aspect IN ('16:9', '9:16', '1:1')", name="default_aspect"),
+        CheckConstraint("language ~ '^[a-z]{2,3}(-[A-Z]{2})?$'", name="language_format"),
+        CheckConstraint(
+            "default_style IS NULL OR default_style ~ '^[a-z0-9]+(-[a-z0-9]+)*$'", name="default_style_format"
+        ),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    default_style: Mapped[str | None]
+    pace: Mapped[str] = mapped_column(server_default="normal")
+    language: Mapped[str] = mapped_column(server_default="en")
+    depth: Mapped[str] = mapped_column(server_default="standard")
+    default_voice_id: Mapped[UUID | None]
+    default_aspect: Mapped[str] = mapped_column(server_default="16:9")
+    captions_enabled: Mapped[bool] = mapped_column(server_default=text("true"))

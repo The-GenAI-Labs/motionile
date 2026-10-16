@@ -10,6 +10,7 @@ from motionile.core.config import (
     AppEnv,
     AppSettings,
     AuthSettings,
+    CatalogSettings,
     CorsSettings,
     DatabaseSettings,
     EncryptionSettings,
@@ -117,6 +118,11 @@ def test_short_pagination_secret_is_rejected() -> None:
         SecuritySettings(pagination_secret=SecretStr("short"))
 
 
+def test_short_catalog_revalidation_secret_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="at least 32"):
+        CatalogSettings(revalidation_secret=SecretStr("short"))
+
+
 @pytest.mark.parametrize("key", ["not-base64!", base64.b64encode(b"too-short").decode()])
 def test_invalid_encryption_keys_are_rejected(key: str) -> None:
     with pytest.raises(ValidationError):
@@ -159,6 +165,7 @@ def test_deployed_environments_reject_unsafe_defaults(env: AppEnv) -> None:
         "SECURITY_PAGINATION_SECRET must be set",
         "ENCRYPTION_KEYS must be set",
         "TURNSTILE_SECRET_KEY must be set",
+        "CATALOG_REVALIDATION_SECRET must be set",
         "STORAGE_BUCKET must be set",
     ):
         assert problem in message
@@ -191,7 +198,13 @@ def test_get_settings_is_cached() -> None:
 
 
 def test_blank_secrets_from_env_files_are_treated_as_unset(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ("SECURITY_PAGINATION_SECRET", "TURNSTILE_SECRET_KEY", "STORAGE_ACCESS_KEY_ID", "STORAGE_ENDPOINT_URL"):
+    for name in (
+        "SECURITY_PAGINATION_SECRET",
+        "TURNSTILE_SECRET_KEY",
+        "STORAGE_ACCESS_KEY_ID",
+        "STORAGE_ENDPOINT_URL",
+        "CATALOG_REVALIDATION_SECRET",
+    ):
         monkeypatch.setenv(name, "  ")
 
     settings = Settings()
@@ -200,6 +213,7 @@ def test_blank_secrets_from_env_files_are_treated_as_unset(monkeypatch: pytest.M
     assert settings.turnstile.secret_key is None
     assert settings.storage.access_key_id is None
     assert settings.storage.endpoint_url is None
+    assert settings.catalog.revalidation_secret is None
 
 
 def test_asyncpg_urls_translate_libpq_parameters() -> None:

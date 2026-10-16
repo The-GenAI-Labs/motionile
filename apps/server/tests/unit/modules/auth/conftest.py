@@ -13,6 +13,7 @@ from motionile.core.clock import FrozenClock
 from motionile.core.events import EventBus
 from motionile.core.redis import RedisStore
 from motionile.core.resources import Resources
+from motionile.modules.access import EffectiveAccess
 from motionile.modules.audit import AuditContext, AuditEvent
 from motionile.modules.auth import service as service_module
 from motionile.modules.auth.oauth import service as oauth_service_module
@@ -27,6 +28,13 @@ async def fake_assign(session: AsyncSession, user_id: UUID) -> None:
 
 async def fake_roles(session: AsyncSession, user_id: UUID) -> list[str]:
     return state_of(session).roles.get(user_id, [])
+
+
+async def fake_access(
+    session: AsyncSession, redis_store: RedisStore, user_id: UUID, *, use_cache: bool = True
+) -> EffectiveAccess:
+    del redis_store, use_cache
+    return EffectiveAccess(frozenset(state_of(session).roles.get(user_id, [])), frozenset())
 
 
 async def fake_audit(session: AsyncSession, event: AuditEvent, context: AuditContext | None = None) -> UUID:
@@ -56,6 +64,7 @@ async def auth_service(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[AuthSer
         monkeypatch.setattr(module, "UsersService", FakeUsersService)
         monkeypatch.setattr(module, "assign_default_role", fake_assign)
     monkeypatch.setattr(service_module, "roles_for_user", fake_roles)
+    monkeypatch.setattr(service_module, "resolve_access", fake_access)
     monkeypatch.setattr(service_module, "record", fake_audit)
     monkeypatch.setattr(service_module, "enqueue_notification", fake_enqueue)
     service = AuthService(

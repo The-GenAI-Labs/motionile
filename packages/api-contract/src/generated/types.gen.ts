@@ -5,6 +5,645 @@ export type ClientOptions = {
 };
 
 /**
+ * AccessCatalogResponse
+ */
+export type AccessCatalogResponse = {
+    /**
+     * Permissions
+     */
+    permissions: Array<PermissionResponse>;
+    /**
+     * Roles
+     */
+    roles: Array<RoleResponse>;
+};
+
+/**
+ * AccountDeletionConfirmRequest
+ */
+export type AccountDeletionConfirmRequest = {
+    /**
+     * Challengetoken
+     */
+    challengeToken: string;
+    /**
+     * Code
+     */
+    code: string;
+};
+
+/**
+ * AdminCatalogTreeResponse
+ */
+export type AdminCatalogTreeResponse = {
+    /**
+     * Categories
+     */
+    categories: Array<CategoryTreeItem>;
+    /**
+     * Topics
+     */
+    topics: Array<CatalogTopicResponse>;
+};
+
+/**
+ * AdminUserAuditEntry
+ */
+export type AdminUserAuditEntry = {
+    /**
+     * Action
+     */
+    action: string;
+    /**
+     * Actortype
+     */
+    actorType: string;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Targetid
+     */
+    targetId: string | null;
+    /**
+     * Targettype
+     */
+    targetType: string | null;
+};
+
+/**
+ * AdminUserDetailResponse
+ */
+export type AdminUserDetailResponse = {
+    /**
+     * Activesessioncount
+     */
+    activeSessionCount: number;
+    /**
+     * Avatarurl
+     */
+    avatarUrl: string | null;
+    /**
+     * Contacts
+     */
+    contacts: Array<UserContactResponse>;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Locale
+     */
+    locale: string;
+    /**
+     * Name
+     */
+    name: string | null;
+    /**
+     * Recentaudit
+     */
+    recentAudit: Array<AdminUserAuditEntry>;
+    /**
+     * Roles
+     */
+    roles: Array<string>;
+    /**
+     * Status
+     */
+    status: string;
+};
+
+/**
+ * AdminUserListResponse
+ */
+export type AdminUserListResponse = {
+    /**
+     * Items
+     */
+    items: Array<AdminUserSummary>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AdminUserSummary
+ */
+export type AdminUserSummary = {
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string | null;
+    /**
+     * Primarycontact
+     */
+    primaryContact: string | null;
+    /**
+     * Roles
+     */
+    roles: Array<string>;
+    /**
+     * Status
+     */
+    status: string;
+};
+
+/**
+ * AnalyticsResponse
+ */
+export type AnalyticsResponse = {
+    /**
+     * Activesessions
+     */
+    activeSessions: number;
+    /**
+     * Newusers
+     */
+    newUsers: Array<DailyUsers>;
+    /**
+     * Signinmethods
+     */
+    signInMethods: {
+        [key: string]: number;
+    };
+    /**
+     * Totalusers
+     */
+    totalUsers: number;
+    /**
+     * Verifiedratio
+     */
+    verifiedRatio: number;
+};
+
+/**
+ * AuditEntryResponse
+ */
+export type AuditEntryResponse = {
+    /**
+     * Action
+     */
+    action: string;
+    /**
+     * Actortype
+     */
+    actorType: string;
+    /**
+     * Actoruserid
+     */
+    actorUserId: string | null;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Ip
+     */
+    ip: string | null;
+    /**
+     * Metadata
+     */
+    metadata: {
+        [key: string]: unknown;
+    };
+    /**
+     * Requestid
+     */
+    requestId: string | null;
+    /**
+     * Targetid
+     */
+    targetId: string | null;
+    /**
+     * Targettype
+     */
+    targetType: string | null;
+    /**
+     * Useragent
+     */
+    userAgent: string | null;
+};
+
+/**
+ * AuditListResponse
+ */
+export type AuditListResponse = {
+    /**
+     * Items
+     */
+    items: Array<AuditEntryResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AvatarResponse
+ */
+export type AvatarResponse = {
+    /**
+     * Url
+     */
+    url: string;
+};
+
+/**
+ * Body_users_upload_avatar
+ */
+export type BodyUsersUploadAvatar = {
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
+ * CatalogCategoryResponse
+ */
+export type CatalogCategoryResponse = {
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Description
+     */
+    description: string | null;
+    /**
+     * Icon
+     */
+    icon: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Isactive
+     */
+    isActive: boolean;
+    /**
+     * Level
+     */
+    level: 'category' | 'subcategory';
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Parentid
+     */
+    parentId: string | null;
+    /**
+     * Seodescription
+     */
+    seoDescription: string | null;
+    /**
+     * Seotitle
+     */
+    seoTitle: string | null;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Sortorder
+     */
+    sortOrder: number;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * CatalogPathResponse
+ */
+export type CatalogPathResponse = {
+    /**
+     * Lastmodified
+     */
+    lastModified: string;
+    /**
+     * Path
+     */
+    path: string;
+};
+
+/**
+ * CatalogPathsResponse
+ */
+export type CatalogPathsResponse = {
+    /**
+     * Items
+     */
+    items: Array<CatalogPathResponse>;
+};
+
+/**
+ * CatalogRedirectResponse
+ */
+export type CatalogRedirectResponse = {
+    /**
+     * Destination
+     */
+    destination: string;
+};
+
+/**
+ * CatalogReorderRequest
+ */
+export type CatalogReorderRequest = {
+    /**
+     * Entitytype
+     */
+    entityType: 'category' | 'topic';
+    /**
+     * Items
+     */
+    items: Array<ReorderItem>;
+};
+
+/**
+ * CatalogTopicResponse
+ */
+export type CatalogTopicResponse = {
+    /**
+     * Categoryid
+     */
+    categoryId: string;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Difficulty
+     */
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Isactive
+     */
+    isActive: boolean;
+    /**
+     * Seodescription
+     */
+    seoDescription: string | null;
+    /**
+     * Seotitle
+     */
+    seoTitle: string | null;
+    /**
+     * Skillhints
+     */
+    skillHints: Array<string>;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Sortorder
+     */
+    sortOrder: number;
+    /**
+     * Suggesteddurationms
+     */
+    suggestedDurationMs: number;
+    /**
+     * Summary
+     */
+    summary: string | null;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * CatalogTreeResponse
+ */
+export type CatalogTreeResponse = {
+    /**
+     * Categories
+     */
+    categories: Array<CategoryTreeItem>;
+};
+
+/**
+ * CategoryDetailResponse
+ */
+export type CategoryDetailResponse = {
+    category: CatalogCategoryResponse;
+    /**
+     * Subcategories
+     */
+    subcategories: Array<CatalogCategoryResponse>;
+};
+
+/**
+ * CategoryTreeItem
+ */
+export type CategoryTreeItem = {
+    /**
+     * Children
+     */
+    children: Array<CatalogCategoryResponse>;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Description
+     */
+    description: string | null;
+    /**
+     * Icon
+     */
+    icon: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Isactive
+     */
+    isActive: boolean;
+    /**
+     * Level
+     */
+    level: 'category' | 'subcategory';
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Parentid
+     */
+    parentId: string | null;
+    /**
+     * Seodescription
+     */
+    seoDescription: string | null;
+    /**
+     * Seotitle
+     */
+    seoTitle: string | null;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Sortorder
+     */
+    sortOrder: number;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * CategoryUpdateRequest
+ */
+export type CategoryUpdateRequest = {
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Icon
+     */
+    icon?: string | null;
+    /**
+     * Isactive
+     */
+    isActive?: boolean;
+    /**
+     * Level
+     */
+    level: 'category' | 'subcategory';
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Parentid
+     */
+    parentId?: string | null;
+    /**
+     * Seodescription
+     */
+    seoDescription?: string | null;
+    /**
+     * Seotitle
+     */
+    seoTitle?: string | null;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Sortorder
+     */
+    sortOrder?: number;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * CategoryWriteRequest
+ */
+export type CategoryWriteRequest = {
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Icon
+     */
+    icon?: string | null;
+    /**
+     * Isactive
+     */
+    isActive?: boolean;
+    /**
+     * Level
+     */
+    level: 'category' | 'subcategory';
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Parentid
+     */
+    parentId?: string | null;
+    /**
+     * Seodescription
+     */
+    seoDescription?: string | null;
+    /**
+     * Seotitle
+     */
+    seoTitle?: string | null;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Sortorder
+     */
+    sortOrder?: number;
+};
+
+/**
  * ChallengeResponse
  */
 export type ChallengeResponse = {
@@ -51,6 +690,42 @@ export type CodeRequest = {
 };
 
 /**
+ * ContactAddRequest
+ */
+export type ContactAddRequest = {
+    /**
+     * Identifier
+     */
+    identifier: string;
+};
+
+/**
+ * ContactChallengeResponse
+ */
+export type ContactChallengeResponse = {
+    /**
+     * Challengetoken
+     */
+    challengeToken: string;
+    /**
+     * Channel
+     */
+    channel: 'email' | 'whatsapp';
+    /**
+     * Destination
+     */
+    destination: string;
+    /**
+     * Expiresin
+     */
+    expiresIn?: number;
+    /**
+     * Resendafter
+     */
+    resendAfter?: number;
+};
+
+/**
  * ContactResponse
  */
 export type ContactResponse = {
@@ -73,9 +748,171 @@ export type ContactResponse = {
 };
 
 /**
+ * ContactVerifyRequest
+ */
+export type ContactVerifyRequest = {
+    /**
+     * Challengetoken
+     */
+    challengeToken: string;
+    /**
+     * Code
+     */
+    code: string;
+};
+
+/**
+ * CursorPage[CatalogTopicResponse]
+ */
+export type CursorPageCatalogTopicResponse = {
+    /**
+     * Items
+     */
+    items: Array<CatalogTopicResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * DailyUsers
+ */
+export type DailyUsers = {
+    /**
+     * Count
+     */
+    count: number;
+    /**
+     * Date
+     */
+    date: string;
+};
+
+/**
  * DependencyStatus
  */
 export type DependencyStatus = 'ok' | 'unavailable';
+
+/**
+ * EvaluatedFlagsResponse
+ */
+export type EvaluatedFlagsResponse = {
+    /**
+     * Flags
+     */
+    flags: {
+        [key: string]: boolean;
+    };
+};
+
+/**
+ * ExportResponse
+ */
+export type ExportResponse = {
+    /**
+     * Status
+     */
+    status?: 'queued';
+};
+
+/**
+ * FeatureFlagDeleteRequest
+ */
+export type FeatureFlagDeleteRequest = {
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * FeatureFlagResponse
+ */
+export type FeatureFlagResponse = {
+    /**
+     * Description
+     */
+    description: string | null;
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Rolloutpercentage
+     */
+    rolloutPercentage: number;
+    /**
+     * Rules
+     */
+    rules: Array<FlagRule>;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * FeatureFlagUpdateRequest
+ */
+export type FeatureFlagUpdateRequest = {
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+    /**
+     * Rolloutpercentage
+     */
+    rolloutPercentage: number;
+    /**
+     * Rules
+     */
+    rules?: Array<FlagRule>;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * FeatureFlagWriteRequest
+ */
+export type FeatureFlagWriteRequest = {
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Enabled
+     */
+    enabled?: boolean;
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Rolloutpercentage
+     */
+    rolloutPercentage?: number;
+    /**
+     * Rules
+     */
+    rules?: Array<FlagRule>;
+};
 
 /**
  * FieldError
@@ -93,6 +930,20 @@ export type FieldError = {
      * Type
      */
     type: string;
+};
+
+/**
+ * FlagRule
+ */
+export type FlagRule = {
+    /**
+     * Kind
+     */
+    kind: 'user' | 'role';
+    /**
+     * Values
+     */
+    values: Array<string>;
 };
 
 /**
@@ -162,6 +1013,20 @@ export type OAuthStartResponse = {
 };
 
 /**
+ * PermissionResponse
+ */
+export type PermissionResponse = {
+    /**
+     * Description
+     */
+    description: string | null;
+    /**
+     * Key
+     */
+    key: string;
+};
+
+/**
  * ProblemDetails
  */
 export type ProblemDetails = {
@@ -197,6 +1062,18 @@ export type ProblemDetails = {
      * Type
      */
     readonly type: string;
+};
+
+/**
+ * PublicSettingsResponse
+ */
+export type PublicSettingsResponse = {
+    /**
+     * Settings
+     */
+    settings: {
+        [key: string]: SettingValue;
+    };
 };
 
 /**
@@ -237,6 +1114,24 @@ export type RegisterRequest = {
 };
 
 /**
+ * ReorderItem
+ */
+export type ReorderItem = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Sortorder
+     */
+    sortOrder: number;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
  * ResetPasswordRequest
  */
 export type ResetPasswordRequest = {
@@ -244,6 +1139,88 @@ export type ResetPasswordRequest = {
      * Code
      */
     code: string;
+};
+
+/**
+ * RoleCreateRequest
+ */
+export type RoleCreateRequest = {
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Permissions
+     */
+    permissions?: Array<string>;
+};
+
+/**
+ * RoleResponse
+ */
+export type RoleResponse = {
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Description
+     */
+    description: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Issystem
+     */
+    isSystem: boolean;
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Permissions
+     */
+    permissions: Array<string>;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Usercount
+     */
+    userCount?: number;
+};
+
+/**
+ * RoleUpdateRequest
+ */
+export type RoleUpdateRequest = {
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Permissions
+     */
+    permissions?: Array<string> | null;
 };
 
 /**
@@ -301,6 +1278,10 @@ export type SessionUser = {
      */
     name: string | null;
     /**
+     * Permissions
+     */
+    permissions: Array<string>;
+    /**
      * Roles
      */
     roles: Array<string>;
@@ -322,6 +1303,416 @@ export type SessionsResponse = {
      * Nextcursor
      */
     nextCursor?: string | null;
+};
+
+/**
+ * SettingResponse
+ */
+export type SettingResponse = {
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Public
+     */
+    public: boolean;
+    /**
+     * Schema
+     */
+    schema: {
+        [key: string]: unknown;
+    };
+    /**
+     * Updatedat
+     */
+    updatedAt?: string | null;
+    value: SettingValue;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * SettingUpdateRequest
+ */
+export type SettingUpdateRequest = {
+    value: SettingValue;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+export type SettingValue = boolean | number | string | Array<string>;
+
+/**
+ * SubcategoryDetailResponse
+ */
+export type SubcategoryDetailResponse = {
+    category: CatalogCategoryResponse;
+    subcategory: CatalogCategoryResponse;
+    topics: CursorPageCatalogTopicResponse;
+};
+
+/**
+ * TopicDetailResponse
+ */
+export type TopicDetailResponse = {
+    category: CatalogCategoryResponse;
+    /**
+     * Relatedtopics
+     */
+    relatedTopics: Array<CatalogTopicResponse>;
+    subcategory: CatalogCategoryResponse;
+    topic: CatalogTopicResponse;
+};
+
+/**
+ * TopicSearchResponse
+ */
+export type TopicSearchResponse = {
+    /**
+     * Items
+     */
+    items: Array<TopicSearchResult>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * TopicSearchResult
+ */
+export type TopicSearchResult = {
+    /**
+     * Categoryid
+     */
+    categoryId: string;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Difficulty
+     */
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Isactive
+     */
+    isActive: boolean;
+    /**
+     * Path
+     */
+    path: string;
+    /**
+     * Seodescription
+     */
+    seoDescription: string | null;
+    /**
+     * Seotitle
+     */
+    seoTitle: string | null;
+    /**
+     * Skillhints
+     */
+    skillHints: Array<string>;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Sortorder
+     */
+    sortOrder: number;
+    /**
+     * Suggesteddurationms
+     */
+    suggestedDurationMs: number;
+    /**
+     * Summary
+     */
+    summary: string | null;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * TopicUpdateRequest
+ */
+export type TopicUpdateRequest = {
+    /**
+     * Categoryid
+     */
+    categoryId: string;
+    /**
+     * Difficulty
+     */
+    difficulty?: 'beginner' | 'intermediate' | 'advanced';
+    /**
+     * Isactive
+     */
+    isActive?: boolean;
+    /**
+     * Seodescription
+     */
+    seoDescription?: string | null;
+    /**
+     * Seotitle
+     */
+    seoTitle?: string | null;
+    /**
+     * Skillhints
+     */
+    skillHints?: Array<string>;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Sortorder
+     */
+    sortOrder?: number;
+    /**
+     * Suggesteddurationms
+     */
+    suggestedDurationMs?: number;
+    /**
+     * Summary
+     */
+    summary?: string | null;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * TopicWriteRequest
+ */
+export type TopicWriteRequest = {
+    /**
+     * Categoryid
+     */
+    categoryId: string;
+    /**
+     * Difficulty
+     */
+    difficulty?: 'beginner' | 'intermediate' | 'advanced';
+    /**
+     * Isactive
+     */
+    isActive?: boolean;
+    /**
+     * Seodescription
+     */
+    seoDescription?: string | null;
+    /**
+     * Seotitle
+     */
+    seoTitle?: string | null;
+    /**
+     * Skillhints
+     */
+    skillHints?: Array<string>;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Sortorder
+     */
+    sortOrder?: number;
+    /**
+     * Suggesteddurationms
+     */
+    suggestedDurationMs?: number;
+    /**
+     * Summary
+     */
+    summary?: string | null;
+    /**
+     * Title
+     */
+    title: string;
+};
+
+/**
+ * UserContactResponse
+ */
+export type UserContactResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Kind
+     */
+    kind: 'email' | 'phone';
+    /**
+     * Primary
+     */
+    primary: boolean;
+    /**
+     * Value
+     */
+    value: string;
+    /**
+     * Verified
+     */
+    verified: boolean;
+};
+
+/**
+ * UserPreferencesResponse
+ */
+export type UserPreferencesResponse = {
+    /**
+     * Captionsenabled
+     */
+    captionsEnabled: boolean;
+    /**
+     * Defaultaspect
+     */
+    defaultAspect: string;
+    /**
+     * Defaultstyle
+     */
+    defaultStyle: string | null;
+    /**
+     * Defaultvoiceid
+     */
+    defaultVoiceId: string | null;
+    /**
+     * Depth
+     */
+    depth: string;
+    /**
+     * Language
+     */
+    language: string;
+    /**
+     * Pace
+     */
+    pace: string;
+};
+
+/**
+ * UserPreferencesUpdateRequest
+ */
+export type UserPreferencesUpdateRequest = {
+    /**
+     * Captionsenabled
+     */
+    captionsEnabled: boolean;
+    /**
+     * Defaultaspect
+     */
+    defaultAspect: string;
+    /**
+     * Defaultstyle
+     */
+    defaultStyle?: string | null;
+    /**
+     * Defaultvoiceid
+     */
+    defaultVoiceId?: null;
+    /**
+     * Depth
+     */
+    depth: string;
+    /**
+     * Language
+     */
+    language: string;
+    /**
+     * Pace
+     */
+    pace: string;
+};
+
+/**
+ * UserProfileResponse
+ */
+export type UserProfileResponse = {
+    /**
+     * Avatarurl
+     */
+    avatarUrl: string | null;
+    /**
+     * Contacts
+     */
+    contacts: Array<UserContactResponse>;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Locale
+     */
+    locale: string;
+    /**
+     * Name
+     */
+    name: string | null;
+    /**
+     * Status
+     */
+    status: string;
+};
+
+/**
+ * UserProfileUpdateRequest
+ */
+export type UserProfileUpdateRequest = {
+    /**
+     * Locale
+     */
+    locale?: string | null;
+    /**
+     * Name
+     */
+    name?: string | null;
+};
+
+/**
+ * UserRoleMutationRequest
+ */
+export type UserRoleMutationRequest = {
+    /**
+     * Roleid
+     */
+    roleId: string;
 };
 
 /**
@@ -535,6 +1926,1588 @@ export type HealthReadyResponses = {
 };
 
 export type HealthReadyResponse = HealthReadyResponses[keyof HealthReadyResponses];
+
+export type AdminInsightsGetAnalyticsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/analytics';
+};
+
+export type AdminInsightsGetAnalyticsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminInsightsGetAnalyticsError = AdminInsightsGetAnalyticsErrors[keyof AdminInsightsGetAnalyticsErrors];
+
+export type AdminInsightsGetAnalyticsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalyticsResponse;
+};
+
+export type AdminInsightsGetAnalyticsResponse = AdminInsightsGetAnalyticsResponses[keyof AdminInsightsGetAnalyticsResponses];
+
+export type AdminInsightsListAuditEntriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Actoruserid
+         */
+        actorUserId?: string | null;
+        /**
+         * Action
+         */
+        action?: string | null;
+        /**
+         * Targettype
+         */
+        targetType?: string | null;
+        /**
+         * Targetid
+         */
+        targetId?: string | null;
+        /**
+         * Createdfrom
+         */
+        createdFrom?: string | null;
+        /**
+         * Createdto
+         */
+        createdTo?: string | null;
+    };
+    url: '/v1/admin/audit';
+};
+
+export type AdminInsightsListAuditEntriesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminInsightsListAuditEntriesError = AdminInsightsListAuditEntriesErrors[keyof AdminInsightsListAuditEntriesErrors];
+
+export type AdminInsightsListAuditEntriesResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuditListResponse;
+};
+
+export type AdminInsightsListAuditEntriesResponse = AdminInsightsListAuditEntriesResponses[keyof AdminInsightsListAuditEntriesResponses];
+
+export type AdminInsightsGetAuditEntryData = {
+    body?: never;
+    path: {
+        /**
+         * Entry Id
+         */
+        entry_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/audit/{entry_id}';
+};
+
+export type AdminInsightsGetAuditEntryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminInsightsGetAuditEntryError = AdminInsightsGetAuditEntryErrors[keyof AdminInsightsGetAuditEntryErrors];
+
+export type AdminInsightsGetAuditEntryResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuditEntryResponse;
+};
+
+export type AdminInsightsGetAuditEntryResponse = AdminInsightsGetAuditEntryResponses[keyof AdminInsightsGetAuditEntryResponses];
+
+export type AdminCatalogCreateCategoryData = {
+    body: CategoryWriteRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/catalog/categories';
+};
+
+export type AdminCatalogCreateCategoryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminCatalogCreateCategoryError = AdminCatalogCreateCategoryErrors[keyof AdminCatalogCreateCategoryErrors];
+
+export type AdminCatalogCreateCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    201: CatalogCategoryResponse;
+};
+
+export type AdminCatalogCreateCategoryResponse = AdminCatalogCreateCategoryResponses[keyof AdminCatalogCreateCategoryResponses];
+
+export type AdminCatalogUpdateCategoryData = {
+    body: CategoryUpdateRequest;
+    path: {
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/catalog/categories/{category_id}';
+};
+
+export type AdminCatalogUpdateCategoryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminCatalogUpdateCategoryError = AdminCatalogUpdateCategoryErrors[keyof AdminCatalogUpdateCategoryErrors];
+
+export type AdminCatalogUpdateCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    200: CatalogCategoryResponse;
+};
+
+export type AdminCatalogUpdateCategoryResponse = AdminCatalogUpdateCategoryResponses[keyof AdminCatalogUpdateCategoryResponses];
+
+export type AdminCatalogReorderCatalogData = {
+    body: CatalogReorderRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/catalog/reorder';
+};
+
+export type AdminCatalogReorderCatalogErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminCatalogReorderCatalogError = AdminCatalogReorderCatalogErrors[keyof AdminCatalogReorderCatalogErrors];
+
+export type AdminCatalogReorderCatalogResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AdminCatalogReorderCatalogResponse = AdminCatalogReorderCatalogResponses[keyof AdminCatalogReorderCatalogResponses];
+
+export type AdminCatalogCreateTopicData = {
+    body: TopicWriteRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/catalog/topics';
+};
+
+export type AdminCatalogCreateTopicErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminCatalogCreateTopicError = AdminCatalogCreateTopicErrors[keyof AdminCatalogCreateTopicErrors];
+
+export type AdminCatalogCreateTopicResponses = {
+    /**
+     * Successful Response
+     */
+    201: CatalogTopicResponse;
+};
+
+export type AdminCatalogCreateTopicResponse = AdminCatalogCreateTopicResponses[keyof AdminCatalogCreateTopicResponses];
+
+export type AdminCatalogUpdateTopicData = {
+    body: TopicUpdateRequest;
+    path: {
+        /**
+         * Topic Id
+         */
+        topic_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/catalog/topics/{topic_id}';
+};
+
+export type AdminCatalogUpdateTopicErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminCatalogUpdateTopicError = AdminCatalogUpdateTopicErrors[keyof AdminCatalogUpdateTopicErrors];
+
+export type AdminCatalogUpdateTopicResponses = {
+    /**
+     * Successful Response
+     */
+    200: CatalogTopicResponse;
+};
+
+export type AdminCatalogUpdateTopicResponse = AdminCatalogUpdateTopicResponses[keyof AdminCatalogUpdateTopicResponses];
+
+export type AdminCatalogAdminCatalogTreeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/catalog/tree';
+};
+
+export type AdminCatalogAdminCatalogTreeErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminCatalogAdminCatalogTreeError = AdminCatalogAdminCatalogTreeErrors[keyof AdminCatalogAdminCatalogTreeErrors];
+
+export type AdminCatalogAdminCatalogTreeResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminCatalogTreeResponse;
+};
+
+export type AdminCatalogAdminCatalogTreeResponse = AdminCatalogAdminCatalogTreeResponses[keyof AdminCatalogAdminCatalogTreeResponses];
+
+export type PlatformListFlagsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/flags';
+};
+
+export type PlatformListFlagsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type PlatformListFlagsError = PlatformListFlagsErrors[keyof PlatformListFlagsErrors];
+
+export type PlatformListFlagsResponses = {
+    /**
+     * Response Platform List Flags
+     *
+     * Successful Response
+     */
+    200: Array<FeatureFlagResponse>;
+};
+
+export type PlatformListFlagsResponse = PlatformListFlagsResponses[keyof PlatformListFlagsResponses];
+
+export type PlatformCreateFlagData = {
+    body: FeatureFlagWriteRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/flags';
+};
+
+export type PlatformCreateFlagErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type PlatformCreateFlagError = PlatformCreateFlagErrors[keyof PlatformCreateFlagErrors];
+
+export type PlatformCreateFlagResponses = {
+    /**
+     * Successful Response
+     */
+    201: FeatureFlagResponse;
+};
+
+export type PlatformCreateFlagResponse = PlatformCreateFlagResponses[keyof PlatformCreateFlagResponses];
+
+export type PlatformDeleteFlagData = {
+    body: FeatureFlagDeleteRequest;
+    path: {
+        /**
+         * Key
+         */
+        key: string;
+    };
+    query?: never;
+    url: '/v1/admin/flags/{key}';
+};
+
+export type PlatformDeleteFlagErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type PlatformDeleteFlagError = PlatformDeleteFlagErrors[keyof PlatformDeleteFlagErrors];
+
+export type PlatformDeleteFlagResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type PlatformDeleteFlagResponse = PlatformDeleteFlagResponses[keyof PlatformDeleteFlagResponses];
+
+export type PlatformUpdateFlagData = {
+    body: FeatureFlagUpdateRequest;
+    path: {
+        /**
+         * Key
+         */
+        key: string;
+    };
+    query?: never;
+    url: '/v1/admin/flags/{key}';
+};
+
+export type PlatformUpdateFlagErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type PlatformUpdateFlagError = PlatformUpdateFlagErrors[keyof PlatformUpdateFlagErrors];
+
+export type PlatformUpdateFlagResponses = {
+    /**
+     * Successful Response
+     */
+    200: FeatureFlagResponse;
+};
+
+export type PlatformUpdateFlagResponse = PlatformUpdateFlagResponses[keyof PlatformUpdateFlagResponses];
+
+export type AdminRolesListRolesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/roles';
+};
+
+export type AdminRolesListRolesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminRolesListRolesError = AdminRolesListRolesErrors[keyof AdminRolesListRolesErrors];
+
+export type AdminRolesListRolesResponses = {
+    /**
+     * Successful Response
+     */
+    200: AccessCatalogResponse;
+};
+
+export type AdminRolesListRolesResponse = AdminRolesListRolesResponses[keyof AdminRolesListRolesResponses];
+
+export type AdminRolesCreateRoleData = {
+    body: RoleCreateRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/roles';
+};
+
+export type AdminRolesCreateRoleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminRolesCreateRoleError = AdminRolesCreateRoleErrors[keyof AdminRolesCreateRoleErrors];
+
+export type AdminRolesCreateRoleResponses = {
+    /**
+     * Successful Response
+     */
+    201: RoleResponse;
+};
+
+export type AdminRolesCreateRoleResponse = AdminRolesCreateRoleResponses[keyof AdminRolesCreateRoleResponses];
+
+export type AdminRolesDeleteRoleData = {
+    body?: never;
+    path: {
+        /**
+         * Role Id
+         */
+        role_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/roles/{role_id}';
+};
+
+export type AdminRolesDeleteRoleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminRolesDeleteRoleError = AdminRolesDeleteRoleErrors[keyof AdminRolesDeleteRoleErrors];
+
+export type AdminRolesDeleteRoleResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AdminRolesDeleteRoleResponse = AdminRolesDeleteRoleResponses[keyof AdminRolesDeleteRoleResponses];
+
+export type AdminRolesUpdateRoleData = {
+    body: RoleUpdateRequest;
+    path: {
+        /**
+         * Role Id
+         */
+        role_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/roles/{role_id}';
+};
+
+export type AdminRolesUpdateRoleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminRolesUpdateRoleError = AdminRolesUpdateRoleErrors[keyof AdminRolesUpdateRoleErrors];
+
+export type AdminRolesUpdateRoleResponses = {
+    /**
+     * Successful Response
+     */
+    200: RoleResponse;
+};
+
+export type AdminRolesUpdateRoleResponse = AdminRolesUpdateRoleResponses[keyof AdminRolesUpdateRoleResponses];
+
+export type PlatformListSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/settings';
+};
+
+export type PlatformListSettingsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type PlatformListSettingsError = PlatformListSettingsErrors[keyof PlatformListSettingsErrors];
+
+export type PlatformListSettingsResponses = {
+    /**
+     * Response Platform List Settings
+     *
+     * Successful Response
+     */
+    200: Array<SettingResponse>;
+};
+
+export type PlatformListSettingsResponse = PlatformListSettingsResponses[keyof PlatformListSettingsResponses];
+
+export type PlatformGetSettingData = {
+    body?: never;
+    path: {
+        /**
+         * Key
+         */
+        key: string;
+    };
+    query?: never;
+    url: '/v1/admin/settings/{key}';
+};
+
+export type PlatformGetSettingErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type PlatformGetSettingError = PlatformGetSettingErrors[keyof PlatformGetSettingErrors];
+
+export type PlatformGetSettingResponses = {
+    /**
+     * Successful Response
+     */
+    200: SettingResponse;
+};
+
+export type PlatformGetSettingResponse = PlatformGetSettingResponses[keyof PlatformGetSettingResponses];
+
+export type PlatformUpdateSettingData = {
+    body: SettingUpdateRequest;
+    path: {
+        /**
+         * Key
+         */
+        key: string;
+    };
+    query?: never;
+    url: '/v1/admin/settings/{key}';
+};
+
+export type PlatformUpdateSettingErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type PlatformUpdateSettingError = PlatformUpdateSettingErrors[keyof PlatformUpdateSettingErrors];
+
+export type PlatformUpdateSettingResponses = {
+    /**
+     * Successful Response
+     */
+    200: SettingResponse;
+};
+
+export type PlatformUpdateSettingResponse = PlatformUpdateSettingResponses[keyof PlatformUpdateSettingResponses];
+
+export type AdminUsersAdminUsersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Search
+         */
+        search?: string | null;
+        /**
+         * Status
+         */
+        status?: 'pending_verification' | 'active' | 'suspended' | 'deleted' | null;
+        /**
+         * Role
+         */
+        role?: string | null;
+        /**
+         * Createdfrom
+         */
+        createdFrom?: string | null;
+        /**
+         * Createdto
+         */
+        createdTo?: string | null;
+        /**
+         * Sort
+         */
+        sort?: 'created_desc' | 'created_asc';
+    };
+    url: '/v1/admin/users';
+};
+
+export type AdminUsersAdminUsersErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminUsersAdminUsersError = AdminUsersAdminUsersErrors[keyof AdminUsersAdminUsersErrors];
+
+export type AdminUsersAdminUsersResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminUserListResponse;
+};
+
+export type AdminUsersAdminUsersResponse = AdminUsersAdminUsersResponses[keyof AdminUsersAdminUsersResponses];
+
+export type AdminUsersAdminUserDetailData = {
+    body?: never;
+    path: {
+        /**
+         * Target Id
+         */
+        target_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/users/{target_id}';
+};
+
+export type AdminUsersAdminUserDetailErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminUsersAdminUserDetailError = AdminUsersAdminUserDetailErrors[keyof AdminUsersAdminUserDetailErrors];
+
+export type AdminUsersAdminUserDetailResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminUserDetailResponse;
+};
+
+export type AdminUsersAdminUserDetailResponse = AdminUsersAdminUserDetailResponses[keyof AdminUsersAdminUserDetailResponses];
+
+export type AdminUsersRestoreUserData = {
+    body?: never;
+    path: {
+        /**
+         * Target Id
+         */
+        target_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/users/{target_id}/restore';
+};
+
+export type AdminUsersRestoreUserErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminUsersRestoreUserError = AdminUsersRestoreUserErrors[keyof AdminUsersRestoreUserErrors];
+
+export type AdminUsersRestoreUserResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AdminUsersRestoreUserResponse = AdminUsersRestoreUserResponses[keyof AdminUsersRestoreUserResponses];
+
+export type AdminUsersAssignUserRoleData = {
+    body: UserRoleMutationRequest;
+    path: {
+        /**
+         * Target Id
+         */
+        target_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/users/{target_id}/roles';
+};
+
+export type AdminUsersAssignUserRoleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminUsersAssignUserRoleError = AdminUsersAssignUserRoleErrors[keyof AdminUsersAssignUserRoleErrors];
+
+export type AdminUsersAssignUserRoleResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AdminUsersAssignUserRoleResponse = AdminUsersAssignUserRoleResponses[keyof AdminUsersAssignUserRoleResponses];
+
+export type AdminUsersRemoveUserRoleData = {
+    body?: never;
+    path: {
+        /**
+         * Target Id
+         */
+        target_id: string;
+        /**
+         * Role Id
+         */
+        role_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/users/{target_id}/roles/{role_id}';
+};
+
+export type AdminUsersRemoveUserRoleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminUsersRemoveUserRoleError = AdminUsersRemoveUserRoleErrors[keyof AdminUsersRemoveUserRoleErrors];
+
+export type AdminUsersRemoveUserRoleResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AdminUsersRemoveUserRoleResponse = AdminUsersRemoveUserRoleResponses[keyof AdminUsersRemoveUserRoleResponses];
+
+export type AdminUsersForceSignOutData = {
+    body?: never;
+    path: {
+        /**
+         * Target Id
+         */
+        target_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/users/{target_id}/sign-out';
+};
+
+export type AdminUsersForceSignOutErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminUsersForceSignOutError = AdminUsersForceSignOutErrors[keyof AdminUsersForceSignOutErrors];
+
+export type AdminUsersForceSignOutResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AdminUsersForceSignOutResponse = AdminUsersForceSignOutResponses[keyof AdminUsersForceSignOutResponses];
+
+export type AdminUsersSuspendUserData = {
+    body?: never;
+    path: {
+        /**
+         * Target Id
+         */
+        target_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/users/{target_id}/suspend';
+};
+
+export type AdminUsersSuspendUserErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminUsersSuspendUserError = AdminUsersSuspendUserErrors[keyof AdminUsersSuspendUserErrors];
+
+export type AdminUsersSuspendUserResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AdminUsersSuspendUserResponse = AdminUsersSuspendUserResponses[keyof AdminUsersSuspendUserResponses];
+
+export type AdminUsersUnsuspendUserData = {
+    body?: never;
+    path: {
+        /**
+         * Target Id
+         */
+        target_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/users/{target_id}/unsuspend';
+};
+
+export type AdminUsersUnsuspendUserErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminUsersUnsuspendUserError = AdminUsersUnsuspendUserErrors[keyof AdminUsersUnsuspendUserErrors];
+
+export type AdminUsersUnsuspendUserResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AdminUsersUnsuspendUserResponse = AdminUsersUnsuspendUserResponses[keyof AdminUsersUnsuspendUserResponses];
 
 export type AuthJwksData = {
     body?: never;
@@ -1765,3 +4738,1193 @@ export type AuthVerifyResponses = {
 };
 
 export type AuthVerifyResponse = AuthVerifyResponses[keyof AuthVerifyResponses];
+
+export type CatalogCatalogCategoryData = {
+    body?: never;
+    path: {
+        /**
+         * Category
+         */
+        category: string;
+    };
+    query?: never;
+    url: '/v1/catalog/categories/{category}';
+};
+
+export type CatalogCatalogCategoryErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type CatalogCatalogCategoryError = CatalogCatalogCategoryErrors[keyof CatalogCatalogCategoryErrors];
+
+export type CatalogCatalogCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    200: CategoryDetailResponse;
+};
+
+export type CatalogCatalogCategoryResponse = CatalogCatalogCategoryResponses[keyof CatalogCatalogCategoryResponses];
+
+export type CatalogCatalogSubcategoryData = {
+    body?: never;
+    path: {
+        /**
+         * Category
+         */
+        category: string;
+        /**
+         * Subcategory
+         */
+        subcategory: string;
+    };
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/v1/catalog/categories/{category}/{subcategory}';
+};
+
+export type CatalogCatalogSubcategoryErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type CatalogCatalogSubcategoryError = CatalogCatalogSubcategoryErrors[keyof CatalogCatalogSubcategoryErrors];
+
+export type CatalogCatalogSubcategoryResponses = {
+    /**
+     * Successful Response
+     */
+    200: SubcategoryDetailResponse;
+};
+
+export type CatalogCatalogSubcategoryResponse = CatalogCatalogSubcategoryResponses[keyof CatalogCatalogSubcategoryResponses];
+
+export type CatalogCatalogPathsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/catalog/paths';
+};
+
+export type CatalogCatalogPathsErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type CatalogCatalogPathsError = CatalogCatalogPathsErrors[keyof CatalogCatalogPathsErrors];
+
+export type CatalogCatalogPathsResponses = {
+    /**
+     * Successful Response
+     */
+    200: CatalogPathsResponse;
+};
+
+export type CatalogCatalogPathsResponse = CatalogCatalogPathsResponses[keyof CatalogCatalogPathsResponses];
+
+export type CatalogCatalogRedirectData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Path
+         */
+        path: string;
+    };
+    url: '/v1/catalog/redirects';
+};
+
+export type CatalogCatalogRedirectErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type CatalogCatalogRedirectError = CatalogCatalogRedirectErrors[keyof CatalogCatalogRedirectErrors];
+
+export type CatalogCatalogRedirectResponses = {
+    /**
+     * Successful Response
+     */
+    200: CatalogRedirectResponse;
+};
+
+export type CatalogCatalogRedirectResponse = CatalogCatalogRedirectResponses[keyof CatalogCatalogRedirectResponses];
+
+export type CatalogCatalogSearchData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Q
+         */
+        q: string;
+    };
+    url: '/v1/catalog/search';
+};
+
+export type CatalogCatalogSearchErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type CatalogCatalogSearchError = CatalogCatalogSearchErrors[keyof CatalogCatalogSearchErrors];
+
+export type CatalogCatalogSearchResponses = {
+    /**
+     * Successful Response
+     */
+    200: TopicSearchResponse;
+};
+
+export type CatalogCatalogSearchResponse = CatalogCatalogSearchResponses[keyof CatalogCatalogSearchResponses];
+
+export type CatalogCatalogTopicData = {
+    body?: never;
+    path: {
+        /**
+         * Category
+         */
+        category: string;
+        /**
+         * Subcategory
+         */
+        subcategory: string;
+        /**
+         * Topic
+         */
+        topic: string;
+    };
+    query?: never;
+    url: '/v1/catalog/topics/{category}/{subcategory}/{topic}';
+};
+
+export type CatalogCatalogTopicErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type CatalogCatalogTopicError = CatalogCatalogTopicErrors[keyof CatalogCatalogTopicErrors];
+
+export type CatalogCatalogTopicResponses = {
+    /**
+     * Successful Response
+     */
+    200: TopicDetailResponse;
+};
+
+export type CatalogCatalogTopicResponse = CatalogCatalogTopicResponses[keyof CatalogCatalogTopicResponses];
+
+export type CatalogCatalogTreeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/catalog/tree';
+};
+
+export type CatalogCatalogTreeErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type CatalogCatalogTreeError = CatalogCatalogTreeErrors[keyof CatalogCatalogTreeErrors];
+
+export type CatalogCatalogTreeResponses = {
+    /**
+     * Successful Response
+     */
+    200: CatalogTreeResponse;
+};
+
+export type CatalogCatalogTreeResponse = CatalogCatalogTreeResponses[keyof CatalogCatalogTreeResponses];
+
+export type PlatformEvaluatedFlagsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/flags';
+};
+
+export type PlatformEvaluatedFlagsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type PlatformEvaluatedFlagsError = PlatformEvaluatedFlagsErrors[keyof PlatformEvaluatedFlagsErrors];
+
+export type PlatformEvaluatedFlagsResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvaluatedFlagsResponse;
+};
+
+export type PlatformEvaluatedFlagsResponse = PlatformEvaluatedFlagsResponses[keyof PlatformEvaluatedFlagsResponses];
+
+export type PlatformPublicSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/settings/public';
+};
+
+export type PlatformPublicSettingsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type PlatformPublicSettingsError = PlatformPublicSettingsErrors[keyof PlatformPublicSettingsErrors];
+
+export type PlatformPublicSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: PublicSettingsResponse;
+};
+
+export type PlatformPublicSettingsResponse = PlatformPublicSettingsResponses[keyof PlatformPublicSettingsResponses];
+
+export type UsersGetProfileData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/users/me';
+};
+
+export type UsersGetProfileErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersGetProfileError = UsersGetProfileErrors[keyof UsersGetProfileErrors];
+
+export type UsersGetProfileResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserProfileResponse;
+};
+
+export type UsersGetProfileResponse = UsersGetProfileResponses[keyof UsersGetProfileResponses];
+
+export type UsersUpdateProfileData = {
+    body: UserProfileUpdateRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/users/me';
+};
+
+export type UsersUpdateProfileErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersUpdateProfileError = UsersUpdateProfileErrors[keyof UsersUpdateProfileErrors];
+
+export type UsersUpdateProfileResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserProfileResponse;
+};
+
+export type UsersUpdateProfileResponse = UsersUpdateProfileResponses[keyof UsersUpdateProfileResponses];
+
+export type UsersDeleteAvatarData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/users/me/avatar';
+};
+
+export type UsersDeleteAvatarErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersDeleteAvatarError = UsersDeleteAvatarErrors[keyof UsersDeleteAvatarErrors];
+
+export type UsersDeleteAvatarResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type UsersDeleteAvatarResponse = UsersDeleteAvatarResponses[keyof UsersDeleteAvatarResponses];
+
+export type UsersUploadAvatarData = {
+    body: BodyUsersUploadAvatar;
+    path?: never;
+    query?: never;
+    url: '/v1/users/me/avatar';
+};
+
+export type UsersUploadAvatarErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersUploadAvatarError = UsersUploadAvatarErrors[keyof UsersUploadAvatarErrors];
+
+export type UsersUploadAvatarResponses = {
+    /**
+     * Successful Response
+     */
+    200: AvatarResponse;
+};
+
+export type UsersUploadAvatarResponse = UsersUploadAvatarResponses[keyof UsersUploadAvatarResponses];
+
+export type UsersAddContactData = {
+    body: ContactAddRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/users/me/contacts';
+};
+
+export type UsersAddContactErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersAddContactError = UsersAddContactErrors[keyof UsersAddContactErrors];
+
+export type UsersAddContactResponses = {
+    /**
+     * Successful Response
+     */
+    202: ContactChallengeResponse;
+};
+
+export type UsersAddContactResponse = UsersAddContactResponses[keyof UsersAddContactResponses];
+
+export type UsersVerifyContactData = {
+    body: ContactVerifyRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/users/me/contacts/verify';
+};
+
+export type UsersVerifyContactErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersVerifyContactError = UsersVerifyContactErrors[keyof UsersVerifyContactErrors];
+
+export type UsersVerifyContactResponses = {
+    /**
+     * Successful Response
+     */
+    201: UserContactResponse;
+};
+
+export type UsersVerifyContactResponse = UsersVerifyContactResponses[keyof UsersVerifyContactResponses];
+
+export type UsersRemoveContactData = {
+    body?: never;
+    path: {
+        /**
+         * Contact Id
+         */
+        contact_id: string;
+    };
+    query?: never;
+    url: '/v1/users/me/contacts/{contact_id}';
+};
+
+export type UsersRemoveContactErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersRemoveContactError = UsersRemoveContactErrors[keyof UsersRemoveContactErrors];
+
+export type UsersRemoveContactResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type UsersRemoveContactResponse = UsersRemoveContactResponses[keyof UsersRemoveContactResponses];
+
+export type UsersSetPrimaryContactData = {
+    body?: never;
+    path: {
+        /**
+         * Contact Id
+         */
+        contact_id: string;
+    };
+    query?: never;
+    url: '/v1/users/me/contacts/{contact_id}/primary';
+};
+
+export type UsersSetPrimaryContactErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersSetPrimaryContactError = UsersSetPrimaryContactErrors[keyof UsersSetPrimaryContactErrors];
+
+export type UsersSetPrimaryContactResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserContactResponse;
+};
+
+export type UsersSetPrimaryContactResponse = UsersSetPrimaryContactResponses[keyof UsersSetPrimaryContactResponses];
+
+export type UsersConfirmDeletionData = {
+    body: AccountDeletionConfirmRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/users/me/delete/confirm';
+};
+
+export type UsersConfirmDeletionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersConfirmDeletionError = UsersConfirmDeletionErrors[keyof UsersConfirmDeletionErrors];
+
+export type UsersConfirmDeletionResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type UsersConfirmDeletionResponse = UsersConfirmDeletionResponses[keyof UsersConfirmDeletionResponses];
+
+export type UsersRequestDeletionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/users/me/delete/request';
+};
+
+export type UsersRequestDeletionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersRequestDeletionError = UsersRequestDeletionErrors[keyof UsersRequestDeletionErrors];
+
+export type UsersRequestDeletionResponses = {
+    /**
+     * Successful Response
+     */
+    202: ContactChallengeResponse;
+};
+
+export type UsersRequestDeletionResponse = UsersRequestDeletionResponses[keyof UsersRequestDeletionResponses];
+
+export type UsersRequestExportData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/users/me/export';
+};
+
+export type UsersRequestExportErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersRequestExportError = UsersRequestExportErrors[keyof UsersRequestExportErrors];
+
+export type UsersRequestExportResponses = {
+    /**
+     * Successful Response
+     */
+    202: ExportResponse;
+};
+
+export type UsersRequestExportResponse = UsersRequestExportResponses[keyof UsersRequestExportResponses];
+
+export type UsersGetPreferencesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/users/me/preferences';
+};
+
+export type UsersGetPreferencesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersGetPreferencesError = UsersGetPreferencesErrors[keyof UsersGetPreferencesErrors];
+
+export type UsersGetPreferencesResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserPreferencesResponse;
+};
+
+export type UsersGetPreferencesResponse = UsersGetPreferencesResponses[keyof UsersGetPreferencesResponses];
+
+export type UsersUpdatePreferencesData = {
+    body: UserPreferencesUpdateRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/users/me/preferences';
+};
+
+export type UsersUpdatePreferencesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type UsersUpdatePreferencesError = UsersUpdatePreferencesErrors[keyof UsersUpdatePreferencesErrors];
+
+export type UsersUpdatePreferencesResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserPreferencesResponse;
+};
+
+export type UsersUpdatePreferencesResponse = UsersUpdatePreferencesResponses[keyof UsersUpdatePreferencesResponses];

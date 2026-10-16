@@ -13,6 +13,11 @@ TemplateName = Literal[
     "oauth_linked",
     "refresh_reuse",
     "password_lockout",
+    "contact_verification",
+    "contact_changed",
+    "account_deletion",
+    "account_restored",
+    "data_export_ready",
 ]
 
 
@@ -23,6 +28,7 @@ class Notification(BaseModel):
     channel: Literal["email", "whatsapp"]
     template: TemplateName
     code: str | None = Field(default=None, repr=False)
+    link: str | None = Field(default=None, repr=False)
 
 
 class RenderedEmail(BaseModel):

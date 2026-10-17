@@ -295,6 +295,22 @@ export const zCursorPageCatalogTopicResponse = z.object({
 });
 
 /**
+ * DailyUsageResponse
+ */
+export const zDailyUsageResponse = z.object({
+    credits: z.int(),
+    date: z.iso.date(),
+    records: z.int()
+});
+
+/**
+ * DailyUsageListResponse
+ */
+export const zDailyUsageListResponse = z.object({
+    items: z.array(zDailyUsageResponse)
+});
+
+/**
  * DailyUsers
  */
 export const zDailyUsers = z.object({
@@ -405,6 +421,50 @@ export const zJwksResponse = z.object({
     keys: z.array(z.record(z.string(), z.string()))
 });
 
+export const zLedgerReasonName = z.enum([
+    'purchase',
+    'subscription_grant',
+    'promo_grant',
+    'admin_adjust',
+    'reserve',
+    'commit',
+    'release',
+    'refund_clawback',
+    'expiry'
+]);
+
+export const zLedgerRefTypeName = z.enum([
+    'payment',
+    'refund',
+    'reservation',
+    'lot',
+    'admin',
+    'promo'
+]);
+
+/**
+ * LedgerEntryResponse
+ */
+export const zLedgerEntryResponse = z.object({
+    balanceAfter: z.int(),
+    createdAt: z.iso.datetime(),
+    delta: z.int(),
+    id: z.uuid(),
+    reason: zLedgerReasonName,
+    refId: z.uuid().nullable(),
+    refType: zLedgerRefTypeName.nullable(),
+    reservedAfter: z.int(),
+    reservedDelta: z.int()
+});
+
+/**
+ * LedgerPageResponse
+ */
+export const zLedgerPageResponse = z.object({
+    items: z.array(zLedgerEntryResponse),
+    nextCursor: z.string().nullish()
+});
+
 /**
  * LivenessResponse
  */
@@ -417,6 +477,22 @@ export const zLivenessResponse = z.object({
  */
 export const zLoginRequest = z.object({
     identifier: z.string().min(3).max(254)
+});
+
+export const zLotSourceName = z.enum([
+    'purchase',
+    'subscription',
+    'admin',
+    'promo'
+]);
+
+/**
+ * ExpiringLotResponse
+ */
+export const zExpiringLotResponse = z.object({
+    expiresAt: z.iso.datetime(),
+    remaining: z.int(),
+    source: zLotSourceName
 });
 
 /**
@@ -713,6 +789,26 @@ export const zTopicWriteRequest = z.object({
 });
 
 /**
+ * UsageEntryResponse
+ */
+export const zUsageEntryResponse = z.object({
+    createdAt: z.iso.datetime(),
+    credits: z.int(),
+    id: z.uuid(),
+    jobId: z.uuid().nullable(),
+    publicationId: z.uuid().nullable(),
+    stage: z.string()
+});
+
+/**
+ * UsagePageResponse
+ */
+export const zUsagePageResponse = z.object({
+    items: z.array(zUsageEntryResponse),
+    nextCursor: z.string().nullish()
+});
+
+/**
  * UserContactResponse
  */
 export const zUserContactResponse = z.object({
@@ -806,6 +902,16 @@ export const zVerificationProblem = z.object({
     status: z.int(),
     title: z.string(),
     type: z.string().readonly()
+});
+
+/**
+ * WalletResponse
+ */
+export const zWalletResponse = z.object({
+    available: z.int(),
+    balance: z.int(),
+    expiringSoon: z.array(zExpiringLotResponse),
+    reserved: z.int()
 });
 
 /**
@@ -1373,6 +1479,39 @@ export const zCatalogCatalogTopicResponse = zTopicDetailResponse;
  * Successful Response
  */
 export const zCatalogCatalogTreeResponse = zCatalogTreeResponse;
+
+export const zCreditsLedgerQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20)
+});
+
+/**
+ * Successful Response
+ */
+export const zCreditsLedgerResponse = zLedgerPageResponse;
+
+export const zCreditsUsageQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    aggregate: z.literal('daily').nullish(),
+    from: z.iso.date().nullish(),
+    to: z.iso.date().nullish()
+});
+
+/**
+ * Response Credits Usage
+ *
+ * Successful Response
+ */
+export const zCreditsUsageResponse = z.union([
+    zUsagePageResponse,
+    zDailyUsageListResponse
+]);
+
+/**
+ * Successful Response
+ */
+export const zCreditsWalletResponse = zWalletResponse;
 
 /**
  * Successful Response

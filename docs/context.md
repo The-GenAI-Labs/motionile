@@ -221,7 +221,7 @@ apps/server/
 │   │   ├── skills/           router.py  admin_router.py  schemas.py  service.py  repository.py  models.py  validator.py  scanner.py  packager.py
 │   │   ├── memory/
 │   │   ├── billing/          router.py  admin_router.py  webhook_router.py  schemas.py  models.py  repository.py  exceptions.py  tasks.py  services/  razorpay/
-│   │   ├── credits/          service.py  repository.py  models.py  schemas.py  router.py  usage.py
+│   │   ├── credits/          router.py  schemas.py  service.py  repository.py  models.py  domain.py  dependencies.py  exceptions.py  tasks.py
 │   │   ├── publishing/       router.py  schemas.py  service.py  repository.py  models.py  tasks.py  captions.py  providers/
 │   │   ├── integrations/
 │   │   └── audit/
@@ -431,6 +431,8 @@ Billing and credits are two modules: `credits` owns the wallet, lots, reservatio
 - Every change is one append-only `credit_ledger` row with `delta`, `reserved_delta`, `balance_after`, `reserved_after` and a unique `idempotency_key`, written in one transaction that locks the wallet first and then its lots in a fixed order.
 - **Invariant:** per user, the sum of ledger deltas equals the balance and the sum of lot remainders; the sum of reserved deltas equals the reserved amount and the sum of active reservations. A nightly task verifies every wallet and alerts on any mismatch.
 - Subscription credits expire at the end of their billing period unless the runtime setting `billing.subscription_rollover` is on. Purchased credits never expire.
+- Every mutating method of `CreditsService` takes the caller's session and never commits, so billing grants credits inside its own settlement transaction. `reserve`, `commit`, `clawback` and `adjust` first expire the user's due lots inside the same locked transaction, so expired credits cannot be spent between sweeps. A clawback that finds nothing to take writes no ledger row.
+- Periodic tasks on the `billing` queue: `credits.expire_lots` (every 15 minutes), `credits.release_stale_reservations` (every 5 minutes), `credits.send_expiry_reminders` (hourly, once per lot) and `credits.check_integrity` (02:30 UTC, read-only, alerts through `raise_alert`).
 
 ### Products ([ADR 0019](adr/0019-product-immutability-and-versioning.md), [ADR 0020](adr/0020-gst-inclusive-pricing-and-invoices-follow-up.md))
 - Prices, credits and plan IDs come only from `products`; the client sends a product code and nothing else that affects money.

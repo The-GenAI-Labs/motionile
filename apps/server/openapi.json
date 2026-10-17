@@ -1395,6 +1395,46 @@
         "title": "CursorPage[CatalogTopicResponse]",
         "type": "object"
       },
+      "DailyUsageListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DailyUsageResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "DailyUsageListResponse",
+        "type": "object"
+      },
+      "DailyUsageResponse": {
+        "properties": {
+          "credits": {
+            "title": "Credits",
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "records": {
+            "title": "Records",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "credits",
+          "records"
+        ],
+        "title": "DailyUsageResponse",
+        "type": "object"
+      },
       "DailyUsers": {
         "properties": {
           "count": {
@@ -1436,6 +1476,29 @@
           "flags"
         ],
         "title": "EvaluatedFlagsResponse",
+        "type": "object"
+      },
+      "ExpiringLotResponse": {
+        "properties": {
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          },
+          "remaining": {
+            "title": "Remaining",
+            "type": "integer"
+          },
+          "source": {
+            "$ref": "#/components/schemas/LotSourceName"
+          }
+        },
+        "required": [
+          "source",
+          "remaining",
+          "expiresAt"
+        ],
+        "title": "ExpiringLotResponse",
         "type": "object"
       },
       "ExportResponse": {
@@ -1701,6 +1764,127 @@
         "title": "JwksResponse",
         "type": "object"
       },
+      "LedgerEntryResponse": {
+        "properties": {
+          "balanceAfter": {
+            "title": "Balanceafter",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "delta": {
+            "title": "Delta",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/LedgerReasonName"
+          },
+          "refId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refid"
+          },
+          "refType": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LedgerRefTypeName"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reservedAfter": {
+            "title": "Reservedafter",
+            "type": "integer"
+          },
+          "reservedDelta": {
+            "title": "Reserveddelta",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "reason",
+          "delta",
+          "reservedDelta",
+          "balanceAfter",
+          "reservedAfter",
+          "refType",
+          "refId",
+          "createdAt"
+        ],
+        "title": "LedgerEntryResponse",
+        "type": "object"
+      },
+      "LedgerPageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntryResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page; null on the last page",
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "LedgerPageResponse",
+        "type": "object"
+      },
+      "LedgerReasonName": {
+        "enum": [
+          "purchase",
+          "subscription_grant",
+          "promo_grant",
+          "admin_adjust",
+          "reserve",
+          "commit",
+          "release",
+          "refund_clawback",
+          "expiry"
+        ],
+        "type": "string"
+      },
+      "LedgerRefTypeName": {
+        "enum": [
+          "payment",
+          "refund",
+          "reservation",
+          "lot",
+          "admin",
+          "promo"
+        ],
+        "type": "string"
+      },
       "LivenessResponse": {
         "properties": {
           "status": {
@@ -1739,6 +1923,15 @@
         ],
         "title": "LoginRequest",
         "type": "object"
+      },
+      "LotSourceName": {
+        "enum": [
+          "purchase",
+          "subscription",
+          "admin",
+          "promo"
+        ],
+        "type": "string"
       },
       "OAuthStartQuery": {
         "additionalProperties": false,
@@ -2836,6 +3029,90 @@
         "title": "TopicWriteRequest",
         "type": "object"
       },
+      "UsageEntryResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "credits": {
+            "title": "Credits",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "jobId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jobid"
+          },
+          "publicationId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publicationid"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "stage",
+          "credits",
+          "jobId",
+          "publicationId",
+          "createdAt"
+        ],
+        "title": "UsageEntryResponse",
+        "type": "object"
+      },
+      "UsagePageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UsageEntryResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page; null on the last page",
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "UsagePageResponse",
+        "type": "object"
+      },
       "UserContactResponse": {
         "properties": {
           "id": {
@@ -3174,6 +3451,37 @@
           "type"
         ],
         "title": "VerificationProblem",
+        "type": "object"
+      },
+      "WalletResponse": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "integer"
+          },
+          "balance": {
+            "title": "Balance",
+            "type": "integer"
+          },
+          "expiringSoon": {
+            "items": {
+              "$ref": "#/components/schemas/ExpiringLotResponse"
+            },
+            "title": "Expiringsoon",
+            "type": "array"
+          },
+          "reserved": {
+            "title": "Reserved",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "balance",
+          "reserved",
+          "available",
+          "expiringSoon"
+        ],
+        "title": "WalletResponse",
         "type": "object"
       }
     },
@@ -10325,6 +10633,355 @@
         "summary": "Get the active catalog tree",
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/v1/credits/ledger": {
+      "get": {
+        "operationId": "credits_ledger",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "List credit ledger entries, newest first",
+        "tags": [
+          "credits"
+        ]
+      }
+    },
+    "/v1/credits/usage": {
+      "get": {
+        "operationId": "credits_usage",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "aggregate",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "const": "daily",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aggregate"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/UsagePageResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DailyUsageListResponse"
+                    }
+                  ],
+                  "title": "Response Credits Usage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "List credit usage, newest first, or aggregate it per UTC day",
+        "tags": [
+          "credits"
+        ]
+      }
+    },
+    "/v1/credits/wallet": {
+      "get": {
+        "operationId": "credits_wallet",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "Get the credit wallet",
+        "tags": [
+          "credits"
         ]
       }
     },

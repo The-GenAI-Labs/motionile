@@ -778,6 +778,34 @@ export type CursorPageCatalogTopicResponse = {
 };
 
 /**
+ * DailyUsageListResponse
+ */
+export type DailyUsageListResponse = {
+    /**
+     * Items
+     */
+    items: Array<DailyUsageResponse>;
+};
+
+/**
+ * DailyUsageResponse
+ */
+export type DailyUsageResponse = {
+    /**
+     * Credits
+     */
+    credits: number;
+    /**
+     * Date
+     */
+    date: string;
+    /**
+     * Records
+     */
+    records: number;
+};
+
+/**
  * DailyUsers
  */
 export type DailyUsers = {
@@ -806,6 +834,21 @@ export type EvaluatedFlagsResponse = {
     flags: {
         [key: string]: boolean;
     };
+};
+
+/**
+ * ExpiringLotResponse
+ */
+export type ExpiringLotResponse = {
+    /**
+     * Expiresat
+     */
+    expiresAt: string;
+    /**
+     * Remaining
+     */
+    remaining: number;
+    source: LotSourceName;
 };
 
 /**
@@ -969,6 +1012,62 @@ export type JwksResponse = {
 };
 
 /**
+ * LedgerEntryResponse
+ */
+export type LedgerEntryResponse = {
+    /**
+     * Balanceafter
+     */
+    balanceAfter: number;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Delta
+     */
+    delta: number;
+    /**
+     * Id
+     */
+    id: string;
+    reason: LedgerReasonName;
+    /**
+     * Refid
+     */
+    refId: string | null;
+    refType: LedgerRefTypeName | null;
+    /**
+     * Reservedafter
+     */
+    reservedAfter: number;
+    /**
+     * Reserveddelta
+     */
+    reservedDelta: number;
+};
+
+/**
+ * LedgerPageResponse
+ */
+export type LedgerPageResponse = {
+    /**
+     * Items
+     */
+    items: Array<LedgerEntryResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+export type LedgerReasonName = 'purchase' | 'subscription_grant' | 'promo_grant' | 'admin_adjust' | 'reserve' | 'commit' | 'release' | 'refund_clawback' | 'expiry';
+
+export type LedgerRefTypeName = 'payment' | 'refund' | 'reservation' | 'lot' | 'admin' | 'promo';
+
+/**
  * LivenessResponse
  */
 export type LivenessResponse = {
@@ -987,6 +1086,8 @@ export type LoginRequest = {
      */
     identifier: string;
 };
+
+export type LotSourceName = 'purchase' | 'subscription' | 'admin' | 'promo';
 
 /**
  * OAuthStartQuery
@@ -1564,6 +1665,52 @@ export type TopicWriteRequest = {
 };
 
 /**
+ * UsageEntryResponse
+ */
+export type UsageEntryResponse = {
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Credits
+     */
+    credits: number;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Jobid
+     */
+    jobId: string | null;
+    /**
+     * Publicationid
+     */
+    publicationId: string | null;
+    /**
+     * Stage
+     */
+    stage: string;
+};
+
+/**
+ * UsagePageResponse
+ */
+export type UsagePageResponse = {
+    /**
+     * Items
+     */
+    items: Array<UsageEntryResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
  * UserContactResponse
  */
 export type UserContactResponse = {
@@ -1752,6 +1899,28 @@ export type VerificationProblem = {
      * Type
      */
     readonly type: string;
+};
+
+/**
+ * WalletResponse
+ */
+export type WalletResponse = {
+    /**
+     * Available
+     */
+    available: number;
+    /**
+     * Balance
+     */
+    balance: number;
+    /**
+     * Expiringsoon
+     */
+    expiringSoon: Array<ExpiringLotResponse>;
+    /**
+     * Reserved
+     */
+    reserved: number;
 };
 
 /**
@@ -5079,6 +5248,161 @@ export type CatalogCatalogTreeResponses = {
 };
 
 export type CatalogCatalogTreeResponse = CatalogCatalogTreeResponses[keyof CatalogCatalogTreeResponses];
+
+export type CreditsLedgerData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/v1/credits/ledger';
+};
+
+export type CreditsLedgerErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type CreditsLedgerError = CreditsLedgerErrors[keyof CreditsLedgerErrors];
+
+export type CreditsLedgerResponses = {
+    /**
+     * Successful Response
+     */
+    200: LedgerPageResponse;
+};
+
+export type CreditsLedgerResponse = CreditsLedgerResponses[keyof CreditsLedgerResponses];
+
+export type CreditsUsageData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Aggregate
+         */
+        aggregate?: 'daily' | null;
+        /**
+         * From
+         */
+        from?: string | null;
+        /**
+         * To
+         */
+        to?: string | null;
+    };
+    url: '/v1/credits/usage';
+};
+
+export type CreditsUsageErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type CreditsUsageError = CreditsUsageErrors[keyof CreditsUsageErrors];
+
+export type CreditsUsageResponses = {
+    /**
+     * Response Credits Usage
+     *
+     * Successful Response
+     */
+    200: UsagePageResponse | DailyUsageListResponse;
+};
+
+export type CreditsUsageResponse = CreditsUsageResponses[keyof CreditsUsageResponses];
+
+export type CreditsWalletData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/credits/wallet';
+};
+
+export type CreditsWalletErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type CreditsWalletError = CreditsWalletErrors[keyof CreditsWalletErrors];
+
+export type CreditsWalletResponses = {
+    /**
+     * Successful Response
+     */
+    200: WalletResponse;
+};
+
+export type CreditsWalletResponse = CreditsWalletResponses[keyof CreditsWalletResponses];
 
 export type PlatformEvaluatedFlagsData = {
     body?: never;

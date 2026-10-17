@@ -19,7 +19,7 @@ Motionile turns a topic or a question into a short animated explainer video, 10 
 7. **Rendering.** Playwright seeks the timeline frame by frame (30 fps) and screenshots; ffmpeg encodes H.264, concatenates scene audio, normalizes loudness to −16 LUFS, ducks background music and optionally burns in subtitles. Formats: 16:9, 9:16 and 1:1, produced from the same composition by changing the viewport.
 8. **Library and secure playback.** Videos live in a private S3 bucket and are served through CloudFront with signed cookies scoped to the owner's path.
 9. **Custom skills.** Users create skills in Claude's skill format (`SKILL.md` with `name` and `description` frontmatter, a markdown body, optional assets). Skills are versioned, scanned, sanitized, enabled or disabled, and can be pinned to a generation.
-10. **Billing.** Razorpay subscriptions and one-time credit packs. Every generation consumes credits through an append-only ledger.
+10. **Billing.** Razorpay subscriptions and one-time credit packs. Credits live in expiring lots; every generation reserves, commits and releases them through an append-only ledger.
 11. **Publishing.** Official APIs only: YouTube, LinkedIn, Instagram (Reels), Facebook Pages, Threads, X, TikTok, Dev.to, Hashnode, WordPress, Ghost, Blogger. AI writes a caption per platform. Platforms without an API (Medium, Substack) get a share kit: format downloads, copy caption, composer links and the native mobile share sheet. Stealth or headless-browser automation of user accounts is never used.
 12. **MCP server.** Users connect Motionile to Claude or ChatGPT. Their own LLM subscription generates the HTML and narration using Motionile skills, then submits them; Motionile validates, voices and renders.
 13. **Admin console.** Users, roles, audit logs, billing (payments, refunds, webhooks), prompts, system skills, catalog, platform specs, system settings, feature flags.
@@ -313,10 +313,11 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 - Never trust client-supplied prices, amounts, roles or user IDs.
 
 ### Billing
-- Prices come only from the `products` table.
-- Every credit change is an append-only `credit_ledger` row with `balance_after` and a unique `idempotency_key`.
+- Prices, credits and plan IDs come only from the `products` table; products are immutable once used.
+- Every credit change is an append-only `credit_ledger` row with `delta`, `reserved_delta`, `balance_after`, `reserved_after` and a unique `idempotency_key`, written in one transaction that locks the wallet and then its lots in a fixed order.
+- A payment is settled only after the server confirmed it with Razorpay or from a verified webhook, never on a client callback alone.
 - Webhooks are verified on the raw body, stored, deduplicated by event ID and processed asynchronously.
-- Status changes follow explicit state machines; stale events are recorded as `ignored`.
+- Status changes follow explicit state machines; stale events are recorded as `ignored`, but money received is never ignored.
 
 ### Frontend
 - Server Components by default; `"use client"` only on leaf components that need it.
@@ -422,15 +423,34 @@ Every 429 includes `Retry-After` and `RateLimit-*` headers. Real client IPs are 
 
 ## 8. Billing (Razorpay)
 
-### Tables
-`products`, `orders`, `payments`, `subscriptions`, `credit_wallets`, `credit_ledger`, `usage_records`, `refunds`, `webhook_events`, `billing_customers`.
+Billing and credits are two modules: `credits` owns the wallet, lots, reservations, ledger and usage records; `billing` owns products, customers, orders, payments, subscriptions, refunds, webhook events and reconciliation runs, and reaches credits only through `motionile.modules.credits`. Table designs are in `docs/db/schema.md`; the long-form flows, failure handling and diagrams are in [`billing.md`](billing.md).
+
+### Credit model ([ADR 0018](adr/0018-credit-lots-and-reservations.md))
+- Credits live in **lots** with a source (`purchase`, `subscription`, `admin`, `promo`), a remaining amount and an optional expiry. They are consumed from the lot expiring soonest, non-expiring lots last.
+- **Reservations** hold credits for jobs, publishing and MCP submissions: `reserve` fails with `insufficient_credits` when available credits (`balance - reserved`) are short, `commit` consumes the actual amount and releases the rest, `release` returns everything, and a sweeper releases reservations past their TTL.
+- Every change is one append-only `credit_ledger` row with `delta`, `reserved_delta`, `balance_after`, `reserved_after` and a unique `idempotency_key`, written in one transaction that locks the wallet first and then its lots in a fixed order.
+- **Invariant:** per user, the sum of ledger deltas equals the balance and the sum of lot remainders; the sum of reserved deltas equals the reserved amount and the sum of active reservations. A nightly task verifies every wallet and alerts on any mismatch.
+- Subscription credits expire at the end of their billing period unless the runtime setting `billing.subscription_rollover` is on. Purchased credits never expire.
+
+### Products ([ADR 0019](adr/0019-product-immutability-and-versioning.md), [ADR 0020](adr/0020-gst-inclusive-pricing-and-invoices-follow-up.md))
+- Prices, credits and plan IDs come only from `products`; the client sends a product code and nothing else that affects money.
+- Prices are GST-inclusive and shown as "incl. GST". This phase sends receipts; GST tax invoices are a follow-up.
+- A product referenced by any order or subscription is financially immutable. A price change duplicates the product as a new version with a new Razorpay plan and deactivates the old one.
 
 ### Flows
-- **Credit pack:** create `orders` row → Razorpay order (amount from `products`, `receipt` = order ID) → Checkout → verify `HMAC(order_id|payment_id)` → fetch the payment from Razorpay and confirm status, amount and currency → in one transaction mark paid, credit the wallet and write the ledger. The `payment.captured` and `order.paid` webhooks run the same idempotent settlement.
-- **Subscription:** create the Razorpay subscription from `products.razorpay_plan_id` → Checkout → verify `HMAC(payment_id|subscription_id)` → webhooks drive the state (`activated`, `charged` grants credits once per payment, `pending`, `halted`, `cancelled`, `completed`, `paused`, `resumed`, `updated`). Cancellation happens at the end of the period.
-- **Refund:** admin-initiated, bounded by the refundable amount → Razorpay refund → `refund.processed` marks it done and claws back unused credits proportionally.
-- **Reconciliation:** every 15 minutes, pending orders older than 30 minutes are settled or expired; a daily report compares Razorpay settlements with `payments`.
-- **Credits for jobs:** reserve on job creation, commit the actual amount on completion and release the difference, or release everything on failure. A sweeper re-queues stuck jobs and releases stale reservations.
+- **Credit pack:** `POST /v1/billing/orders` (product code, `Idempotency-Key`) creates an `orders` row, then the Razorpay order with the product amount, `receipt` = our order ID and notes carrying user and order IDs, and returns checkout data. After Checkout, `POST /v1/billing/payments/verify` checks `HMAC(order_id|payment_id)`, fetches the payment from Razorpay and confirms it is captured with the order's exact amount and currency, then runs `settle_payment`. The `payment.captured` and `order.paid` webhooks and reconciliation run the same function.
+- **`settle_payment`** is idempotent and the only path that settles: in one transaction it locks the order, upserts the payment by Razorpay ID, marks the order `paid` (even from `expired`), grants the product credits as a non-expiring `purchase` lot, writes the ledger and audit rows, and sends the receipt after commit. A payment whose amount or currency does not match the order is recorded without credits, the order is flagged and an alert is raised.
+- **Subscription:** `POST /v1/billing/subscriptions` creates the local subscription and a `subscription` order, then the Razorpay subscription from the plan. `POST /v1/billing/subscriptions/verify` checks `HMAC(payment_id|subscription_id)` and moves it to `authenticated`; credits are granted only by webhooks. Webhooks drive the state machine in any arrival order: `charged` records the payment and grants the period's credits once per payment ID, even when it arrives before `activated`. Cancellation and plan change take effect at the end of the billing cycle through Razorpay.
+- **Webhooks:** `POST /v1/webhooks/razorpay` reads the raw body, verifies the signature, stores the event deduplicated by event ID, queues processing on `billing` and returns 200. Processing locks the event row and ends `processed`, `ignored` or `failed`; failures retry with backoff, alert after the last attempt and can be reprocessed by an admin.
+- **Refund:** admin-initiated with `billing.refunds.create` and an `Idempotency-Key`, bounded by the refundable amount. `refund.processed` updates the payment and claws back `min(lot.remaining, ceil(credits_granted × refund_amount ÷ payment_amount))` from the payment's lot. A refund never cancels a subscription.
+- **Reconciliation:** every 15 minutes, `pending` orders older than 30 minutes are fetched from Razorpay and settled, or expired once past `expires_at`; daily, live subscriptions are synced with Razorpay; a daily settlement check compares the previous day's Razorpay payments with `payments` and writes a `billing_reconciliation_runs` report to storage, alerting on any mismatch.
+- **Credits for jobs:** reserve on job creation, commit the actual amount on completion and release the difference, or release everything on failure. Stale reservations are released by the sweeper after their TTL.
+
+### Permissions
+`billing.read`, `billing.products.manage`, `billing.refunds.create`, `billing.credits.adjust` and `billing.webhooks.manage`. `admin` holds all but `billing.refunds.create` and `billing.credits.adjust`, which belong to `super_admin` by default.
+
+### Rate-limit policies
+`billing.order.create` (10/min per user), `webhooks.razorpay` (600/min) and `api.default` for the rest.
 
 ---
 
@@ -517,7 +537,7 @@ Local development adds Postgres with pgvector, MinIO and Mailpit. The web app ru
 | 4 | Auth backend |
 | 5 | Auth frontend |
 | 6 | Users, RBAC, admin console and catalog |
-| 7 | Credits and billing (Razorpay) |
+| 7 | Credits and billing (Razorpay); GST invoices follow later |
 | 8 | Render and audio engine, media delivery, voices, multi-format renditions |
 | 9 | AI generation pipeline and evals |
 | 10 | Memory, RAG, web search and custom skills |

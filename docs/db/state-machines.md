@@ -63,20 +63,26 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
     [*] --> created: order row inserted
-    created --> pending: Razorpay order created
-    created --> failed: Razorpay order creation failed
-    pending --> paid: payment verified (checkout or webhook)
-    pending --> failed: payment.failed with no later success
+    created --> pending: Razorpay order or subscription created
+    created --> failed: Razorpay creation rejected
+    pending --> paid: payment settled (checkout, webhook or reconciliation)
+    pending --> failed: reconciliation finds only failed payments past expiry
     pending --> expired: reconciliation after expires_at
     pending --> cancelled: user abandons checkout
     created --> expired: reconciliation after expires_at
+    expired --> paid: late payment
+    failed --> paid: late payment
+    cancelled --> paid: late payment
     paid --> [*]
     failed --> [*]
     expired --> [*]
     cancelled --> [*]
 ```
 
-- A `payment.captured` webhook for an `expired`, `failed` or `cancelled` order still settles it: the order moves to `paid` through a reconciliation path recorded in the audit log, because the customer was charged. This is the only transition out of those states.
+- A captured payment for an `expired`, `failed` or `cancelled` order still settles it: the order moves to `paid` and an audit entry records the late settlement, because the customer was charged. This is the only transition out of those states.
+- `payment.failed` never changes the order. Razorpay allows retries on the same order, so the order stays `pending` until it is paid or expires.
+- A captured payment whose amount or currency differs from the order is recorded, grants no credits and sets `flagged_at` and `flag_reason`; the order keeps its status, leaves the reconciliation queue and raises an alert. An admin resolves it by refunding the payment.
+- A subscription order moves to `paid` when the first `subscription.charged` payment settles.
 
 ## `payments.status`
 
@@ -100,9 +106,11 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
     [*] --> created: subscription created at Razorpay
-    created --> authenticated: mandate authorized
+    created --> authenticated: verify endpoint
+    created --> active: activated or charged seen first
     created --> expired: never authorized
-    authenticated --> active: subscription.activated
+    created --> cancelled
+    authenticated --> active: subscription.activated or subscription.charged
     active --> active: subscription.charged (grants credits)
     active --> pending: charge failed, retrying
     pending --> active: retry succeeded
@@ -110,7 +118,7 @@ stateDiagram-v2
     halted --> active: payment method updated and charged
     active --> paused: subscription.paused
     paused --> active: subscription.resumed
-    active --> cancelled: cancelled at period end
+    active --> cancelled: period end after cancellation
     pending --> cancelled
     halted --> cancelled
     paused --> cancelled
@@ -122,7 +130,10 @@ stateDiagram-v2
 ```
 
 - `subscription.updated` changes plan or period fields without changing status.
-- An event whose `created_at` is older than `subscriptions.last_event_at` is stored with `webhook_events.status = 'ignored'`.
+- A subscription event whose `created_at` is older than `subscriptions.last_event_at` never changes status, period or plan; it is stored with `webhook_events.status = 'ignored'` and `ignored_reason = 'stale'`.
+- A `subscription.charged` event is applied in full even when stale: recording the payment and granting credits is idempotent per payment ID, and money received is never ignored. Only its status and period effects are skipped when stale.
+- `subscription.cancelled` records `cancelled_at` and `cancel_at_period_end`. The status becomes `cancelled` immediately when there is no paid period left; otherwise it changes when the period ends, through the periodic finalization task, so access lasts to the end of the paid period.
+- Every transition is a single `UPDATE ... WHERE status = :expected` checked against this diagram; a transition the diagram does not allow is ignored.
 
 ## `refunds.status`
 
@@ -142,16 +153,44 @@ stateDiagram-v2
     [*] --> received: signature verified, stored
     received --> processing: task starts
     processing --> processed: applied
-    processing --> ignored: stale or not applicable
+    processing --> ignored: stale, unknown entity or unhandled event type
     processing --> failed: error
     failed --> processing: retry with backoff
-    received --> ignored: duplicate type with no handler
-    processed --> [*]
-    ignored --> [*]
+    failed --> processing: admin reprocess
+    processed --> processing: admin reprocess
+    ignored --> processing: admin reprocess
 ```
 
 - A delivery whose `(provider, event_id)` already exists returns 200 without creating a row; it never reaches this machine again.
-- After 10 failed attempts the event stays `failed` and alerts.
+- After 10 failed attempts the event stays `failed` and raises an alert.
+- Reprocessing is safe because every handler is idempotent.
+
+## `credit_reservations.status`
+
+```mermaid
+stateDiagram-v2
+    [*] --> active: reserve
+    active --> committed: commit (actual up to the reserved amount)
+    active --> released: release
+    active --> expired: TTL passed, released by the sweeper
+    committed --> [*]
+    released --> [*]
+    expired --> [*]
+```
+
+- `commit` consumes the actual amount from lots in expiry order and releases the rest in the same ledger row.
+- A repeated call with the same idempotency key returns the original result; any other call on a settled reservation fails with `reservation_not_active`.
+
+## `billing_reconciliation_runs.status`
+
+```mermaid
+stateDiagram-v2
+    [*] --> running
+    running --> completed
+    running --> failed
+    completed --> [*]
+    failed --> [*]
+```
 
 ## `publications.status`
 

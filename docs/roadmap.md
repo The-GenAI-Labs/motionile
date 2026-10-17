@@ -74,14 +74,19 @@ Motionile is built in twelve phases. Each phase lands as one or more pull reques
 
 ## Phase 7 — Credits and billing
 
-**Scope:** products, orders, payments, subscriptions, wallets, the append-only credit ledger, usage records, refunds, Razorpay webhooks, reconciliation, billing pages and the admin billing views.
+**Scope:** products with immutable financial fields and versions; credit lots, reservations and the append-only ledger; usage records; Razorpay orders, subscriptions with plan changes and cancellation, webhooks, refunds and reconciliation; the fake Razorpay for CI; payment and lifecycle notifications; the pricing page, the user billing area and the admin billing console. GST tax invoices are a documented follow-up ([ADR 0020](adr/0020-gst-inclusive-pricing-and-invoices-follow-up.md)); this phase sends receipts.
 
 **Done when:**
 
-- Credit packs and subscriptions settle idempotently from both checkout and webhooks.
-- Duplicate, concurrent and out-of-order webhooks never change balances twice.
-- Refunds claw back unused credits proportionally.
-- Reconciliation settles or expires stale orders.
+- The ledger invariant holds under property-based tests and the nightly integrity check.
+- Credit packs and subscriptions settle idempotently from the checkout handler, webhooks and reconciliation, including concurrently.
+- Duplicate, concurrent and out-of-order webhooks never change balances twice, and subscription lifecycles reach the right state in any order.
+- Refunds are bounded, support partial amounts and claw back only the unused credits of the refunded payment's lot.
+- Reconciliation settles or expires stale orders and reports settlement mismatches.
+- The e2e, security and load specs for billing pass in CI against the fake Razorpay.
+- A real test-mode purchase, subscription and refund complete on staging with Razorpay's test keys and webhooks.
+
+**Follow-up:** GST tax invoices with sequential numbering once the GST registration is final.
 
 ## Phase 8 — Render and audio engine
 

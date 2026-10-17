@@ -127,10 +127,16 @@ Operational rules for any coding agent working in this repository. `docs/context
 
 ## Billing
 
-- Read prices only from the `products` table.
-- Record every credit change as an append-only `credit_ledger` row with `balance_after` and a unique `idempotency_key`.
-- Verify webhooks on the raw body, store them, deduplicate by event ID and process them asynchronously.
-- Drive status changes through explicit state machines and record stale events as `ignored`.
+- Read prices, credits and plan IDs only from the `products` table. The client sends a product code and nothing else that affects money.
+- Treat a product as immutable once an order or subscription references it; change a price by duplicating the product as a new version.
+- Record every credit change as an append-only `credit_ledger` row with `delta`, `reserved_delta`, `balance_after`, `reserved_after` and a unique `idempotency_key`, in one transaction that locks the wallet row first and then its lots in `expires_at NULLS LAST, created_at, id` order.
+- Reach the wallet only through `motionile.modules.credits`: `grant`, `reserve`, `commit`, `release`, `clawback`, `adjust`. Never update `credit_wallets` or `credit_lots` elsewhere.
+- Keep the ledger invariant: the sum of deltas equals the balance and the sum of lot remainders; the sum of reserved deltas equals the reserved amount.
+- Never grant credits on a client callback alone. Settle a payment only through `settle_payment`, after the server confirmed it with Razorpay or from a verified webhook.
+- Never re-send a create call after a timeout: look the object up (orders by `receipt`, refunds by the refund ID in the notes).
+- Verify webhooks on the raw body, store them, deduplicate by event ID and process them asynchronously on the `billing` queue.
+- Drive status changes through explicit state machines and record stale events as `ignored`; never ignore money received.
+- Correct credits through `adjust` with a reason, never by editing rows.
 
 ## Frontend
 

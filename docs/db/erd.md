@@ -353,6 +353,7 @@ erDiagram
 erDiagram
     users ||--o| billing_customers : "is"
     products ||--o{ orders : "is bought in"
+    products |o--o{ products : "supersedes"
     users ||--o{ orders : "places"
     subscriptions |o--o{ orders : "starts with"
     orders |o--o{ payments : "is paid by"
@@ -360,11 +361,7 @@ erDiagram
     users ||--o{ payments : "makes"
     users ||--o{ subscriptions : "holds"
     products ||--o{ subscriptions : "plans"
-    users ||--o| credit_wallets : "has"
-    users ||--o{ credit_ledger : "is credited in"
-    users ||--o{ usage_records : "incurs"
-    jobs |o--o{ usage_records : "costs"
-    publications |o--o{ usage_records : "costs"
+    products |o--o{ subscriptions : "changes to"
     payments ||--o{ refunds : "is refunded by"
     users |o--o{ refunds : "initiates"
 
@@ -372,7 +369,9 @@ erDiagram
         uuid id PK
         text code
         text kind
+        text plan_key
         bigint price_paise
+        uuid supersedes_product_id FK
     }
     billing_customers {
         uuid user_id PK, FK
@@ -391,17 +390,74 @@ erDiagram
         uuid subscription_id FK
         uuid user_id FK
         text status
+        bigint credits_granted
     }
     subscriptions {
         uuid id PK
         uuid user_id FK
         uuid product_id FK
+        uuid pending_product_id FK
         text status
     }
+    refunds {
+        uuid id PK
+        uuid payment_id FK
+        uuid initiated_by FK
+        text status
+    }
+    webhook_events {
+        uuid id PK
+        text provider
+        text event_id
+        text status
+    }
+    billing_reconciliation_runs {
+        uuid id PK
+        text type
+        text status
+        text report_storage_key
+    }
+    users {
+        uuid id PK
+    }
+```
+
+`webhook_events` and `billing_reconciliation_runs` have no foreign keys: events are stored before they are matched to any row, and a run describes a window rather than a row.
+
+## Credits
+
+```mermaid
+erDiagram
+    users ||--o| credit_wallets : "has"
+    users ||--o{ credit_lots : "owns"
+    users ||--o{ credit_reservations : "holds"
+    users ||--o{ credit_ledger : "is credited in"
+    users ||--o{ usage_records : "incurs"
+    jobs |o--o{ usage_records : "costs"
+    publications |o--o{ usage_records : "costs"
+
     credit_wallets {
         uuid user_id PK, FK
         bigint balance
         bigint reserved
+    }
+    credit_lots {
+        uuid id PK
+        uuid user_id FK
+        text source
+        bigint amount
+        bigint remaining
+        timestamptz expires_at
+        text ref_type
+        uuid ref_id
+    }
+    credit_reservations {
+        uuid id PK
+        uuid user_id FK
+        bigint amount
+        text status
+        text ref_type
+        uuid ref_id
     }
     credit_ledger {
         uuid id PK
@@ -416,18 +472,6 @@ erDiagram
         uuid job_id FK
         uuid publication_id FK
     }
-    refunds {
-        uuid id PK
-        uuid payment_id FK
-        uuid initiated_by FK
-        text status
-    }
-    webhook_events {
-        uuid id PK
-        text provider
-        text event_id
-        text status
-    }
     users {
         uuid id PK
     }
@@ -439,7 +483,7 @@ erDiagram
     }
 ```
 
-`webhook_events` has no foreign keys: events are stored before they are matched to any row.
+`credit_lots.ref_id` and `credit_ledger.ref_id` point at a payment, refund, reservation, lot or admin action by type, without a foreign key, so the ledger never blocks a purge of the thing it describes.
 
 ## Publishing
 

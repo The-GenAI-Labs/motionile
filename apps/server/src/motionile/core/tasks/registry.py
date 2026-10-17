@@ -1,6 +1,7 @@
 import functools
 from collections.abc import Awaitable, Callable
 from enum import StrEnum
+from typing import cast
 
 import structlog
 from procrastinate import Blueprint, JobContext, RetryStrategy
@@ -13,6 +14,7 @@ from motionile.core.db import after_commit
 TASK_MODULES: tuple[str, ...] = (
     "motionile.core.events",
     "motionile.modules.catalog.tasks",
+    "motionile.modules.credits.tasks",
     "motionile.modules.notifications.tasks",
     "motionile.modules.users.tasks",
 )
@@ -31,6 +33,7 @@ class Queue(StrEnum):
 DEFAULT_RETRY = RetryStrategy(max_attempts=5, wait=2, exponential_wait=2)
 
 type TaskBody = Callable[..., Awaitable[None]]
+type ScheduledBody = Callable[[], Awaitable[None]]
 type RegisteredTask = Task[..., Awaitable[None], ...]
 
 
@@ -56,6 +59,25 @@ def task(
                 logger.info("task.succeeded")
 
         return blueprint.task(name=name, queue=queue.value, retry=retry, pass_context=True)(run_with_context)
+
+    return register
+
+
+def periodic_task(
+    *,
+    name: str,
+    queue: Queue,
+    cron: str,
+    retry: RetryStrategy | int | bool = DEFAULT_RETRY,
+) -> Callable[[ScheduledBody], RegisteredTask]:
+    def register(body: ScheduledBody) -> RegisteredTask:
+        async def run_scheduled(**_: object) -> None:
+            await body()
+
+        registered = task(name=name, queue=queue, retry=retry)(run_scheduled)
+        return cast(
+            "RegisteredTask", blueprint.periodic(cron=cron)(cast("Task[..., Awaitable[None], [int]]", registered))
+        )
 
     return register
 

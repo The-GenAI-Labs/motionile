@@ -29,9 +29,10 @@ class ScriptGenerated(DomainEvent):
 
 
 @pytest.fixture
-async def in_memory_app() -> AsyncIterator[tuple[App, InMemoryConnector]]:
+async def in_memory_app(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[tuple[App, InMemoryConnector]]:
     connector = InMemoryConnector()
     with registered_task_app().replace_connector(connector) as app:
+        monkeypatch.setattr(app, "periodic_defaults", {"max_delay": -1})
         async with app.open_async():
             yield app, connector
 

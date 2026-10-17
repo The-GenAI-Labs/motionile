@@ -61,6 +61,12 @@ def build_app() -> FastAPI:
     async def validate(payload: Payload) -> Payload:
         return payload
 
+    @app.get("/extended")
+    async def extended() -> None:
+        raise ConflictError(
+            "Busy.", code="quota_reached", extensions={"limit": 5, "used": 5, "code": "overridden", "retry": True}
+        )
+
     @app.get("/http")
     async def http_error() -> None:
         raise HTTPException(status_code=418, detail="short and stout")
@@ -97,6 +103,16 @@ async def test_app_errors_render_problem_details(
     assert body["detail"] == "Something specific."
     assert body["instance"] == f"/errors/{index}"
     assert body["requestId"] == "req-12345678"
+
+
+async def test_problem_extension_members_are_added_without_overriding_standard_members(client: AsyncClient) -> None:
+    response = await client.get("/extended")
+
+    body = response.json()
+    assert response.status_code == 409
+    assert body["code"] == "quota_reached"
+    assert (body["limit"], body["used"], body["retry"]) == (5, 5, True)
+    assert body["type"] == problem_type("quota_reached")
 
 
 async def test_validation_errors_use_camel_case_paths(client: AsyncClient) -> None:

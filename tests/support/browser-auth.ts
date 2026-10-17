@@ -74,6 +74,16 @@ export async function logoutApi(page: Page): Promise<void> {
   expect(response.status()).toBe(204);
 }
 
+export async function gotoAfterLogout(page: Page, path: string): Promise<void> {
+  try {
+    await page.goto(path);
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("ERR_ABORTED")) throw error;
+    await page.waitForLoadState("domcontentloaded");
+    if (new URL(page.url()).pathname !== path) await page.goto(path);
+  }
+}
+
 export async function signIn(page: Page, identifier: string, secret = password): Promise<void> {
   await page.getByLabel("Email or phone", { exact: true }).fill(identifier);
   await page.locator("#password").fill(secret);
@@ -85,7 +95,7 @@ export async function fakeOAuth(
   identifier: string,
   provider = "Google",
 ): Promise<void> {
-  await page.route("**/v1/_test/oauth/*/authorize?*", async (route) => {
+  await page.route(/\/v1\/_test\/oauth\/[^/]+\/authorize(?:\?|$)/, async (route) => {
     const url = new URL(route.request().url());
     url.searchParams.set("email", identifier);
     await route.continue({ url: url.toString() });

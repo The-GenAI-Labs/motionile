@@ -6,6 +6,7 @@ import {
   email,
   enterCode,
   fakeOAuth,
+  gotoAfterLogout,
   inboxCode,
   logoutApi,
   password,
@@ -77,7 +78,7 @@ for (const provider of ["Google", "GitHub", "Microsoft"]) {
     const first = await page.request.get(`${authOrigin}/v1/auth/me`);
     const user = (await first.json()) as { id: string };
     await logoutApi(page);
-    await page.goto("/login");
+    await gotoAfterLogout(page, "/login");
     await fakeOAuth(page, identifier, provider);
     const second = await page.request.get(`${authOrigin}/v1/auth/me`);
     expect(((await second.json()) as { id: string }).id).toBe(user.id);
@@ -89,7 +90,7 @@ test("one-time-code login signs in a verified contact", async ({ page }) => {
   await page.goto("/login");
   await fakeOAuth(page, identifier);
   await logoutApi(page);
-  await page.goto("/login");
+  await gotoAfterLogout(page, "/login");
   await page.getByRole("tab", { name: "One-time code", exact: true }).click();
   await page.getByLabel("Email or phone", { exact: true }).fill(identifier);
   await page.getByRole("button", { name: "Send code", exact: true }).click();
@@ -103,7 +104,7 @@ test("forgot password resets credentials and signs in with the new password", as
   await page.goto("/login");
   await fakeOAuth(page, identifier);
   await logoutApi(page);
-  await page.goto("/forgot-password");
+  await gotoAfterLogout(page, "/forgot-password");
   await page.getByLabel("Email or phone", { exact: true }).fill(identifier);
   await page.getByRole("button", { name: "Send reset code", exact: true }).click();
   await expect(page).toHaveURL(/\/reset-password(?:\?|$)/);

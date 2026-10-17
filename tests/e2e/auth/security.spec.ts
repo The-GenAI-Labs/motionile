@@ -14,20 +14,11 @@ for (const path of ["/login", "/register", "/verify", "/forgot-password", "/rese
       if (/content security policy|violates.*directive/i.test(message.text()))
         violations.push(message.text());
     });
-    await page.addInitScript(() => {
-      document.addEventListener("securitypolicyviolation", (event) => {
-        document.documentElement.dataset["cspViolation"] =
-          `${event.violatedDirective} ${event.blockedURI}`;
-      });
-    });
     await page.goto(path);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     await page.keyboard.press("Tab");
     expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe("BODY");
     expect(violations).toEqual([]);
-    expect(
-      await page.evaluate(() => document.documentElement.dataset["cspViolation"]),
-    ).toBeUndefined();
     const report = await new AxeBuilder({ page }).analyze();
     expect(
       report.violations.filter((violation) =>

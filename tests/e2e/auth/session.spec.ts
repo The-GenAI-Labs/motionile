@@ -73,15 +73,15 @@ test("revocation from another context redirects once and preserves the destinati
       headers: { Origin: authOrigin, "X-CSRF-Token": csrf },
     });
     expect(revoked.status()).toBe(204);
-    const logins: string[] = [];
-    page.on("framenavigated", (frame) => {
-      if (frame === page.mainFrame() && new URL(frame.url()).pathname === "/login")
-        logins.push(frame.url());
+    const loginDocuments: string[] = [];
+    page.on("request", (request) => {
+      if (request.resourceType() === "document" && new URL(request.url()).pathname === "/login")
+        loginDocuments.push(request.url());
     });
     await page.reload();
     await expect(page).toHaveURL(/\/login\?next=%2Fsettings%2Fsecurity&reason=expired/);
     await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
-    expect(logins).toHaveLength(1);
+    expect(loginDocuments).toHaveLength(1);
   } finally {
     await other.close();
   }

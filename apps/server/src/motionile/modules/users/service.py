@@ -64,6 +64,9 @@ class UsersService:
     async def contacts(self, user_id: UUID) -> list[UserContact]:
         return await self.repository.contacts(user_id)
 
+    async def primary_verified_email(self, user_id: UUID) -> str | None:
+        return await self.repository.primary_verified_email(user_id)
+
     async def activate(self, user_id: UUID, identifier: Identifier, now: datetime) -> User:
         user = await self.get(user_id, lock=True)
         existing = await self.find_contact(identifier)

@@ -70,4 +70,6 @@ After staging deploys, check health/readiness, JWKS, registration with a real de
 
 Set the Vercel API and site origins, Turnstile site key, and matching AUTH_JWT_ISSUER and AUTH_JWT_AUDIENCE. Leave NEXT_PUBLIC_JWKS_URL unset to use the public API JWKS path, or configure its explicit server-reachable URL. Keep AUTH_COOKIE_DOMAIN empty on localhost and set the shared staging domain on deployed instances.
 
+For container builds, pass NEXT_PUBLIC_TURNSTILE_SITE_KEY and the optional NEXT_PUBLIC_JWKS_URL as Docker build arguments alongside the site and API origins. Public values are compiled into the frontend; changing only runtime environment variables does not update them. Set AUTH_JWT_ISSUER and AUTH_JWT_AUDIENCE in the running web container.
+
 Browser CI uses the HTTPS reverse proxy and AUTH_TEST_ACCESS_SECONDS=75 with fake providers. Never configure this test override on staging or production; startup rejects it. After deploying Phase 5, register a staging account through real email OTP, sign out and back in, wait for silent refresh, revoke another session, and check account linking. CI and local fakes do not replace this real-delivery acceptance check.

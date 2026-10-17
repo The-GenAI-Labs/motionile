@@ -11,7 +11,7 @@ from motionile.core.security.cookies import SessionCookies
 from motionile.core.security.identifiers import Identifier, normalize_identifier
 from motionile.core.security.rbac import Principal, PrincipalKind
 from motionile.core.security.tokens import random_token, token_hash
-from motionile.modules.access import assign_default_role, roles_for_user
+from motionile.modules.access import assign_default_role, resolve_access, roles_for_user
 from motionile.modules.audit import ActorType, AuditContext, AuditEvent, record
 from motionile.modules.auth.events import (
     ContactVerified,
@@ -43,6 +43,15 @@ IDLE_LIFETIME = timedelta(days=7)
 ABSOLUTE_LIFETIME = timedelta(days=60)
 REFRESH_GRACE = timedelta(seconds=10)
 LOCKOUT_THRESHOLD = 10
+
+OTP_TEMPLATES: dict[OtpPurpose, TemplateName] = {
+    "verify_contact": "verify_contact",
+    "login": "login",
+    "password_reset": "password_reset",
+    "set_password": "set_password",
+    "add_contact": "contact_verification",
+    "delete_account": "account_deletion",
+}
 LOCKOUT_WINDOW = timedelta(hours=1)
 LOCKOUT_DURATION = timedelta(minutes=15)
 
@@ -131,7 +140,12 @@ class AuthService:
             enqueue_notification(
                 self.resources,
                 session,
-                Notification(destination=identifier.value, channel=identifier.channel, template=purpose, code=code),
+                Notification(
+                    destination=identifier.value,
+                    channel=identifier.channel,
+                    template=OTP_TEMPLATES[purpose],
+                    code=code,
+                ),
             )
         return ticket, ChallengeResponse(destination=identifier.masked, channel=identifier.channel)
 
@@ -160,11 +174,13 @@ class AuthService:
     async def session_user(self, session: AsyncSession, user: User) -> SessionUser:
         contacts = await UsersService(session).contacts(user.id)
         repository = AuthRepository(session)
+        access = await resolve_access(session, self.resources.redis_store, user.id)
         return SessionUser(
             id=user.id,
             name=user.name,
             status=user.status,
-            roles=await roles_for_user(session, user.id),
+            roles=sorted(access.roles),
+            permissions=sorted(access.permissions),
             contacts=[
                 ContactResponse(
                     kind=contact.kind,
@@ -308,7 +324,7 @@ class AuthService:
                     Notification(
                         destination=challenge.destination,
                         channel=challenge.identifier.channel,
-                        template=challenge.purpose,
+                        template=OTP_TEMPLATES[challenge.purpose],
                         code=code,
                     ),
                 )

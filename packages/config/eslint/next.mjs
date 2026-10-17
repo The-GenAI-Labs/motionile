@@ -15,6 +15,9 @@ export const createNextConfig = ({ tsconfigRootDir }) => [
       "@next/next": nextPlugin,
       "react-hooks": reactHooks,
     },
+    settings: {
+      next: { rootDir: tsconfigRootDir },
+    },
     rules: {
       ...nextPlugin.configs.recommended.rules,
       ...nextPlugin.configs["core-web-vitals"].rules,

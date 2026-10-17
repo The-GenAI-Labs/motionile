@@ -15,7 +15,7 @@ from motionile.core.security.tokens import random_token, sign_value, token_hash
 
 MAX_TOKEN_LENGTH = 128
 
-OtpPurpose = Literal["verify_contact", "login", "password_reset", "set_password"]
+OtpPurpose = Literal["verify_contact", "login", "password_reset", "set_password", "add_contact", "delete_account"]
 OTP_TTL = timedelta(minutes=5)
 TICKET_TTL = timedelta(minutes=10)
 RESEND_TTL = timedelta(seconds=60)

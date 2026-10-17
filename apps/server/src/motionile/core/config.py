@@ -284,6 +284,17 @@ class OutboundHttpSettings(GroupSettings):
     max_redirects: int = Field(default=5, ge=0, le=10)
 
 
+class CatalogSettings(GroupSettings):
+    model_config = SettingsConfigDict(env_prefix="CATALOG_")
+
+    revalidation_secret: OptionalSecret = None
+
+    @field_validator("revalidation_secret")
+    @classmethod
+    def validate_secret(cls, value: SecretStr | None) -> SecretStr | None:
+        return SecuritySettings.require_long_secret(value)
+
+
 class AuthSettings(GroupSettings):
     model_config = SettingsConfigDict(env_prefix="AUTH_")
 
@@ -398,6 +409,7 @@ class Settings(BaseModel):
     encryption: EncryptionSettings = Field(default_factory=EncryptionSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     outbound_http: OutboundHttpSettings = Field(default_factory=OutboundHttpSettings)
+    catalog: CatalogSettings = Field(default_factory=CatalogSettings)
 
     @model_validator(mode="after")
     def require_safe_values_when_deployed(self) -> Self:
@@ -431,6 +443,8 @@ class Settings(BaseModel):
             problems.append("ENCRYPTION_KEYS must be set")
         if self.turnstile.secret_key is None:
             problems.append("TURNSTILE_SECRET_KEY must be set")
+        if self.catalog.revalidation_secret is None:
+            problems.append("CATALOG_REVALIDATION_SECRET must be set")
         if "bucket" not in self.storage.model_fields_set:
             problems.append("STORAGE_BUCKET must be set")
         problems.extend(self.auth_deployment_problems())

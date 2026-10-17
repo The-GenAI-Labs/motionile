@@ -14,6 +14,9 @@ next-env.d.ts
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest-*/
+.test-tmp/
+.tool-shims/
 .ruff_cache/
 .pyright/
 .coverage

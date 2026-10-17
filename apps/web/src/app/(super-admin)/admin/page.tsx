@@ -1,4 +1,5 @@
-﻿import { PageHeader } from "@/components/shared/page-header";
+import { PageHeader } from "@/components/shared/page-header";
+import { AnalyticsDashboard } from "@/features/admin/components/analytics-dashboard";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
@@ -10,9 +11,12 @@ export const metadata = buildMetadata({
 
 export default function AdminPage() {
   return (
-    <PageHeader
-      title="Administration"
-      description="Your administrator session is active. User and catalog management arrive in the next release."
-    />
+    <div className="space-y-8">
+      <PageHeader
+        title="Overview"
+        description="Current user growth, verification, sessions, and sign-in methods."
+      />
+      <AnalyticsDashboard />
+    </div>
   );
 }

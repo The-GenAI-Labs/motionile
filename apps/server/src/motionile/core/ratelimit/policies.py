@@ -66,6 +66,7 @@ DEFAULT_POLICIES: tuple[RateLimitPolicy, ...] = (
             RateLimitRule(60, MINUTE, RateLimitScope.IP, anonymous_only=True),
         ),
     ),
+    RateLimitPolicy("catalog.read", (RateLimitRule(600, MINUTE, RateLimitScope.IP),)),
     RateLimitPolicy("jobs.create", (RateLimitRule(5, MINUTE, RateLimitScope.USER),)),
     RateLimitPolicy("billing.order.create", (RateLimitRule(10, MINUTE, RateLimitScope.USER),)),
     RateLimitPolicy("skills.write", (RateLimitRule(20, HOUR, RateLimitScope.USER),)),

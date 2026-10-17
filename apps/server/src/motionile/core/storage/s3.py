@@ -13,6 +13,7 @@ from motionile.core.storage.base import DEFAULT_CHUNK_SIZE, ObjectInfo, ObjectNo
 
 if TYPE_CHECKING:
     from types_boto3_s3.client import S3Client
+    from types_boto3_s3.type_defs import ObjectIdentifierTypeDef
 
 SPOOL_MAX_MEMORY_BYTES = 8 * 1024 * 1024
 NOT_FOUND_CODES = frozenset({"404", "NoSuchKey", "NotFound"})
@@ -107,6 +108,28 @@ class S3Storage:
     async def delete(self, key: str) -> None:
         validate_key(key)
         await asyncio.to_thread(self.client.delete_object, Bucket=self.bucket, Key=key)
+
+    async def delete_prefix(self, prefix: str) -> None:
+        validate_key(prefix.rstrip("/"))
+        continuation: str | None = None
+        while True:
+            if continuation is None:
+                response = await asyncio.to_thread(self.client.list_objects_v2, Bucket=self.bucket, Prefix=prefix)
+            else:
+                response = await asyncio.to_thread(
+                    self.client.list_objects_v2,
+                    Bucket=self.bucket,
+                    Prefix=prefix,
+                    ContinuationToken=continuation,
+                )
+            keys: list[ObjectIdentifierTypeDef] = [
+                {"Key": key} for item in response.get("Contents", []) if (key := item.get("Key")) is not None
+            ]
+            if keys:
+                await asyncio.to_thread(self.client.delete_objects, Bucket=self.bucket, Delete={"Objects": keys})
+            if not response.get("IsTruncated"):
+                return
+            continuation = str(response["NextContinuationToken"])
 
     async def head(self, key: str) -> ObjectInfo | None:
         validate_key(key)

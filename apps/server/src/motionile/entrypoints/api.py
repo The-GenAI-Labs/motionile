@@ -6,11 +6,12 @@ from fastapi import APIRouter, Depends, FastAPI, status
 from motionile.core.config import Settings, get_settings
 from motionile.core.errors import problem_responses
 from motionile.core.logging import configure_logging
-from motionile.core.ratelimit.limiter import rate_limit
 from motionile.core.resources import Resources, build_resources
 from motionile.core.tasks.app import create_task_app, open_for_deferring
 from motionile.entrypoints.http_app import HttpAppSpec, Lifespan, build_http_app
 from motionile.entrypoints.test_support import test_support_router
+from motionile.modules.access.router import access_admin_router
+from motionile.modules.admin import admin_insights_router
 from motionile.modules.auth import (
     AuthRuntime,
     VerificationRequiredError,
@@ -18,6 +19,9 @@ from motionile.modules.auth import (
     identify_for_rate_limit,
     verification_required_response,
 )
+from motionile.modules.catalog.router import catalog_admin_router, catalog_router
+from motionile.modules.platform.router import platform_router
+from motionile.modules.users.router import users_admin_router, users_router
 
 API_TITLE = "Motionile API"
 APPLICATION_NAME = "motionile-api"
@@ -26,7 +30,7 @@ APPLICATION_NAME = "motionile-api"
 def build_v1_router(*, include_test_routes: bool) -> APIRouter:
     router = APIRouter(
         prefix="/v1",
-        dependencies=[Depends(identify_for_rate_limit), Depends(rate_limit("api.default"))],
+        dependencies=[Depends(identify_for_rate_limit)],
         responses=problem_responses(
             status.HTTP_429_TOO_MANY_REQUESTS,
             status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -34,6 +38,13 @@ def build_v1_router(*, include_test_routes: bool) -> APIRouter:
         ),
     )
     router.include_router(auth_router)
+    router.include_router(users_router)
+    router.include_router(catalog_router)
+    router.include_router(access_admin_router)
+    router.include_router(admin_insights_router)
+    router.include_router(users_admin_router)
+    router.include_router(platform_router)
+    router.include_router(catalog_admin_router)
     if include_test_routes:
         router.include_router(test_support_router)
     return router

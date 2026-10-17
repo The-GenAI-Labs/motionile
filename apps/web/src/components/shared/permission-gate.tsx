@@ -1,4 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
+
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 
 export type PermissionMatchMode = "all" | "any";
 
@@ -18,18 +22,31 @@ export const hasPermissions = (
 
 interface PermissionGateProps {
   required: readonly string[];
-  granted: readonly string[];
+  granted?: readonly string[];
   mode?: PermissionMatchMode;
   fallback?: ReactNode;
   children: ReactNode;
 }
 
-export function PermissionGate({
+function SessionPermissionGate({
   required,
-  granted,
   mode = "all",
   fallback = null,
   children,
-}: PermissionGateProps) {
-  return hasPermissions(required, granted, mode) ? children : fallback;
+}: Omit<PermissionGateProps, "granted">) {
+  const currentUser = useCurrentUser();
+  if (currentUser.isPending) {
+    return null;
+  }
+  const permissions = currentUser.data?.permissions ?? [];
+  return hasPermissions(required, permissions, mode) ? children : fallback;
+}
+
+export function PermissionGate({ granted, ...props }: PermissionGateProps) {
+  if (granted !== undefined) {
+    return hasPermissions(props.required, granted, props.mode)
+      ? props.children
+      : (props.fallback ?? null);
+  }
+  return <SessionPermissionGate {...props} />;
 }

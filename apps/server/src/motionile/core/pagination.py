@@ -8,6 +8,7 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, ValidationError
 from sqlalchemy import ColumnElement, Select, tuple_
+from sqlalchemy.orm import InstrumentedAttribute
 
 from motionile.core.errors import ValidationAppError
 
@@ -77,8 +78,8 @@ class CursorCodec:
 def keyset_page[RowT](
     statement: Select[RowT],
     *,
-    created_at: ColumnElement[datetime],
-    id_: ColumnElement[UUID],
+    created_at: ColumnElement[datetime] | InstrumentedAttribute[datetime],
+    id_: ColumnElement[UUID] | InstrumentedAttribute[UUID],
     cursor: Cursor | None,
     limit: int,
 ) -> Select[RowT]:

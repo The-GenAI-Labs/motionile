@@ -10,5 +10,12 @@ playwright-report/
 test-results/
 zap-report/
 .venv/
+**/.pytest-*/
+apps/server/.pytest-auth/
+apps/server/.pytest-phase6/
+apps/server/.pytest-phase6-primitives/
+apps/server/.pytest-tmp/
+.test-tmp/
+.tool-shims/
 docs/context.md
 **/.import_linter_cache/

@@ -17,7 +17,9 @@ from motionile.modules.notifications import FakeDelivery, Notification
 
 TEST_IDEMPOTENCY_SCOPE = "test.idempotent"
 
-test_support_router = APIRouter(prefix="/_test", tags=["test_support"])
+test_support_router = APIRouter(
+    prefix="/_test", tags=["test_support"], dependencies=[Depends(rate_limit("api.default"))]
+)
 
 
 class EchoRequest(StrictModel):
@@ -128,7 +130,6 @@ async def inbox(destination: str, resources: ResourcesDep) -> InboxResponse:
     response_model=None,
     status_code=302,
     summary="Authorize through the local fake provider",
-    dependencies=[Depends(rate_limit("api.default"))],
 )
 async def fake_authorize(
     provider: ProviderName, query: Annotated[FakeAuthorizeQuery, Query()], resources: ResourcesDep

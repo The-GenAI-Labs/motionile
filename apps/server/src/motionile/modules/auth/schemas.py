@@ -63,6 +63,7 @@ class SessionUser(ResponseModel):
     name: str | None
     status: str
     roles: list[str]
+    permissions: list[str]
     contacts: list[ContactResponse]
     has_password: bool
     linked_providers: list[str]

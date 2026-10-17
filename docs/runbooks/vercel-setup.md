@@ -70,13 +70,14 @@ Verify: **Settings → Environments → Production** shows `prod` as the tracked
 
 Variable names are defined in `apps/web/src/config/env-schema.ts` (public, inlined at build time) and `apps/web/src/config/server-env.ts` (server only). Values are https origins without a trailing slash.
 
-| Variable                       | Production (branch `prod`) | Preview, branch `develop` (staging) | Notes                                                                                                                        |
-| ------------------------------ | -------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SITE_URL`         | `https://<DOMAIN>`         | `https://<STAGING_DOMAIN>`          | Required; the build fails without it. Used for canonical URLs, metadata and the CSP.                                         |
-| `NEXT_PUBLIC_API_URL`          | `https://api.<DOMAIN>`     | `https://api.<STAGING_DOMAIN>`      | Must be set; it silently defaults to `http://localhost:8000`. Feeds the Axios base URL and the CSP `connect-src`.            |
-| `NEXT_PUBLIC_CDN_URL`          | `https://cdn.<DOMAIN>`     | `https://cdn.<STAGING_DOMAIN>`      | Optional until the CDN is enabled; feeds the CSP `img-src` and `media-src`.                                                  |
-| `API_INTERNAL_URL`             | `https://api.<DOMAIN>`     | `https://api.<STAGING_DOMAIN>`      | Optional and server only; on Vercel it equals `NEXT_PUBLIC_API_URL`. Never prefix it with `NEXT_PUBLIC_`.                    |
-| `ENABLE_EXPERIMENTAL_COREPACK` | `1`                        | `1`                                 | Makes Vercel use pnpm 10.34.7 from `packageManager`. Add it to Preview without a branch so every preview builds with it too. |
+| Variable                       | Production (branch `prod`)  | Preview, branch `develop` (staging)  | Notes                                                                                                                        |
+| ------------------------------ | --------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`         | `https://<DOMAIN>`          | `https://<STAGING_DOMAIN>`           | Required; the build fails without it. Used for canonical URLs, metadata and the CSP.                                         |
+| `NEXT_PUBLIC_API_URL`          | `https://api.<DOMAIN>`      | `https://api.<STAGING_DOMAIN>`       | Must be set; it silently defaults to `http://localhost:8000`. Feeds the Axios base URL and the CSP `connect-src`.            |
+| `NEXT_PUBLIC_CDN_URL`          | `https://cdn.<DOMAIN>`      | `https://cdn.<STAGING_DOMAIN>`       | Optional until the CDN is enabled; feeds the CSP `img-src` and `media-src`.                                                  |
+| `API_INTERNAL_URL`             | `https://api.<DOMAIN>`      | `https://api.<STAGING_DOMAIN>`       | Optional and server only; on Vercel it equals `NEXT_PUBLIC_API_URL`. Never prefix it with `NEXT_PUBLIC_`.                    |
+| `CATALOG_REVALIDATION_SECRET`  | Random 32+ character secret | Separate random 32+ character secret | Required and server only. Use the same environment-specific value uploaded to the API's SSM parameter.                       |
+| `ENABLE_EXPERIMENTAL_COREPACK` | `1`                         | `1`                                  | Makes Vercel use pnpm 10.34.7 from `packageManager`. Add it to Preview without a branch so every preview builds with it too. |
 
 In the dashboard:
 
@@ -92,12 +93,14 @@ printf '%s' 'https://<DOMAIN>' | vercel env add NEXT_PUBLIC_SITE_URL production
 printf '%s' 'https://api.<DOMAIN>' | vercel env add NEXT_PUBLIC_API_URL production
 printf '%s' 'https://cdn.<DOMAIN>' | vercel env add NEXT_PUBLIC_CDN_URL production
 printf '%s' 'https://api.<DOMAIN>' | vercel env add API_INTERNAL_URL production
+printf '%s' '<PRODUCTION_REVALIDATION_SECRET>' | vercel env add CATALOG_REVALIDATION_SECRET production
 printf '%s' '1' | vercel env add ENABLE_EXPERIMENTAL_COREPACK production
 
 printf '%s' 'https://<STAGING_DOMAIN>' | vercel env add NEXT_PUBLIC_SITE_URL preview develop
 printf '%s' 'https://api.<STAGING_DOMAIN>' | vercel env add NEXT_PUBLIC_API_URL preview develop
 printf '%s' 'https://cdn.<STAGING_DOMAIN>' | vercel env add NEXT_PUBLIC_CDN_URL preview develop
 printf '%s' 'https://api.<STAGING_DOMAIN>' | vercel env add API_INTERNAL_URL preview develop
+printf '%s' '<STAGING_REVALIDATION_SECRET>' | vercel env add CATALOG_REVALIDATION_SECRET preview develop
 printf '%s' '1' | vercel env add ENABLE_EXPERIMENTAL_COREPACK preview
 ```
 

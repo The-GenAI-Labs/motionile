@@ -9,7 +9,20 @@ import { PublicHeader } from "@/components/layouts/public-header";
 import { UserShell } from "@/components/layouts/user-shell";
 
 vi.mock("@/features/auth/hooks/use-current-user", () => ({
-  useCurrentUser: () => ({ data: { name: "Test user" } }),
+  useCurrentUser: () => ({
+    data: {
+      name: "Test user",
+      permissions: [
+        "analytics.read",
+        "users.read",
+        "roles.read",
+        "audit.read",
+        "catalog.manage",
+        "flags.manage",
+        "settings.read",
+      ],
+    },
+  }),
 }));
 vi.mock("@/features/auth/hooks/use-auth-mutations", () => ({
   useLogout: () => ({ mutate: vi.fn(), isPending: false }),
@@ -67,7 +80,7 @@ describe("public layout", () => {
       within(mobileNav)
         .getAllByRole("link")
         .map((link) => link.textContent),
-    ).toEqual(["Pricing", "About", "Contact"]);
+    ).toEqual(["Explore", "Pricing", "About", "Contact"]);
 
     await user.click(within(mobileNav).getByRole("link", { name: "Pricing" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

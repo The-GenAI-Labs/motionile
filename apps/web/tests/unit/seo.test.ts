@@ -1,13 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { metadata, viewport } from "@/app/layout";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
 
+vi.mock("@/features/catalog/api/catalog.server.api", () => ({
+  catalogPaths: vi.fn().mockResolvedValue({ items: [] }),
+}));
+
 describe("sitemap", () => {
-  it("lists every public page with absolute urls", () => {
-    expect(sitemap()).toEqual([
+  it("lists every public page with absolute urls", async () => {
+    expect(await sitemap()).toEqual([
       { url: "https://motionile.test/", changeFrequency: "weekly", priority: 1 },
+      { url: "https://motionile.test/explore", changeFrequency: "weekly", priority: 0.9 },
       { url: "https://motionile.test/pricing", changeFrequency: "monthly", priority: 0.8 },
       { url: "https://motionile.test/about", changeFrequency: "monthly", priority: 0.6 },
       { url: "https://motionile.test/contact", changeFrequency: "yearly", priority: 0.5 },
@@ -60,10 +65,10 @@ describe("robots", () => {
     expect(result.host).toBe("https://motionile.test");
   });
 
-  it("never blocks a public page", () => {
+  it("never blocks a public page", async () => {
     const disallowed = [robots().rules].flat().flatMap((rule) => [rule.disallow ?? []].flat());
 
-    for (const { url } of sitemap()) {
+    for (const { url } of await sitemap()) {
       const path = new URL(url).pathname;
       expect(disallowed.some((prefix) => path.startsWith(prefix))).toBe(false);
     }

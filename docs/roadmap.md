@@ -61,11 +61,14 @@ Motionile is built in twelve phases. Each phase lands as one or more pull reques
 
 ## Phase 6 — Users, RBAC, admin console and catalog
 
-**Scope:** users and roles, RBAC enforcement, audit logs, the admin console (users, roles, audit logs, catalog, prompts, system skills, platform specs, settings, feature flags), the catalog module and the public explore pages with ISR, sitemap and JSON-LD.
+**Scope:** user profile, contacts, preferences, avatar, export and deletion; live RBAC enforcement; runtime settings and feature flags; audit and analytics views; the catalog module; the admin console for users, roles, audit, settings, flags and catalog; public explore pages with ISR, sitemap, redirects and JSON-LD.
 
 **Done when:**
 
 - Admin actions are authorized in services and recorded in audit logs.
+- Role and permission changes affect active sessions immediately without trusting token role claims.
+- Profile management, export and the 30-day deletion and restore flow work end to end.
+- Runtime settings and feature flags use schema validation, optimistic concurrency, audit and cache invalidation.
 - Explore pages are statically generated, revalidate on catalog changes and emit `BreadcrumbList` JSON-LD.
 - `sitemap.ts` lists every public catalog page.
 

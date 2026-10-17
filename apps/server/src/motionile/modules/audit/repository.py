@@ -1,3 +1,6 @@
+from uuid import UUID
+
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.ids import new_id
@@ -25,3 +28,17 @@ class AuditRepository:
         self.session.add(entry)
         await self.session.flush()
         return entry
+
+    async def recent_for_user(self, user_id: UUID, limit: int) -> list[AuditLogEntry]:
+        query = (
+            select(AuditLogEntry)
+            .where(
+                or_(
+                    AuditLogEntry.actor_user_id == user_id,
+                    AuditLogEntry.target_id == str(user_id),
+                )
+            )
+            .order_by(AuditLogEntry.created_at.desc(), AuditLogEntry.id.desc())
+            .limit(limit)
+        )
+        return list(await self.session.scalars(query))

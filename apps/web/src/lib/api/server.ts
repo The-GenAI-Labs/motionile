@@ -16,6 +16,8 @@ export interface ServerFetchOptions<Schema extends z.ZodType> {
   headers?: Record<string, string>;
   timeoutMs?: number;
   signal?: AbortSignal;
+  cache?: RequestCache;
+  next?: NextFetchRequestConfig;
 }
 
 const FORWARDED_HEADERS = ["cookie", REQUEST_ID_HEADER, "accept-language"] as const;
@@ -70,7 +72,8 @@ export async function serverFetch<Schema extends z.ZodType>(
       method: options.method ?? "GET",
       headers: requestHeaders,
       body: options.body === undefined ? null : JSON.stringify(options.body),
-      cache: "no-store",
+      cache: options.cache ?? "no-store",
+      next: options.next,
       signal: buildSignal(options.timeoutMs ?? API_TIMEOUT_MS, options.signal),
     });
   } catch (error) {

@@ -20,6 +20,7 @@ CONTEXT_POLICIES = {
     "auth.otp.verify": [(5, 5 * MINUTE, RateLimitScope.IDENTIFIER)],
     "auth.refresh": [(30, MINUTE, RateLimitScope.SESSION)],
     "api.default": [(120, MINUTE, RateLimitScope.USER), (60, MINUTE, RateLimitScope.IP)],
+    "catalog.read": [(600, MINUTE, RateLimitScope.IP)],
     "jobs.create": [(5, MINUTE, RateLimitScope.USER)],
     "billing.order.create": [(10, MINUTE, RateLimitScope.USER)],
     "skills.write": [(20, HOUR, RateLimitScope.USER)],

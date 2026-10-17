@@ -405,6 +405,8 @@ jobs:
     if: needs.changes.outputs.stack == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      RATE_LIMIT_ENABLED: "false"
     steps:
       - uses: actions/checkout@v7.0.1
         with:

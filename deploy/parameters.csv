@@ -25,6 +25,7 @@ DATABASE_URL,owner,yes,"Pooled PostgreSQL URL used by the application, postgresq
 DATABASE_DIRECT_URL,owner,yes,"Direct PostgreSQL URL used by migrations and workers, postgresql://..."
 REDIS_PASSWORD,owner,yes,Password of the Compose Redis service
 SECURITY_PAGINATION_SECRET,owner,yes,At least 32 random characters that sign pagination cursors
+CATALOG_REVALIDATION_SECRET,owner,yes,At least 32 random characters shared by catalog revalidation tasks and the web endpoint
 ENCRYPTION_KEYS,owner,yes,"JSON map of key version to base64 32-byte AES-GCM key, for example {""1"":""<base64>""}"
 TURNSTILE_SECRET_KEY,owner,yes,Cloudflare Turnstile secret key of this environment
 CLOUDFRONT_PRIVATE_KEY,owner,no,PEM private key that signs CloudFront cookies and URLs; used from Phase 9

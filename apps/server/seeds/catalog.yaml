@@ -1,0 +1,189 @@
+categories:
+  - slug: education
+    name: Education
+    description: Clear visual lessons for foundational academic subjects and practical study.
+    subcategories:
+      - slug: mathematics
+        name: Mathematics
+        description: Essential mathematical ideas and problem-solving methods.
+        topics:
+          [
+            Linear Equations,
+            Quadratic Functions,
+            Trigonometric Ratios,
+            Derivatives,
+            Probability Basics,
+            Matrix Transformations,
+          ]
+      - slug: physics
+        name: Physics
+        description: Motion, forces, energy, waves, and the physical world.
+        topics:
+          [
+            Newton's Laws of Motion,
+            Conservation of Energy,
+            Electric Circuits,
+            Wave Interference,
+            Special Relativity,
+            Projectile Motion,
+          ]
+      - slug: chemistry
+        name: Chemistry
+        description: Atoms, reactions, bonding, equilibrium, and chemical change.
+        topics:
+          [
+            Atomic Structure,
+            Chemical Bonding,
+            Balancing Chemical Equations,
+            Acids and Bases,
+            Chemical Equilibrium,
+            Organic Functional Groups,
+          ]
+      - slug: biology
+        name: Biology
+        description: Cells, genetics, evolution, physiology, and ecosystems.
+        topics:
+          [
+            Cell Structure,
+            DNA Replication,
+            Natural Selection,
+            Photosynthesis,
+            The Immune Response,
+            Energy Flow in Ecosystems,
+          ]
+      - slug: computer-science-fundamentals
+        name: Computer Science Fundamentals
+        description: Core computing ideas across data, algorithms, systems, and abstraction.
+        topics:
+          [
+            Binary Numbers,
+            Algorithm Complexity,
+            Core Data Structures,
+            Recursion,
+            Operating System Processes,
+            Database Indexes,
+          ]
+      - slug: economics
+        name: Economics
+        description: Markets, incentives, policy, trade, and economic behavior.
+        topics:
+          [
+            Supply and Demand,
+            Inflation,
+            Comparative Advantage,
+            Monetary Policy,
+            Market Failures,
+            Gross Domestic Product,
+          ]
+  - slug: tech
+    name: Tech
+    description: Practical guides to modern software, infrastructure, security, and intelligent systems.
+    subcategories:
+      - slug: frontend
+        name: Frontend
+        description: Browser architecture, interfaces, performance, and accessible web development.
+        topics:
+          [
+            Browser Rendering Pipeline,
+            React Rendering,
+            Modern CSS Layout,
+            Web Accessibility Fundamentals,
+            Client-Side Caching,
+            Web Performance Metrics,
+          ]
+      - slug: backend
+        name: Backend
+        description: Server APIs, databases, concurrency, reliability, and application architecture.
+        topics:
+          [
+            REST API Design,
+            Database Transactions,
+            Authentication Sessions,
+            Background Job Processing,
+            API Rate Limiting,
+            Asynchronous I/O,
+          ]
+      - slug: system-design
+        name: System Design
+        description: Architecture patterns for scalable, reliable, and observable systems.
+        topics:
+          [
+            Load Balancing,
+            Caching at Scale,
+            Database Sharding,
+            Message Queues,
+            Consistent Hashing,
+            Observability Fundamentals,
+          ]
+      - slug: devops
+        name: DevOps
+        description: Delivery pipelines, containers, infrastructure, deployment, and operations.
+        topics:
+          [
+            How Containers Work,
+            CI/CD Pipelines,
+            Kubernetes Scheduling,
+            Infrastructure as Code,
+            Blue-Green Deployments,
+            Incident Response,
+          ]
+      - slug: concepts
+        name: Concepts
+        description: Foundational ideas connecting software, networks, data, and computing systems.
+        topics:
+          [
+            Abstraction in Software,
+            Concurrency vs Parallelism,
+            Eventual Consistency,
+            Public-Key Cryptography,
+            The Domain Name System,
+            Virtual Memory,
+          ]
+      - slug: applied-ai
+        name: Applied AI
+        description: Useful AI products built with retrieval, evaluation, safety, and operations.
+        topics:
+          [
+            Retrieval-Augmented Generation,
+            Prompt Engineering,
+            Evaluating AI Systems,
+            Model Guardrails,
+            Semantic Search,
+            AI Agents,
+          ]
+      - slug: machine-learning
+        name: Machine Learning
+        description: Models, training, generalization, optimization, and learning algorithms.
+        topics:
+          [
+            Linear Regression,
+            Decision Trees,
+            Gradient Descent,
+            Neural Networks,
+            Overfitting and Generalization,
+            Clustering,
+          ]
+      - slug: blockchain-and-web3
+        name: Blockchain and Web3
+        description: Distributed ledgers, consensus, smart contracts, and decentralized applications.
+        topics:
+          [
+            Blockchain Basics,
+            Proof of Work,
+            Proof of Stake,
+            Smart Contracts,
+            The Blockchain Trilemma,
+            Layer Two Rollups,
+          ]
+      - slug: cybersecurity
+        name: Cybersecurity
+        description: Defensive security, common attacks, identity, encryption, and secure engineering.
+        topics:
+          [
+            Threat Modeling,
+            SQL Injection,
+            Cross-Site Scripting,
+            Phishing Attacks,
+            Zero Trust Architecture,
+            Password Hashing,
+          ]

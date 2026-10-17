@@ -7,6 +7,7 @@ declare namespace NodeJS {
     readonly NEXT_PUBLIC_JWKS_URL?: string;
     readonly AUTH_JWT_ISSUER?: string;
     readonly AUTH_JWT_AUDIENCE?: string;
+    readonly CATALOG_REVALIDATION_SECRET?: string;
     readonly API_INTERNAL_URL?: string;
   }
 }

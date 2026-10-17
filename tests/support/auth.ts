@@ -50,8 +50,13 @@ export class AuthApi {
     }
     return response;
   }
-  async code(template: string, destination = this.email, previous = ""): Promise<string> {
+  async code(
+    template: string,
+    destination = this.email,
+    previous: string | readonly string[] = "",
+  ): Promise<string> {
     let result = "";
+    const previousCodes = new Set(typeof previous === "string" ? [previous] : previous);
     await expect
       .poll(
         async () => {
@@ -62,7 +67,7 @@ export class AuthApi {
           const body = (await inbox.json()) as Inbox;
           result =
             body.messages.find(
-              (message) => message.template === template && message.code !== previous,
+              (message) => message.template === template && !previousCodes.has(message.code ?? ""),
             )?.code ?? "";
           return result;
         },

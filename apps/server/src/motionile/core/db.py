@@ -21,6 +21,7 @@ NAMING_CONVENTION = {
     "pk": "pk_%(table_name)s",
 }
 AFTER_COMMIT_KEY = "motionile.after_commit"
+AFTER_ROLLBACK_KEY = "motionile.after_rollback"
 
 type AfterCommitCallback = Callable[[], Awaitable[None]]
 
@@ -74,13 +75,29 @@ def after_commit(session: AsyncSession, callback: AfterCommitCallback) -> None:
     callbacks.append(callback)
 
 
+def after_rollback(session: AsyncSession, callback: AfterCommitCallback) -> None:
+    callbacks: list[AfterCommitCallback] = session.info.setdefault(AFTER_ROLLBACK_KEY, [])
+    callbacks.append(callback)
+
+
 async def run_after_commit(session: AsyncSession) -> None:
+    session.info.pop(AFTER_ROLLBACK_KEY, None)
     callbacks: list[AfterCommitCallback] = session.info.pop(AFTER_COMMIT_KEY, [])
     for callback in callbacks:
         try:
             await callback()
         except Exception:
             logger.exception("db.after_commit_failed")
+
+
+async def run_after_rollback(session: AsyncSession) -> None:
+    session.info.pop(AFTER_COMMIT_KEY, None)
+    callbacks: list[AfterCommitCallback] = session.info.pop(AFTER_ROLLBACK_KEY, [])
+    for callback in callbacks:
+        try:
+            await callback()
+        except Exception:
+            logger.exception("db.after_rollback_failed")
 
 
 class Database:
@@ -94,9 +111,14 @@ class Database:
     @asynccontextmanager
     async def transaction(self) -> AsyncGenerator[AsyncSession]:
         async with self._sessions() as session:
-            async with session.begin():
-                yield session
-            await run_after_commit(session)
+            try:
+                async with session.begin():
+                    yield session
+            except BaseException:
+                await run_after_rollback(session)
+                raise
+            else:
+                await run_after_commit(session)
 
     async def ping(self, timeout_seconds: float) -> None:
         async with asyncio.timeout(timeout_seconds), self.engine.connect() as connection:

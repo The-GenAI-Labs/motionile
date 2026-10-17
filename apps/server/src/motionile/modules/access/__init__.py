@@ -1,4 +1,55 @@
-from motionile.modules.access.models import Role, UserRole
-from motionile.modules.access.service import assign_default_role, roles_for_user
+from motionile.modules.access.dependencies import (
+    AnalyticsReadDep,
+    AuditReadDep,
+    CatalogManageDep,
+    FlagsManageDep,
+    RequirePermission,
+    RolesManageDep,
+    RolesReadDep,
+    SettingsManageDep,
+    SettingsReadDep,
+    UsersManageDep,
+    UsersReadDep,
+    UsersRolesAssignDep,
+)
+from motionile.modules.access.models import Permission, Role, RolePermission, UserRole
+from motionile.modules.access.permissions import PERMISSION_KEYS, PERMISSIONS
+from motionile.modules.access.service import (
+    AccessService,
+    EffectiveAccess,
+    assign_default_role,
+    grant_role_by_key,
+    invalidate_user_access,
+    invalidate_user_access_after_commit,
+    resolve_access,
+    roles_for_user,
+)
 
-__all__ = ["Role", "UserRole", "assign_default_role", "roles_for_user"]
+__all__ = [
+    "PERMISSIONS",
+    "PERMISSION_KEYS",
+    "AccessService",
+    "AnalyticsReadDep",
+    "AuditReadDep",
+    "CatalogManageDep",
+    "EffectiveAccess",
+    "FlagsManageDep",
+    "Permission",
+    "RequirePermission",
+    "Role",
+    "RolePermission",
+    "RolesManageDep",
+    "RolesReadDep",
+    "SettingsManageDep",
+    "SettingsReadDep",
+    "UserRole",
+    "UsersManageDep",
+    "UsersReadDep",
+    "UsersRolesAssignDep",
+    "assign_default_role",
+    "grant_role_by_key",
+    "invalidate_user_access",
+    "invalidate_user_access_after_commit",
+    "resolve_access",
+    "roles_for_user",
+]

@@ -2,6 +2,7 @@
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
@@ -23,8 +24,10 @@ export function Providers({ children }: Readonly<{ children: ReactNode }>) {
     <QueryClientProvider client={queryClient}>
       <SessionRuntime />
       <TooltipProvider>
-        {children}
-        <Toaster />
+        <NuqsAdapter>
+          {children}
+          <Toaster />
+        </NuqsAdapter>
       </TooltipProvider>
       {ReactQueryDevtools ? <ReactQueryDevtools buttonPosition="bottom-left" /> : null}
     </QueryClientProvider>

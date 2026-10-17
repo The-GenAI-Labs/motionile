@@ -3,6 +3,229 @@
 import * as z from 'zod';
 
 /**
+ * AccountDeletionConfirmRequest
+ */
+export const zAccountDeletionConfirmRequest = z.object({
+    challengeToken: z.string().min(20).max(128),
+    code: z.string().regex(/^[0-9]{6}$/)
+});
+
+/**
+ * AdminUserAuditEntry
+ */
+export const zAdminUserAuditEntry = z.object({
+    action: z.string(),
+    actorType: z.string(),
+    createdAt: z.iso.datetime(),
+    id: z.uuid(),
+    targetId: z.string().nullable(),
+    targetType: z.string().nullable()
+});
+
+/**
+ * AdminUserSummary
+ */
+export const zAdminUserSummary = z.object({
+    createdAt: z.iso.datetime(),
+    id: z.uuid(),
+    name: z.string().nullable(),
+    primaryContact: z.string().nullable(),
+    roles: z.array(z.string()),
+    status: z.string()
+});
+
+/**
+ * AdminUserListResponse
+ */
+export const zAdminUserListResponse = z.object({
+    items: z.array(zAdminUserSummary),
+    nextCursor: z.string().nullish()
+});
+
+/**
+ * AuditEntryResponse
+ */
+export const zAuditEntryResponse = z.object({
+    action: z.string(),
+    actorType: z.string(),
+    actorUserId: z.uuid().nullable(),
+    createdAt: z.iso.datetime(),
+    id: z.uuid(),
+    ip: z.string().nullable(),
+    metadata: z.record(z.string(), z.unknown()),
+    requestId: z.string().nullable(),
+    targetId: z.string().nullable(),
+    targetType: z.string().nullable(),
+    userAgent: z.string().nullable()
+});
+
+/**
+ * AuditListResponse
+ */
+export const zAuditListResponse = z.object({
+    items: z.array(zAuditEntryResponse),
+    nextCursor: z.string().nullish()
+});
+
+/**
+ * AvatarResponse
+ */
+export const zAvatarResponse = z.object({
+    url: z.string()
+});
+
+/**
+ * Body_users_upload_avatar
+ */
+export const zBodyUsersUploadAvatar = z.object({
+    file: z.string()
+});
+
+/**
+ * CatalogCategoryResponse
+ */
+export const zCatalogCategoryResponse = z.object({
+    createdAt: z.iso.datetime(),
+    description: z.string().nullable(),
+    icon: z.string().nullable(),
+    id: z.uuid(),
+    isActive: z.boolean(),
+    level: z.enum(['category', 'subcategory']),
+    name: z.string(),
+    parentId: z.uuid().nullable(),
+    seoDescription: z.string().nullable(),
+    seoTitle: z.string().nullable(),
+    slug: z.string(),
+    sortOrder: z.int(),
+    updatedAt: z.iso.datetime(),
+    version: z.int()
+});
+
+/**
+ * CatalogPathResponse
+ */
+export const zCatalogPathResponse = z.object({
+    lastModified: z.iso.datetime(),
+    path: z.string()
+});
+
+/**
+ * CatalogPathsResponse
+ */
+export const zCatalogPathsResponse = z.object({
+    items: z.array(zCatalogPathResponse)
+});
+
+/**
+ * CatalogRedirectResponse
+ */
+export const zCatalogRedirectResponse = z.object({
+    destination: z.string()
+});
+
+/**
+ * CatalogTopicResponse
+ */
+export const zCatalogTopicResponse = z.object({
+    categoryId: z.uuid(),
+    createdAt: z.iso.datetime(),
+    difficulty: z.enum([
+        'beginner',
+        'intermediate',
+        'advanced'
+    ]),
+    id: z.uuid(),
+    isActive: z.boolean(),
+    seoDescription: z.string().nullable(),
+    seoTitle: z.string().nullable(),
+    skillHints: z.array(z.string()),
+    slug: z.string(),
+    sortOrder: z.int(),
+    suggestedDurationMs: z.int(),
+    summary: z.string().nullable(),
+    title: z.string(),
+    updatedAt: z.iso.datetime(),
+    version: z.int()
+});
+
+/**
+ * CategoryDetailResponse
+ */
+export const zCategoryDetailResponse = z.object({
+    category: zCatalogCategoryResponse,
+    subcategories: z.array(zCatalogCategoryResponse)
+});
+
+/**
+ * CategoryTreeItem
+ */
+export const zCategoryTreeItem = z.object({
+    children: z.array(zCatalogCategoryResponse),
+    createdAt: z.iso.datetime(),
+    description: z.string().nullable(),
+    icon: z.string().nullable(),
+    id: z.uuid(),
+    isActive: z.boolean(),
+    level: z.enum(['category', 'subcategory']),
+    name: z.string(),
+    parentId: z.uuid().nullable(),
+    seoDescription: z.string().nullable(),
+    seoTitle: z.string().nullable(),
+    slug: z.string(),
+    sortOrder: z.int(),
+    updatedAt: z.iso.datetime(),
+    version: z.int()
+});
+
+/**
+ * AdminCatalogTreeResponse
+ */
+export const zAdminCatalogTreeResponse = z.object({
+    categories: z.array(zCategoryTreeItem),
+    topics: z.array(zCatalogTopicResponse)
+});
+
+/**
+ * CatalogTreeResponse
+ */
+export const zCatalogTreeResponse = z.object({
+    categories: z.array(zCategoryTreeItem)
+});
+
+/**
+ * CategoryUpdateRequest
+ */
+export const zCategoryUpdateRequest = z.object({
+    description: z.string().max(500).nullish(),
+    icon: z.string().max(80).nullish(),
+    isActive: z.boolean().optional().default(true),
+    level: z.enum(['category', 'subcategory']),
+    name: z.string().min(1).max(80),
+    parentId: z.uuid().nullish(),
+    seoDescription: z.string().max(160).nullish(),
+    seoTitle: z.string().max(70).nullish(),
+    slug: z.string().min(1).max(80).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+    sortOrder: z.int().gte(0).lte(100000).optional().default(0),
+    version: z.int().gte(1)
+});
+
+/**
+ * CategoryWriteRequest
+ */
+export const zCategoryWriteRequest = z.object({
+    description: z.string().max(500).nullish(),
+    icon: z.string().max(80).nullish(),
+    isActive: z.boolean().optional().default(true),
+    level: z.enum(['category', 'subcategory']),
+    name: z.string().min(1).max(80),
+    parentId: z.uuid().nullish(),
+    seoDescription: z.string().max(160).nullish(),
+    seoTitle: z.string().max(70).nullish(),
+    slug: z.string().min(1).max(80).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+    sortOrder: z.int().gte(0).lte(100000).optional().default(0)
+});
+
+/**
  * ChallengeResponse
  */
 export const zChallengeResponse = z.object({
@@ -28,6 +251,24 @@ export const zCodeRequest = z.object({
 });
 
 /**
+ * ContactAddRequest
+ */
+export const zContactAddRequest = z.object({
+    identifier: z.string().min(3).max(254)
+});
+
+/**
+ * ContactChallengeResponse
+ */
+export const zContactChallengeResponse = z.object({
+    challengeToken: z.string(),
+    channel: z.enum(['email', 'whatsapp']),
+    destination: z.string(),
+    expiresIn: z.int().optional().default(300),
+    resendAfter: z.int().optional().default(60)
+});
+
+/**
  * ContactResponse
  */
 export const zContactResponse = z.object({
@@ -38,9 +279,65 @@ export const zContactResponse = z.object({
 });
 
 /**
+ * ContactVerifyRequest
+ */
+export const zContactVerifyRequest = z.object({
+    challengeToken: z.string().min(20).max(128),
+    code: z.string().regex(/^[0-9]{6}$/)
+});
+
+/**
+ * CursorPage[CatalogTopicResponse]
+ */
+export const zCursorPageCatalogTopicResponse = z.object({
+    items: z.array(zCatalogTopicResponse),
+    nextCursor: z.string().nullish()
+});
+
+/**
+ * DailyUsers
+ */
+export const zDailyUsers = z.object({
+    count: z.int(),
+    date: z.iso.date()
+});
+
+/**
+ * AnalyticsResponse
+ */
+export const zAnalyticsResponse = z.object({
+    activeSessions: z.int(),
+    newUsers: z.array(zDailyUsers),
+    signInMethods: z.record(z.string(), z.int()),
+    totalUsers: z.int(),
+    verifiedRatio: z.number()
+});
+
+/**
  * DependencyStatus
  */
 export const zDependencyStatus = z.enum(['ok', 'unavailable']);
+
+/**
+ * EvaluatedFlagsResponse
+ */
+export const zEvaluatedFlagsResponse = z.object({
+    flags: z.record(z.string(), z.boolean())
+});
+
+/**
+ * ExportResponse
+ */
+export const zExportResponse = z.object({
+    status: z.literal('queued').optional().default('queued')
+});
+
+/**
+ * FeatureFlagDeleteRequest
+ */
+export const zFeatureFlagDeleteRequest = z.object({
+    version: z.int().gte(1)
+});
 
 /**
  * FieldError
@@ -49,6 +346,49 @@ export const zFieldError = z.object({
     field: z.string(),
     message: z.string(),
     type: z.string()
+});
+
+/**
+ * FlagRule
+ */
+export const zFlagRule = z.object({
+    kind: z.enum(['user', 'role']),
+    values: z.array(z.string()).min(1).max(100)
+});
+
+/**
+ * FeatureFlagResponse
+ */
+export const zFeatureFlagResponse = z.object({
+    description: z.string().nullable(),
+    enabled: z.boolean(),
+    key: z.string(),
+    rolloutPercentage: z.int(),
+    rules: z.array(zFlagRule),
+    updatedAt: z.iso.datetime(),
+    version: z.int()
+});
+
+/**
+ * FeatureFlagUpdateRequest
+ */
+export const zFeatureFlagUpdateRequest = z.object({
+    description: z.string().max(500).nullish(),
+    enabled: z.boolean(),
+    rolloutPercentage: z.int().gte(0).lte(100),
+    rules: z.array(zFlagRule).max(20).optional(),
+    version: z.int().gte(1)
+});
+
+/**
+ * FeatureFlagWriteRequest
+ */
+export const zFeatureFlagWriteRequest = z.object({
+    description: z.string().max(500).nullish(),
+    enabled: z.boolean().optional().default(false),
+    key: z.string().min(1).max(80).regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/),
+    rolloutPercentage: z.int().gte(0).lte(100).optional().default(0),
+    rules: z.array(zFlagRule).max(20).optional()
 });
 
 /**
@@ -95,6 +435,14 @@ export const zOAuthStartResponse = z.object({
 });
 
 /**
+ * PermissionResponse
+ */
+export const zPermissionResponse = z.object({
+    description: z.string().nullable(),
+    key: z.string()
+});
+
+/**
  * ProblemDetails
  */
 export const zProblemDetails = z.object({
@@ -134,10 +482,69 @@ export const zRegisterRequest = z.object({
 });
 
 /**
+ * ReorderItem
+ */
+export const zReorderItem = z.object({
+    id: z.uuid(),
+    sortOrder: z.int().gte(0).lte(100000),
+    version: z.int().gte(1)
+});
+
+/**
+ * CatalogReorderRequest
+ */
+export const zCatalogReorderRequest = z.object({
+    entityType: z.enum(['category', 'topic']),
+    items: z.array(zReorderItem).min(1).max(500)
+});
+
+/**
  * ResetPasswordRequest
  */
 export const zResetPasswordRequest = z.object({
     code: z.string().regex(/^[0-9]{6}$/)
+});
+
+/**
+ * RoleCreateRequest
+ */
+export const zRoleCreateRequest = z.object({
+    description: z.string().max(500).nullish(),
+    key: z.string().min(2).max(40).regex(/^[a-z][a-z_]{1,39}$/),
+    name: z.string().min(1).max(80),
+    permissions: z.array(z.string()).max(100).optional()
+});
+
+/**
+ * RoleResponse
+ */
+export const zRoleResponse = z.object({
+    createdAt: z.iso.datetime(),
+    description: z.string().nullable(),
+    id: z.uuid(),
+    isSystem: z.boolean(),
+    key: z.string(),
+    name: z.string(),
+    permissions: z.array(z.string()),
+    updatedAt: z.iso.datetime(),
+    userCount: z.int().optional().default(0)
+});
+
+/**
+ * AccessCatalogResponse
+ */
+export const zAccessCatalogResponse = z.object({
+    permissions: z.array(zPermissionResponse),
+    roles: z.array(zRoleResponse)
+});
+
+/**
+ * RoleUpdateRequest
+ */
+export const zRoleUpdateRequest = z.object({
+    description: z.string().max(500).nullish(),
+    name: z.string().min(1).max(80).nullish(),
+    permissions: z.array(z.string()).max(100).nullish()
 });
 
 /**
@@ -161,6 +568,7 @@ export const zSessionUser = z.object({
     id: z.uuid(),
     linkedProviders: z.array(z.string()),
     name: z.string().nullable(),
+    permissions: z.array(z.string()),
     roles: z.array(z.string()),
     status: z.string()
 });
@@ -171,6 +579,218 @@ export const zSessionUser = z.object({
 export const zSessionsResponse = z.object({
     items: z.array(zSessionResponse),
     nextCursor: z.string().nullish()
+});
+
+export const zSettingValue = z.union([
+    z.boolean(),
+    z.int(),
+    z.string(),
+    z.array(z.string())
+]);
+
+/**
+ * PublicSettingsResponse
+ */
+export const zPublicSettingsResponse = z.object({
+    settings: z.record(z.string(), zSettingValue)
+});
+
+/**
+ * SettingResponse
+ */
+export const zSettingResponse = z.object({
+    description: z.string(),
+    key: z.string(),
+    public: z.boolean(),
+    schema: z.record(z.string(), z.unknown()),
+    updatedAt: z.iso.datetime().nullish(),
+    value: zSettingValue,
+    version: z.int()
+});
+
+/**
+ * SettingUpdateRequest
+ */
+export const zSettingUpdateRequest = z.object({
+    value: zSettingValue,
+    version: z.int().gte(1)
+});
+
+/**
+ * SubcategoryDetailResponse
+ */
+export const zSubcategoryDetailResponse = z.object({
+    category: zCatalogCategoryResponse,
+    subcategory: zCatalogCategoryResponse,
+    topics: zCursorPageCatalogTopicResponse
+});
+
+/**
+ * TopicDetailResponse
+ */
+export const zTopicDetailResponse = z.object({
+    category: zCatalogCategoryResponse,
+    relatedTopics: z.array(zCatalogTopicResponse),
+    subcategory: zCatalogCategoryResponse,
+    topic: zCatalogTopicResponse
+});
+
+/**
+ * TopicSearchResult
+ */
+export const zTopicSearchResult = z.object({
+    categoryId: z.uuid(),
+    createdAt: z.iso.datetime(),
+    difficulty: z.enum([
+        'beginner',
+        'intermediate',
+        'advanced'
+    ]),
+    id: z.uuid(),
+    isActive: z.boolean(),
+    path: z.string(),
+    seoDescription: z.string().nullable(),
+    seoTitle: z.string().nullable(),
+    skillHints: z.array(z.string()),
+    slug: z.string(),
+    sortOrder: z.int(),
+    suggestedDurationMs: z.int(),
+    summary: z.string().nullable(),
+    title: z.string(),
+    updatedAt: z.iso.datetime(),
+    version: z.int()
+});
+
+/**
+ * TopicSearchResponse
+ */
+export const zTopicSearchResponse = z.object({
+    items: z.array(zTopicSearchResult),
+    nextCursor: z.string().nullish()
+});
+
+/**
+ * TopicUpdateRequest
+ */
+export const zTopicUpdateRequest = z.object({
+    categoryId: z.uuid(),
+    difficulty: z.enum([
+        'beginner',
+        'intermediate',
+        'advanced'
+    ]).optional().default('beginner'),
+    isActive: z.boolean().optional().default(true),
+    seoDescription: z.string().max(160).nullish(),
+    seoTitle: z.string().max(70).nullish(),
+    skillHints: z.array(z.string()).max(20).optional(),
+    slug: z.string().min(1).max(120).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+    sortOrder: z.int().gte(0).lte(100000).optional().default(0),
+    suggestedDurationMs: z.int().gte(10000).lte(120000).optional().default(60000),
+    summary: z.string().max(500).nullish(),
+    title: z.string().min(1).max(120),
+    version: z.int().gte(1)
+});
+
+/**
+ * TopicWriteRequest
+ */
+export const zTopicWriteRequest = z.object({
+    categoryId: z.uuid(),
+    difficulty: z.enum([
+        'beginner',
+        'intermediate',
+        'advanced'
+    ]).optional().default('beginner'),
+    isActive: z.boolean().optional().default(true),
+    seoDescription: z.string().max(160).nullish(),
+    seoTitle: z.string().max(70).nullish(),
+    skillHints: z.array(z.string()).max(20).optional(),
+    slug: z.string().min(1).max(120).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+    sortOrder: z.int().gte(0).lte(100000).optional().default(0),
+    suggestedDurationMs: z.int().gte(10000).lte(120000).optional().default(60000),
+    summary: z.string().max(500).nullish(),
+    title: z.string().min(1).max(120)
+});
+
+/**
+ * UserContactResponse
+ */
+export const zUserContactResponse = z.object({
+    id: z.uuid(),
+    kind: z.enum(['email', 'phone']),
+    primary: z.boolean(),
+    value: z.string(),
+    verified: z.boolean()
+});
+
+/**
+ * AdminUserDetailResponse
+ */
+export const zAdminUserDetailResponse = z.object({
+    activeSessionCount: z.int(),
+    avatarUrl: z.string().nullable(),
+    contacts: z.array(zUserContactResponse),
+    createdAt: z.iso.datetime(),
+    id: z.uuid(),
+    locale: z.string(),
+    name: z.string().nullable(),
+    recentAudit: z.array(zAdminUserAuditEntry),
+    roles: z.array(z.string()),
+    status: z.string()
+});
+
+/**
+ * UserPreferencesResponse
+ */
+export const zUserPreferencesResponse = z.object({
+    captionsEnabled: z.boolean(),
+    defaultAspect: z.string(),
+    defaultStyle: z.string().nullable(),
+    defaultVoiceId: z.uuid().nullable(),
+    depth: z.string(),
+    language: z.string(),
+    pace: z.string()
+});
+
+/**
+ * UserPreferencesUpdateRequest
+ */
+export const zUserPreferencesUpdateRequest = z.object({
+    captionsEnabled: z.boolean(),
+    defaultAspect: z.string().max(10),
+    defaultStyle: z.string().max(80).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/).nullish(),
+    defaultVoiceId: z.null().optional(),
+    depth: z.string().max(32),
+    language: z.string().max(20),
+    pace: z.string().max(32)
+});
+
+/**
+ * UserProfileResponse
+ */
+export const zUserProfileResponse = z.object({
+    avatarUrl: z.string().nullable(),
+    contacts: z.array(zUserContactResponse),
+    createdAt: z.iso.datetime(),
+    id: z.uuid(),
+    locale: z.string(),
+    name: z.string().nullable(),
+    status: z.string()
+});
+
+/**
+ * UserProfileUpdateRequest
+ */
+export const zUserProfileUpdateRequest = z.object({
+    locale: z.string().regex(/^[a-z]{2,3}(-[A-Z]{2})?$/).nullish(),
+    name: z.string().min(1).max(120).nullish()
+});
+
+/**
+ * UserRoleMutationRequest
+ */
+export const zUserRoleMutationRequest = z.object({
+    roleId: z.uuid()
 });
 
 /**
@@ -250,6 +870,266 @@ export const zHealthLiveResponse = zLivenessResponse;
  * Successful Response
  */
 export const zHealthReadyResponse = zReadinessResponse;
+
+/**
+ * Successful Response
+ */
+export const zAdminInsightsGetAnalyticsResponse = zAnalyticsResponse;
+
+export const zAdminInsightsListAuditEntriesQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    actorUserId: z.uuid().nullish(),
+    action: z.string().max(100).nullish(),
+    targetType: z.string().max(64).nullish(),
+    targetId: z.string().max(128).nullish(),
+    createdFrom: z.iso.datetime().nullish(),
+    createdTo: z.iso.datetime().nullish()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminInsightsListAuditEntriesResponse = zAuditListResponse;
+
+export const zAdminInsightsGetAuditEntryPath = z.object({
+    entry_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminInsightsGetAuditEntryResponse = zAuditEntryResponse;
+
+export const zAdminCatalogCreateCategoryBody = zCategoryWriteRequest;
+
+/**
+ * Successful Response
+ */
+export const zAdminCatalogCreateCategoryResponse = zCatalogCategoryResponse;
+
+export const zAdminCatalogUpdateCategoryBody = zCategoryUpdateRequest;
+
+export const zAdminCatalogUpdateCategoryPath = z.object({
+    category_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminCatalogUpdateCategoryResponse = zCatalogCategoryResponse;
+
+export const zAdminCatalogReorderCatalogBody = zCatalogReorderRequest;
+
+/**
+ * Successful Response
+ */
+export const zAdminCatalogReorderCatalogResponse = z.void();
+
+export const zAdminCatalogCreateTopicBody = zTopicWriteRequest;
+
+/**
+ * Successful Response
+ */
+export const zAdminCatalogCreateTopicResponse = zCatalogTopicResponse;
+
+export const zAdminCatalogUpdateTopicBody = zTopicUpdateRequest;
+
+export const zAdminCatalogUpdateTopicPath = z.object({
+    topic_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminCatalogUpdateTopicResponse = zCatalogTopicResponse;
+
+/**
+ * Successful Response
+ */
+export const zAdminCatalogAdminCatalogTreeResponse = zAdminCatalogTreeResponse;
+
+/**
+ * Response Platform List Flags
+ *
+ * Successful Response
+ */
+export const zPlatformListFlagsResponse = z.array(zFeatureFlagResponse);
+
+export const zPlatformCreateFlagBody = zFeatureFlagWriteRequest;
+
+/**
+ * Successful Response
+ */
+export const zPlatformCreateFlagResponse = zFeatureFlagResponse;
+
+export const zPlatformDeleteFlagBody = zFeatureFlagDeleteRequest;
+
+export const zPlatformDeleteFlagPath = z.object({
+    key: z.string()
+});
+
+/**
+ * Successful Response
+ */
+export const zPlatformDeleteFlagResponse = z.void();
+
+export const zPlatformUpdateFlagBody = zFeatureFlagUpdateRequest;
+
+export const zPlatformUpdateFlagPath = z.object({
+    key: z.string()
+});
+
+/**
+ * Successful Response
+ */
+export const zPlatformUpdateFlagResponse = zFeatureFlagResponse;
+
+/**
+ * Successful Response
+ */
+export const zAdminRolesListRolesResponse = zAccessCatalogResponse;
+
+export const zAdminRolesCreateRoleBody = zRoleCreateRequest;
+
+/**
+ * Successful Response
+ */
+export const zAdminRolesCreateRoleResponse = zRoleResponse;
+
+export const zAdminRolesDeleteRolePath = z.object({
+    role_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminRolesDeleteRoleResponse = z.void();
+
+export const zAdminRolesUpdateRoleBody = zRoleUpdateRequest;
+
+export const zAdminRolesUpdateRolePath = z.object({
+    role_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminRolesUpdateRoleResponse = zRoleResponse;
+
+/**
+ * Response Platform List Settings
+ *
+ * Successful Response
+ */
+export const zPlatformListSettingsResponse = z.array(zSettingResponse);
+
+export const zPlatformGetSettingPath = z.object({
+    key: z.string()
+});
+
+/**
+ * Successful Response
+ */
+export const zPlatformGetSettingResponse = zSettingResponse;
+
+export const zPlatformUpdateSettingBody = zSettingUpdateRequest;
+
+export const zPlatformUpdateSettingPath = z.object({
+    key: z.string()
+});
+
+/**
+ * Successful Response
+ */
+export const zPlatformUpdateSettingResponse = zSettingResponse;
+
+export const zAdminUsersAdminUsersQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    search: z.string().max(120).nullish(),
+    status: z.enum([
+        'pending_verification',
+        'active',
+        'suspended',
+        'deleted'
+    ]).nullish(),
+    role: z.string().max(40).nullish(),
+    createdFrom: z.iso.datetime().nullish(),
+    createdTo: z.iso.datetime().nullish(),
+    sort: z.enum(['created_desc', 'created_asc']).optional().default('created_desc')
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminUsersAdminUsersResponse = zAdminUserListResponse;
+
+export const zAdminUsersAdminUserDetailPath = z.object({
+    target_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminUsersAdminUserDetailResponse = zAdminUserDetailResponse;
+
+export const zAdminUsersRestoreUserPath = z.object({
+    target_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminUsersRestoreUserResponse = z.void();
+
+export const zAdminUsersAssignUserRoleBody = zUserRoleMutationRequest;
+
+export const zAdminUsersAssignUserRolePath = z.object({
+    target_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminUsersAssignUserRoleResponse = z.void();
+
+export const zAdminUsersRemoveUserRolePath = z.object({
+    target_id: z.uuid(),
+    role_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminUsersRemoveUserRoleResponse = z.void();
+
+export const zAdminUsersForceSignOutPath = z.object({
+    target_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminUsersForceSignOutResponse = z.void();
+
+export const zAdminUsersSuspendUserPath = z.object({
+    target_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminUsersSuspendUserResponse = z.void();
+
+export const zAdminUsersUnsuspendUserPath = z.object({
+    target_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminUsersUnsuspendUserResponse = z.void();
 
 /**
  * Successful Response
@@ -428,3 +1308,163 @@ export const zAuthVerifyBody = zCodeRequest;
  * Successful Response
  */
 export const zAuthVerifyResponse = zSessionUser;
+
+export const zCatalogCatalogCategoryPath = z.object({
+    category: z.string()
+});
+
+/**
+ * Successful Response
+ */
+export const zCatalogCatalogCategoryResponse = zCategoryDetailResponse;
+
+export const zCatalogCatalogSubcategoryPath = z.object({
+    category: z.string(),
+    subcategory: z.string()
+});
+
+export const zCatalogCatalogSubcategoryQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20)
+});
+
+/**
+ * Successful Response
+ */
+export const zCatalogCatalogSubcategoryResponse = zSubcategoryDetailResponse;
+
+/**
+ * Successful Response
+ */
+export const zCatalogCatalogPathsResponse = zCatalogPathsResponse;
+
+export const zCatalogCatalogRedirectQuery = z.object({
+    path: z.string().min(9).max(400).regex(/^\/explore\//)
+});
+
+/**
+ * Successful Response
+ */
+export const zCatalogCatalogRedirectResponse = zCatalogRedirectResponse;
+
+export const zCatalogCatalogSearchQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    q: z.string().min(2).max(120)
+});
+
+/**
+ * Successful Response
+ */
+export const zCatalogCatalogSearchResponse = zTopicSearchResponse;
+
+export const zCatalogCatalogTopicPath = z.object({
+    category: z.string(),
+    subcategory: z.string(),
+    topic: z.string()
+});
+
+/**
+ * Successful Response
+ */
+export const zCatalogCatalogTopicResponse = zTopicDetailResponse;
+
+/**
+ * Successful Response
+ */
+export const zCatalogCatalogTreeResponse = zCatalogTreeResponse;
+
+/**
+ * Successful Response
+ */
+export const zPlatformEvaluatedFlagsResponse = zEvaluatedFlagsResponse;
+
+/**
+ * Successful Response
+ */
+export const zPlatformPublicSettingsResponse = zPublicSettingsResponse;
+
+/**
+ * Successful Response
+ */
+export const zUsersGetProfileResponse = zUserProfileResponse;
+
+export const zUsersUpdateProfileBody = zUserProfileUpdateRequest;
+
+/**
+ * Successful Response
+ */
+export const zUsersUpdateProfileResponse = zUserProfileResponse;
+
+/**
+ * Successful Response
+ */
+export const zUsersDeleteAvatarResponse = z.void();
+
+export const zUsersUploadAvatarBody = zBodyUsersUploadAvatar;
+
+/**
+ * Successful Response
+ */
+export const zUsersUploadAvatarResponse = zAvatarResponse;
+
+export const zUsersAddContactBody = zContactAddRequest;
+
+/**
+ * Successful Response
+ */
+export const zUsersAddContactResponse = zContactChallengeResponse;
+
+export const zUsersVerifyContactBody = zContactVerifyRequest;
+
+/**
+ * Successful Response
+ */
+export const zUsersVerifyContactResponse = zUserContactResponse;
+
+export const zUsersRemoveContactPath = z.object({
+    contact_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zUsersRemoveContactResponse = z.void();
+
+export const zUsersSetPrimaryContactPath = z.object({
+    contact_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zUsersSetPrimaryContactResponse = zUserContactResponse;
+
+export const zUsersConfirmDeletionBody = zAccountDeletionConfirmRequest;
+
+/**
+ * Successful Response
+ */
+export const zUsersConfirmDeletionResponse = z.void();
+
+/**
+ * Successful Response
+ */
+export const zUsersRequestDeletionResponse = zContactChallengeResponse;
+
+/**
+ * Successful Response
+ */
+export const zUsersRequestExportResponse = zExportResponse;
+
+/**
+ * Successful Response
+ */
+export const zUsersGetPreferencesResponse = zUserPreferencesResponse;
+
+export const zUsersUpdatePreferencesBody = zUserPreferencesUpdateRequest;
+
+/**
+ * Successful Response
+ */
+export const zUsersUpdatePreferencesResponse = zUserPreferencesResponse;

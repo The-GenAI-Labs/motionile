@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, FastAPI, status
 from motionile.core.config import Settings, get_settings
 from motionile.core.errors import problem_responses
 from motionile.core.logging import configure_logging
-from motionile.core.ratelimit.limiter import rate_limit
 from motionile.core.resources import Resources, build_resources
 from motionile.core.tasks.app import create_task_app, open_for_deferring
 from motionile.entrypoints.http_app import HttpAppSpec, Lifespan, build_http_app
@@ -31,7 +30,7 @@ APPLICATION_NAME = "motionile-api"
 def build_v1_router(*, include_test_routes: bool) -> APIRouter:
     router = APIRouter(
         prefix="/v1",
-        dependencies=[Depends(identify_for_rate_limit), Depends(rate_limit("api.default"))],
+        dependencies=[Depends(identify_for_rate_limit)],
         responses=problem_responses(
             status.HTTP_429_TOO_MANY_REQUESTS,
             status.HTTP_500_INTERNAL_SERVER_ERROR,

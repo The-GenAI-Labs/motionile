@@ -156,6 +156,14 @@ async def test_error_responses_are_documented_as_problem_json() -> None:
     assert set(responses["200"]["content"]) == {"application/json"}
 
 
+async def test_v1_router_does_not_layer_a_second_rate_limit_policy() -> None:
+    router = api.build_v1_router(include_test_routes=False)
+
+    dependencies = [dependency.dependency for dependency in router.dependencies]
+
+    assert dependencies == [api.identify_for_rate_limit]
+
+
 async def test_mcp_app_only_exposes_health_and_hides_docs() -> None:
     settings = make_settings()
     application = mcp.create_app(settings, resources=make_resources(settings))

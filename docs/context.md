@@ -288,7 +288,7 @@ These rules are mirrored in `AGENTS.md` and enforced by tooling wherever possibl
 - Errors are RFC 9457 `application/problem+json` with a stable machine-readable `code`, a `type` of `urn:motionile:problem:<code>`, the `requestId`, and camelCase `errors[].field` paths for validation failures.
 - Lists use cursor pagination.
 - Mutating endpoints that create money or credit side effects require an `Idempotency-Key` header.
-- Every route declares `response_model`, status codes and rate-limit policy. `/v1` routes inherit `api.default`; public cached catalog reads use `catalog.read`, and stricter policies are added per route.
+- Every route declares `response_model`, status codes and a rate-limit policy. Most routes use `api.default`, public cached catalog reads use `catalog.read`, and sensitive operations use stricter policies.
 - OpenAPI operation IDs are `<tag>_<function_name>` and become the generated TypeScript names. Error responses are documented as `application/problem+json`.
 - Idempotency records live in Postgres (`idempotency_records`): one atomic upsert claims a key per scope and user, a replay returns the stored status, body and `Location`/`ETag` headers with `Idempotent-Replayed: true`, a different body under the same key is `409 idempotency_key_reused`, and a request still running is `409 idempotency_request_in_progress` with `Retry-After`.
 - A test-support router under `/v1/_test` exists only when `APP_ENV` is `local` or `ci` and is never part of the published contract.

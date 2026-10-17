@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, text
+from sqlalchemy import CheckConstraint, ForeignKey, Index, SmallInteger, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -35,7 +35,7 @@ class FeatureFlag(TimestampMixin, Base):
     key: Mapped[str] = mapped_column(primary_key=True)
     description: Mapped[str | None]
     enabled: Mapped[bool] = mapped_column(server_default=text("false"))
-    rollout_percentage: Mapped[int] = mapped_column(server_default="0")
+    rollout_percentage: Mapped[int] = mapped_column(SmallInteger(), server_default="0")
     version: Mapped[int] = mapped_column(server_default="1")
     rules: Mapped[list[dict[str, object]]] = mapped_column(JSONB(), server_default=text("'[]'::jsonb"))
     updated_by: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))

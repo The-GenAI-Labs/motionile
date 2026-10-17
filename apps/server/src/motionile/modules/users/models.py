@@ -70,6 +70,7 @@ class UserPreference(TimestampMixin, Base):
         CheckConstraint(
             "default_style IS NULL OR default_style ~ '^[a-z0-9]+(-[a-z0-9]+)*$'", name="default_style_format"
         ),
+        Index("ix_user_preferences_default_voice_id", "default_voice_id"),
     )
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)

@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import {
   CatalogFetchError,
   catalogRedirect,
+  catalogStaticPaths,
   catalogSubcategory,
 } from "@/features/catalog/api/catalog.server.api";
 import { CatalogBreadcrumbs } from "@/features/catalog/components/breadcrumbs";
@@ -33,6 +34,14 @@ const loadSubcategory = async ({ category, subcategory }: Params) => {
     }
   }
 };
+
+export async function generateStaticParams() {
+  const paths = await catalogStaticPaths();
+  return paths.flatMap(({ path }) => {
+    const segments = path.split("/").filter(Boolean);
+    return segments.length === 3 ? [{ category: segments[1], subcategory: segments[2] }] : [];
+  });
+}
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const values = await params;

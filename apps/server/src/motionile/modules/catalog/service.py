@@ -1,6 +1,7 @@
 import json
 from collections.abc import Sequence
 from datetime import timedelta
+from hashlib import sha256
 from uuid import UUID
 
 from pydantic import BaseModel, TypeAdapter
@@ -38,6 +39,10 @@ from motionile.modules.catalog.tasks import defer_revalidation
 
 CACHE_TTL = timedelta(minutes=15)
 CACHE_GENERATION_TTL = timedelta(days=3650)
+
+
+def cache_key_part(value: str) -> str:
+    return sha256(value.encode()).hexdigest()
 
 
 class CatalogService:
@@ -344,12 +349,12 @@ class CatalogService:
         return value.decode() if value is not None else "0"
 
     async def _cache_get[ModelT](self, part: str, model: type[ModelT]) -> ModelT | None:
-        key = self.redis.keys.key("catalog.cache", await self._generation(), part)
+        key = self.redis.keys.key("catalog.cache", await self._generation(), cache_key_part(part))
         value = await self.redis.get(key)
         return TypeAdapter(model).validate_json(value) if value is not None else None
 
     async def _cache_set(self, part: str, value: BaseModel | Sequence[BaseModel]) -> None:
-        key = self.redis.keys.key("catalog.cache", await self._generation(), part)
+        key = self.redis.keys.key("catalog.cache", await self._generation(), cache_key_part(part))
         if isinstance(value, BaseModel):
             serialized = value.model_dump_json()
         else:

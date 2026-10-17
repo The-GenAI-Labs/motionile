@@ -52,6 +52,14 @@ export const catalogTopic = (category: string, subcategory: string, topic: strin
   );
 export const catalogPaths = () =>
   catalogFetch("v1/catalog/paths", contract.zCatalogPathsResponse, ["catalog", "catalog:paths"]);
+export const catalogStaticPaths = async () => {
+  try {
+    return (await catalogPaths()).items;
+  } catch (error) {
+    if (error instanceof TypeError) return [];
+    throw error;
+  }
+};
 export const catalogRedirect = (path: string) =>
   catalogFetch(
     `v1/catalog/redirects?path=${encodeURIComponent(path)}`,

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   CatalogFetchError,
   catalogRedirect,
+  catalogStaticPaths,
   catalogTopic,
 } from "@/features/catalog/api/catalog.server.api";
 import { CatalogBreadcrumbs } from "@/features/catalog/components/breadcrumbs";
@@ -38,6 +39,16 @@ const loadTopic = async ({ category, subcategory, topic }: Params) => {
     }
   }
 };
+
+export async function generateStaticParams() {
+  const paths = await catalogStaticPaths();
+  return paths.flatMap(({ path }) => {
+    const segments = path.split("/").filter(Boolean);
+    return segments.length === 4
+      ? [{ category: segments[1], subcategory: segments[2], topic: segments[3] }]
+      : [];
+  });
+}
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const values = await params;

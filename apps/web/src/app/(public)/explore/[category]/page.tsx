@@ -7,6 +7,7 @@ import {
   catalogCategory,
   CatalogFetchError,
   catalogRedirect,
+  catalogStaticPaths,
 } from "@/features/catalog/api/catalog.server.api";
 import { CatalogBreadcrumbs } from "@/features/catalog/components/breadcrumbs";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -27,6 +28,14 @@ const loadCategory = async (category: string) => {
     }
   }
 };
+
+export async function generateStaticParams() {
+  const paths = await catalogStaticPaths();
+  return paths.flatMap(({ path }) => {
+    const segments = path.split("/").filter(Boolean);
+    return segments.length === 2 ? [{ category: segments[1] }] : [];
+  });
+}
 
 export async function generateMetadata({
   params,

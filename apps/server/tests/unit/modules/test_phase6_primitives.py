@@ -6,6 +6,7 @@ import pytest
 from PIL import Image, PngImagePlugin
 
 from motionile.core.errors import PayloadTooLargeError, ValidationAppError
+from motionile.modules.catalog.service import cache_key_part
 from motionile.modules.platform import PlatformService
 from motionile.modules.platform.models import FeatureFlag
 from motionile.modules.platform.registry import validate_setting
@@ -72,3 +73,12 @@ def test_catalog_seed_has_required_shape() -> None:
     assert all(
         len(subcategory.topics) >= 6 for category in catalog.categories for subcategory in category.subcategories
     )
+
+
+def test_catalog_cache_key_parts_accept_routes_and_queries() -> None:
+    category = cache_key_part("category:education")
+    search = cache_key_part("search:system design:20")
+
+    assert len(category) == 64
+    assert category.isalnum()
+    assert category != search

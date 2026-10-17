@@ -6,7 +6,6 @@ import { PageHeader } from "@/components/shared/page-header";
 import {
   catalogCategory,
   CatalogFetchError,
-  catalogPaths,
   catalogRedirect,
 } from "@/features/catalog/api/catalog.server.api";
 import { CatalogBreadcrumbs } from "@/features/catalog/components/breadcrumbs";
@@ -28,14 +27,6 @@ const loadCategory = async (category: string) => {
     }
   }
 };
-
-export async function generateStaticParams() {
-  const paths = await catalogPaths();
-  return paths.items.flatMap(({ path }) => {
-    const segments = path.split("/").filter(Boolean);
-    return segments.length === 2 ? [{ category: segments[1] }] : [];
-  });
-}
 
 export async function generateMetadata({
   params,

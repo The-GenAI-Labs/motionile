@@ -4,6 +4,8 @@ import { publicPages } from "@/config/navigation";
 import { catalogPaths } from "@/features/catalog/api/catalog.server.api";
 import { absoluteUrl } from "@/lib/seo/metadata";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const catalog = await catalogPaths();
   return [

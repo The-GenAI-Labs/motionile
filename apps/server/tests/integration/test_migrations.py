@@ -28,8 +28,16 @@ APPLICATION_TABLES = {
     "credentials",
     "oauth_identities",
     "sessions",
+    "permissions",
+    "role_permissions",
+    "user_preferences",
+    "system_settings",
+    "feature_flags",
+    "categories",
+    "topics",
+    "catalog_slug_history",
 }
-HEAD_REVISION = "0003"
+HEAD_REVISION = "0004"
 
 
 @pytest.fixture

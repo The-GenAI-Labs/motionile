@@ -22,6 +22,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY pyproject.toml uv.lock alembic.ini ./
 COPY src ./src
 COPY migrations ./migrations
+COPY seeds ./seeds
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable
 
@@ -34,6 +35,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY pyproject.toml uv.lock alembic.ini ./
 COPY src ./src
 COPY migrations ./migrations
+COPY seeds ./seeds
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --group render --no-editable
 

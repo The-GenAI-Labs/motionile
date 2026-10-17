@@ -7,6 +7,7 @@ import { ExploreSearch } from "@/features/catalog/components/explore-search";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 export const metadata = buildMetadata({
   title: "Explore",
   description: "Browse explainer video topics across education, technology and more.",

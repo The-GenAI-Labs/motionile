@@ -8,7 +8,14 @@
     ".npmrc",
     "packages/config/typescript/*.json"
   ],
-  "globalPassThroughEnv": ["DOCKER_HOST", "TESTCONTAINERS_*", "UV_*", "PLAYWRIGHT_*", "CI"],
+  "globalPassThroughEnv": [
+    "DOCKER_HOST",
+    "TESTCONTAINERS_*",
+    "UV_*",
+    "PLAYWRIGHT_*",
+    "PYTEST_ADDOPTS",
+    "CI"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

@@ -54,3 +54,14 @@ AUTH_GITHUB_CLIENT_ID,owner,yes,GITHUB OAuth client id
 AUTH_GITHUB_CLIENT_SECRET,owner,yes,GITHUB OAuth client secret
 AUTH_MICROSOFT_CLIENT_ID,owner,yes,MICROSOFT OAuth client id
 AUTH_MICROSOFT_CLIENT_SECRET,owner,yes,MICROSOFT OAuth client secret
+BILLING_RAZORPAY_KEY_ID,owner,yes,Razorpay API key ID of this environment
+BILLING_RAZORPAY_KEY_SECRET,owner,yes,Razorpay API key secret of this environment
+BILLING_RAZORPAY_WEBHOOK_SECRET,owner,yes,Secret configured on the Razorpay webhook that signs webhook bodies
+BILLING_RAZORPAY_API_BASE_URL,owner,no,HTTPS origin of the Razorpay API; defaults to https://api.razorpay.com
+BILLING_ORDER_EXPIRY_SECONDS,owner,no,Seconds before an unpaid order expires; defaults to 7200
+BILLING_SUBSCRIPTION_TOTAL_COUNT,owner,no,Billing cycles requested for every new subscription; defaults to 120
+BILLING_EXPIRY_REMINDER_LEAD_DAYS,owner,no,Days before expiry that the credits expiring soon notice is queued; defaults to 7
+BILLING_RESERVATION_TTL_SECONDS,owner,no,Seconds an active credit reservation is held before it is released; defaults to 3600
+BILLING_WEBHOOK_MAX_ATTEMPTS,owner,no,Processing attempts per webhook event before it stays failed; defaults to 10
+BILLING_RECONCILIATION_PENDING_AFTER_SECONDS,owner,no,Age in seconds after which a pending order is reconciled with Razorpay; defaults to 1800
+BILLING_REPORT_STORAGE_PREFIX,owner,no,Object key prefix of reconciliation reports; defaults to billing/reconciliation

@@ -6,6 +6,7 @@ from motionile.core.config import (
     AppEnv,
     AppSettings,
     AuthSettings,
+    BillingSettings,
     CatalogSettings,
     CorsSettings,
     DatabaseSettings,
@@ -56,6 +57,11 @@ def deployed_settings(env: AppEnv = AppEnv.PRODUCTION) -> Settings:
             microsoft_client_secret=STRONG_SECRET,
         ),
         catalog=CatalogSettings(revalidation_secret=STRONG_SECRET),
+        billing=BillingSettings(
+            razorpay_key_id="rzp_live_key",
+            razorpay_key_secret=STRONG_SECRET,
+            razorpay_webhook_secret=STRONG_SECRET,
+        ),
         notifications=NotificationSettings(
             email_backend="ses",
             sender="hello@motionile.com",

@@ -91,6 +91,13 @@ SETTING_DEFINITIONS = (
         "Default public catalog page size",
         True,
     ),
+    SettingDefinition(
+        "billing.subscription_rollover",
+        {"type": "boolean"},
+        False,
+        "Whether new subscription credits roll over instead of expiring at the end of the billing period",
+        False,
+    ),
 )
 
 SETTINGS = {item.key: item for item in SETTING_DEFINITIONS}

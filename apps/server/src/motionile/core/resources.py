@@ -20,6 +20,7 @@ from motionile.core.storage.base import Storage
 from motionile.core.storage.s3 import S3Storage
 
 TURNSTILE_HOSTS = ("challenges.cloudflare.com",)
+RAZORPAY_HOSTS = ("api.razorpay.com",)
 
 
 @dataclass
@@ -104,6 +105,7 @@ def build_resources(settings: Settings, *, application_name: str, clock: Clock |
             ),
             "github": SafeHttpClient(settings.outbound_http, allowed_hosts=("github.com", "api.github.com")),
             "microsoft": SafeHttpClient(settings.outbound_http, allowed_hosts=("login.microsoftonline.com",)),
+            "razorpay": SafeHttpClient(settings.outbound_http, allowed_hosts=RAZORPAY_HOSTS),
             "catalog_revalidation": SafeHttpClient(
                 settings.outbound_http,
                 allowed_hosts=(web_host,),

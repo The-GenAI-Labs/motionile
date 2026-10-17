@@ -76,7 +76,7 @@ export async function logoutApi(page: Page): Promise<void> {
 
 export async function signIn(page: Page, identifier: string, secret = password): Promise<void> {
   await page.getByLabel("Email or phone", { exact: true }).fill(identifier);
-  await page.getByLabel("Password", { exact: true }).fill(secret);
+  await page.locator("#password").fill(secret);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 

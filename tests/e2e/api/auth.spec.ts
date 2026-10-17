@@ -62,7 +62,7 @@ test("unverified password login, resend and contact verification", async ({ requ
   expect(
     (
       await api.send("POST", "/v1/auth/verify", {
-        code: await api.code("verify_contact", api.email, secondCode),
+        code: await api.code("verify_contact", api.email, [firstCode, secondCode]),
       })
     ).status(),
   ).toBe(200);

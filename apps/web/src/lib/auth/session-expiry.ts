@@ -2,11 +2,11 @@ import { broadcastAuth } from "@/lib/auth/broadcast";
 import { AUTH_ROUTES, safeNextPath } from "@/lib/auth/routes";
 import { getQueryClient } from "@/lib/query/query-client";
 
-let expired = false;
+const expired = Symbol.for("motionile.auth.expired");
 
 export const expireSession = (nextPath?: string): void => {
-  if (expired || typeof window === "undefined") return;
-  expired = true;
+  if (typeof window === "undefined" || Reflect.get(window, expired) === true) return;
+  Reflect.set(window, expired, true);
   getQueryClient().clear();
   broadcastAuth("expired");
   const destination =

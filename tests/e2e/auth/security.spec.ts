@@ -24,16 +24,16 @@ for (const path of ["/login", "/register", "/verify", "/forgot-password", "/rese
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     await page.keyboard.press("Tab");
     expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe("BODY");
+    expect(violations).toEqual([]);
+    expect(
+      await page.evaluate(() => document.documentElement.dataset["cspViolation"]),
+    ).toBeUndefined();
     const report = await new AxeBuilder({ page }).analyze();
     expect(
       report.violations.filter((violation) =>
         ["serious", "critical"].includes(violation.impact ?? ""),
       ),
     ).toEqual([]);
-    expect(violations).toEqual([]);
-    expect(
-      await page.evaluate(() => document.documentElement.dataset["cspViolation"]),
-    ).toBeUndefined();
   });
 }
 

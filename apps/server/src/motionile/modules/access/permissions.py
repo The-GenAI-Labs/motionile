@@ -19,6 +19,11 @@ PERMISSIONS = (
     PermissionDefinition("settings.manage", "Update system settings"),
     PermissionDefinition("flags.manage", "Manage feature flags"),
     PermissionDefinition("catalog.manage", "Manage the catalog"),
+    PermissionDefinition("billing.read", "Read products, orders, payments, subscriptions, refunds and webhook events"),
+    PermissionDefinition("billing.products.manage", "Create, edit, version and activate products"),
+    PermissionDefinition("billing.refunds.create", "Refund payments"),
+    PermissionDefinition("billing.credits.adjust", "Grant or remove credits for a user"),
+    PermissionDefinition("billing.webhooks.manage", "Replay and inspect webhook events"),
 )
 
 PERMISSION_KEYS = frozenset(definition.key for definition in PERMISSIONS)

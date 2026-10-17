@@ -18,7 +18,7 @@ TASK_QUEUE_TABLES = {
     "procrastinate_periodic_defers",
     "procrastinate_workers",
 }
-APPLICATION_TABLES = {
+EARLIER_TABLES = {
     "audit_log",
     "idempotency_records",
     "users",
@@ -37,7 +37,23 @@ APPLICATION_TABLES = {
     "topics",
     "catalog_slug_history",
 }
-HEAD_REVISION = "0004"
+BILLING_TABLES = {
+    "products",
+    "billing_customers",
+    "subscriptions",
+    "orders",
+    "payments",
+    "refunds",
+    "webhook_events",
+    "billing_reconciliation_runs",
+    "credit_wallets",
+    "credit_lots",
+    "credit_reservations",
+    "credit_ledger",
+    "usage_records",
+}
+APPLICATION_TABLES = EARLIER_TABLES | BILLING_TABLES
+HEAD_REVISION = "0005"
 
 
 @pytest.fixture
@@ -144,6 +160,37 @@ def test_each_revision_downgrades_and_reapplies(scratch_database_url: str, engin
 
     command.upgrade(config, "head")
     assert application_tables(engine) == APPLICATION_TABLES
+    assert schema_drift(engine) == []
+
+
+def database_functions(engine: Engine) -> set[str]:
+    query = text("SELECT proname FROM pg_proc WHERE proname LIKE 'forbid_%'")
+    with engine.connect() as connection:
+        return set(connection.execute(query).scalars())
+
+
+def billing_permissions(engine: Engine) -> set[str]:
+    with engine.connect() as connection:
+        return set(connection.execute(text("SELECT key FROM permissions WHERE key LIKE 'billing.%'")).scalars())
+
+
+def test_billing_revision_downgrades_cleanly_and_reapplies(scratch_database_url: str, engine: Engine) -> None:
+    config = alembic_config_for(scratch_database_url)
+    command.upgrade(config, "head")
+    assert len(billing_permissions(engine)) == 5
+    assert database_functions(engine) == {"forbid_append_only_mutation", "forbid_used_product_financial_change"}
+
+    command.downgrade(config, "0004")
+
+    assert current_revision(engine) == "0004"
+    assert application_tables(engine) == APPLICATION_TABLES - BILLING_TABLES
+    assert billing_permissions(engine) == set()
+    assert database_functions(engine) == {"forbid_append_only_mutation"}
+
+    command.upgrade(config, "head")
+
+    assert application_tables(engine) == APPLICATION_TABLES
+    assert len(billing_permissions(engine)) == 5
     assert schema_drift(engine) == []
 
 

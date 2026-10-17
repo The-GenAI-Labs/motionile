@@ -1010,6 +1010,7 @@ One row per reconciliation pass. The daily settlement check writes a JSON report
 - `ck_billing_reconciliation_runs_finished_consistent`: `(status = 'running') = (finished_at IS NULL)`.
 - `ck_billing_reconciliation_runs_summary_object`: `jsonb_typeof(summary) = 'object'`.
 - `ck_billing_reconciliation_runs_report_storage_key_length`: `report_storage_key IS NULL OR char_length(report_storage_key) <= 512`.
+- `ck_billing_reconciliation_runs_error_length`: `error IS NULL OR char_length(error) <= 2000`.
 - `ix_billing_reconciliation_runs_type_created_at` (`type`, `created_at`): admin runs list.
 - `ix_billing_reconciliation_runs_mismatches` (`created_at`) `WHERE mismatch_count > 0`: runs that need attention.
 

@@ -216,7 +216,9 @@ async def test_a_tampered_or_foreign_cursor_is_rejected(api: Api) -> None:
     await api.grant(api.primary_id, 2, "cursor:2")
     page = (await api.primary.get("/v1/credits/ledger", params={"limit": 1})).json()
 
-    forged = await api.primary.get("/v1/credits/ledger", params={"cursor": page["nextCursor"][:-2] + "xx"})
+    original: str = page["nextCursor"]
+    swapped = "B" if original[0] == "A" else "A"
+    forged = await api.primary.get("/v1/credits/ledger", params={"cursor": swapped + original[1:]})
     garbage = await api.primary.get("/v1/credits/ledger", params={"cursor": "nonsense"})
 
     assert (forged.status_code, forged.json()["code"]) == (422, "invalid_cursor")

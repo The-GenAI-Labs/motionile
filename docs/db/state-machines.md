@@ -70,6 +70,7 @@ stateDiagram-v2
     pending --> expired: reconciliation after expires_at
     pending --> cancelled: user abandons checkout
     created --> expired: reconciliation after expires_at
+    created --> paid: payment settled before the order was marked pending
     expired --> paid: late payment
     failed --> paid: late payment
     cancelled --> paid: late payment
@@ -82,6 +83,7 @@ stateDiagram-v2
 - A captured payment for an `expired`, `failed` or `cancelled` order still settles it: the order moves to `paid` and an audit entry records the late settlement, because the customer was charged. This is the only transition out of those states.
 - `payment.failed` never changes the order. Razorpay allows retries on the same order, so the order stays `pending` until it is paid or expires.
 - A captured payment whose amount or currency differs from the order is recorded, grants no credits and sets `flagged_at` and `flag_reason`; the order keeps its status, leaves the reconciliation queue and raises an alert. An admin resolves it by refunding the payment.
+- A second captured payment for an order that is already `paid` is recorded without credits and flags the order `duplicate_payment`; the order keeps its status and an alert is raised. An admin resolves it by refunding the extra payment.
 - A subscription order moves to `paid` when the first `subscription.charged` payment settles.
 
 ## `payments.status`
@@ -161,7 +163,7 @@ stateDiagram-v2
     ignored --> processing: admin reprocess
 ```
 
-- A delivery whose `(provider, event_id)` already exists returns 200 without creating a row; it never reaches this machine again.
+- A delivery whose `(provider, event_id)` already exists returns 200 without creating a row; it never reaches this machine again. A duplicate whose stored row is still `received` after 60 seconds is queued again.
 - After 10 failed attempts the event stays `failed` and raises an alert.
 - Reprocessing is safe because every handler is idempotent.
 

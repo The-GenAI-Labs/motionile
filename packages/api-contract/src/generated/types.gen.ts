@@ -680,6 +680,63 @@ export type ChangePasswordRequest = {
 };
 
 /**
+ * CheckoutPrefillResponse
+ */
+export type CheckoutPrefillResponse = {
+    /**
+     * Contact
+     */
+    contact: string | null;
+    /**
+     * Email
+     */
+    email: string | null;
+    /**
+     * Name
+     */
+    name: string | null;
+};
+
+/**
+ * CheckoutResponse
+ */
+export type CheckoutResponse = {
+    /**
+     * Amountpaise
+     */
+    amountPaise: number;
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Customerid
+     */
+    customerId: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Keyid
+     */
+    keyId: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Orderid
+     */
+    orderId: string;
+    prefill: CheckoutPrefillResponse;
+    /**
+     * Razorpayorderid
+     */
+    razorpayOrderId: string;
+};
+
+/**
  * CodeRequest
  */
 export type CodeRequest = {
@@ -759,6 +816,16 @@ export type ContactVerifyRequest = {
      * Code
      */
     code: string;
+};
+
+/**
+ * CreateOrderRequest
+ */
+export type CreateOrderRequest = {
+    /**
+     * Productcode
+     */
+    productCode: string;
 };
 
 /**
@@ -990,6 +1057,77 @@ export type FlagRule = {
 };
 
 /**
+ * HTTPValidationError
+ */
+export type HttpValidationError = {
+    /**
+     * Detail
+     */
+    detail?: Array<ValidationError>;
+};
+
+/**
+ * HistoryItemResponse
+ */
+export type HistoryItemResponse = {
+    /**
+     * Amountpaise
+     */
+    amountPaise: number;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted?: number | null;
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Orderid
+     */
+    orderId?: string | null;
+    /**
+     * Paymentid
+     */
+    paymentId?: string | null;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Title
+     */
+    title: string;
+    type: HistoryTypeName;
+};
+
+/**
+ * HistoryPageResponse
+ */
+export type HistoryPageResponse = {
+    /**
+     * Items
+     */
+    items: Array<HistoryItemResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+export type HistoryTypeName = 'order' | 'payment' | 'refund';
+
+/**
  * IdentifierRequest
  */
 export type IdentifierRequest = {
@@ -998,6 +1136,8 @@ export type IdentifierRequest = {
      */
     identifier: string;
 };
+
+export type IntervalName = 'month' | 'year';
 
 /**
  * JwksResponse
@@ -1113,6 +1253,54 @@ export type OAuthStartResponse = {
     url: string;
 };
 
+export type OrderKindName = 'credit_pack' | 'subscription';
+
+/**
+ * OrderResponse
+ */
+export type OrderResponse = {
+    /**
+     * Amountpaise
+     */
+    amountPaise: number;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Expiresat
+     */
+    expiresAt: string;
+    /**
+     * Failurereason
+     */
+    failureReason?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    kind: OrderKindName;
+    /**
+     * Paidat
+     */
+    paidAt: string | null;
+    /**
+     * Productcode
+     */
+    productCode: string;
+    /**
+     * Productname
+     */
+    productName: string;
+    status: OrderStatusName;
+};
+
+export type OrderStatusName = 'created' | 'pending' | 'paid' | 'failed' | 'expired' | 'cancelled';
+
 /**
  * PermissionResponse
  */
@@ -1163,6 +1351,63 @@ export type ProblemDetails = {
      * Type
      */
     readonly type: string;
+};
+
+/**
+ * ProductResponse
+ */
+export type ProductResponse = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Description
+     */
+    description: string | null;
+    /**
+     * Features
+     */
+    features: Array<string>;
+    interval: IntervalName | null;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Plankey
+     */
+    planKey: string | null;
+    /**
+     * Pricepaise
+     */
+    pricePaise: number;
+    /**
+     * Sortorder
+     */
+    sortOrder: number;
+};
+
+/**
+ * ProductsResponse
+ */
+export type ProductsResponse = {
+    /**
+     * Creditpacks
+     */
+    creditPacks: Array<ProductResponse>;
+    /**
+     * Subscriptions
+     */
+    subscriptions: Array<ProductResponse>;
 };
 
 /**
@@ -1863,6 +2108,34 @@ export type UserRoleMutationRequest = {
 };
 
 /**
+ * ValidationError
+ */
+export type ValidationError = {
+    /**
+     * Context
+     */
+    ctx?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Input
+     */
+    input?: unknown;
+    /**
+     * Location
+     */
+    loc: Array<string | number>;
+    /**
+     * Message
+     */
+    msg: string;
+    /**
+     * Error Type
+     */
+    type: string;
+};
+
+/**
  * VerificationProblem
  */
 export type VerificationProblem = {
@@ -1901,6 +2174,41 @@ export type VerificationProblem = {
     readonly type: string;
 };
 
+export type VerifiedStatus = 'paid' | 'pending';
+
+/**
+ * VerifyPaymentRequest
+ */
+export type VerifyPaymentRequest = {
+    /**
+     * Razorpayorderid
+     */
+    razorpayOrderId: string;
+    /**
+     * Razorpaypaymentid
+     */
+    razorpayPaymentId: string;
+    /**
+     * Razorpaysignature
+     */
+    razorpaySignature: string;
+};
+
+/**
+ * VerifyPaymentResponse
+ */
+export type VerifyPaymentResponse = {
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    /**
+     * Orderid
+     */
+    orderId: string;
+    status: VerifiedStatus;
+};
+
 /**
  * WalletResponse
  */
@@ -1922,6 +2230,15 @@ export type WalletResponse = {
      */
     reserved: number;
 };
+
+/**
+ * WebhookReceiptResponse
+ */
+export type WebhookReceiptResponse = {
+    status: WebhookReceiptStatus;
+};
+
+export type WebhookReceiptStatus = 'received' | 'duplicate';
 
 /**
  * LoginRequest
@@ -4908,6 +5225,253 @@ export type AuthVerifyResponses = {
 
 export type AuthVerifyResponse = AuthVerifyResponses[keyof AuthVerifyResponses];
 
+export type BillingListHistoryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/v1/billing/history';
+};
+
+export type BillingListHistoryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type BillingListHistoryError = BillingListHistoryErrors[keyof BillingListHistoryErrors];
+
+export type BillingListHistoryResponses = {
+    /**
+     * Successful Response
+     */
+    200: HistoryPageResponse;
+};
+
+export type BillingListHistoryResponse = BillingListHistoryResponses[keyof BillingListHistoryResponses];
+
+export type BillingCreateOrderData = {
+    body: CreateOrderRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/billing/orders';
+};
+
+export type BillingCreateOrderErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type BillingCreateOrderError = BillingCreateOrderErrors[keyof BillingCreateOrderErrors];
+
+export type BillingCreateOrderResponses = {
+    /**
+     * Successful Response
+     */
+    201: CheckoutResponse;
+};
+
+export type BillingCreateOrderResponse = BillingCreateOrderResponses[keyof BillingCreateOrderResponses];
+
+export type BillingGetOrderData = {
+    body?: never;
+    path: {
+        /**
+         * Order Id
+         */
+        order_id: string;
+    };
+    query?: never;
+    url: '/v1/billing/orders/{order_id}';
+};
+
+export type BillingGetOrderErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type BillingGetOrderError = BillingGetOrderErrors[keyof BillingGetOrderErrors];
+
+export type BillingGetOrderResponses = {
+    /**
+     * Successful Response
+     */
+    200: OrderResponse;
+};
+
+export type BillingGetOrderResponse = BillingGetOrderResponses[keyof BillingGetOrderResponses];
+
+export type BillingVerifyPaymentData = {
+    body: VerifyPaymentRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/billing/payments/verify';
+};
+
+export type BillingVerifyPaymentErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type BillingVerifyPaymentError = BillingVerifyPaymentErrors[keyof BillingVerifyPaymentErrors];
+
+export type BillingVerifyPaymentResponses = {
+    /**
+     * Successful Response
+     */
+    200: VerifyPaymentResponse;
+};
+
+export type BillingVerifyPaymentResponse = BillingVerifyPaymentResponses[keyof BillingVerifyPaymentResponses];
+
+export type BillingListProductsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/billing/products';
+};
+
+export type BillingListProductsErrors = {
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type BillingListProductsError = BillingListProductsErrors[keyof BillingListProductsErrors];
+
+export type BillingListProductsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProductsResponse;
+};
+
+export type BillingListProductsResponse = BillingListProductsResponses[keyof BillingListProductsResponses];
+
 export type CatalogCatalogCategoryData = {
     body?: never;
     path: {
@@ -6252,3 +6816,62 @@ export type UsersUpdatePreferencesResponses = {
 };
 
 export type UsersUpdatePreferencesResponse = UsersUpdatePreferencesResponses[keyof UsersUpdatePreferencesResponses];
+
+export type WebhooksReceiveRazorpayWebhookData = {
+    body?: never;
+    headers?: {
+        /**
+         * X-Razorpay-Signature
+         */
+        'X-Razorpay-Signature'?: string | null;
+        /**
+         * X-Razorpay-Event-Id
+         */
+        'X-Razorpay-Event-Id'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/v1/webhooks/razorpay';
+};
+
+export type WebhooksReceiveRazorpayWebhookErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type WebhooksReceiveRazorpayWebhookError = WebhooksReceiveRazorpayWebhookErrors[keyof WebhooksReceiveRazorpayWebhookErrors];
+
+export type WebhooksReceiveRazorpayWebhookResponses = {
+    /**
+     * Successful Response
+     */
+    200: WebhookReceiptResponse;
+};
+
+export type WebhooksReceiveRazorpayWebhookResponse = WebhooksReceiveRazorpayWebhookResponses[keyof WebhooksReceiveRazorpayWebhookResponses];

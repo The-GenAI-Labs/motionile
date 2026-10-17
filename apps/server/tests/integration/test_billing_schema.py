@@ -652,6 +652,7 @@ def test_order_flag_reason_matches_flagged_at(connection: Connection) -> None:
     with rejected(connection, "ck_orders_flag_reason"):
         make_order(connection, user_id, product_id, flagged_at=NOW, flag_reason="other")
     make_order(connection, user_id, product_id, flagged_at=NOW, flag_reason="currency_mismatch")
+    make_order(connection, user_id, product_id, flagged_at=NOW, flag_reason="duplicate_payment")
 
 
 def test_order_subscription_link_matches_kind(connection: Connection) -> None:

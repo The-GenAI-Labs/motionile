@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 from alembic import command
@@ -11,6 +12,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from testcontainers.community.minio import MinioContainer
 from testcontainers.community.postgres import PostgresContainer
 from testcontainers.community.redis import RedisContainer
+from tests.integration.billing_support import (
+    PROCESS_TASK_NAME,
+    BillingApi,
+    Recorded,
+    client_for,
+    create_product,
+    purge_billing_data,
+)
+from tests.integration.credit_support import new_clock
+from tests.integration.test_auth import signup
 
 from motionile.core.config import (
     PSYCOPG_SCHEME,
@@ -23,9 +34,17 @@ from motionile.core.config import (
     StorageSettings,
     with_driver,
 )
-from motionile.core.db import Database
+from motionile.core.db import Database, after_commit
+from motionile.core.ids import new_id
 from motionile.core.redis import RedisKeyBuilder, create_redis_client
 from motionile.core.resources import Resources, build_resources
+from motionile.entrypoints.api import create_app
+from motionile.modules.auth import AuthRuntime
+from motionile.modules.auth import service as auth_module
+from motionile.modules.billing.dependencies import get_billing_services
+from motionile.modules.billing.services.factory import ServiceHooks, build_services
+from motionile.modules.credits import CreditsService
+from motionile.modules.notifications import FakeDelivery, Notification
 
 POSTGRES_IMAGE = "pgvector/pgvector:0.8.7-pg17-trixie"
 REDIS_IMAGE = "redis:8.10.2-alpine"
@@ -158,3 +177,66 @@ async def redis_client(settings: Settings) -> AsyncIterator[Redis]:
 @pytest.fixture
 def redis_keys(settings: Settings) -> RedisKeyBuilder:
     return RedisKeyBuilder(settings.redis.key_prefix)
+
+
+PRIMARY_EMAIL = "billing-primary@example.com"
+OTHER_EMAIL = "billing-other@example.com"
+
+
+@pytest.fixture
+async def billing_api(resources: Resources, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[BillingApi]:
+    resources.rate_limiter.enabled = False
+    clock = new_clock()
+    resources.clock = clock
+    inbox = FakeDelivery(resources.redis_store)
+
+    def enqueue(fake_resources: Resources, session: AsyncSession, message: Notification) -> None:
+        del fake_resources
+
+        async def deliver() -> None:
+            await inbox.record(message)
+
+        after_commit(session, deliver)
+
+    monkeypatch.setattr(auth_module, "enqueue_notification", enqueue)
+    recorded = Recorded()
+    services = build_services(
+        resources,
+        ServiceHooks(
+            dispatch=recorded.dispatch,
+            process_task_name=PROCESS_TASK_NAME,
+            receipts=recorded.receipt,
+            alert=recorded.alert,
+        ),
+    )
+    app = create_app(resources.settings, resources=resources)
+    app.state.auth_runtime = AuthRuntime(resources)
+    app.dependency_overrides[get_billing_services] = lambda: services
+    pack_code = f"pack_{new_id().hex[:12]}"
+    counter = 0
+
+    def next_key() -> str:
+        nonlocal counter
+        counter += 1
+        return f"billing-test-{new_id().hex}-{counter}"
+
+    await create_product(resources.database, pack_code)
+    async with client_for(app) as primary, client_for(app) as other, client_for(app) as anonymous:
+        primary_id = UUID(await signup(primary, PRIMARY_EMAIL))
+        other_id = UUID(await signup(other, OTHER_EMAIL))
+        yield BillingApi(
+            app=app,
+            resources=resources,
+            services=services,
+            recorded=recorded,
+            clock=clock,
+            credits=CreditsService(clock, resources.settings.billing),
+            primary=primary,
+            other=other,
+            anonymous=anonymous,
+            primary_id=primary_id,
+            other_id=other_id,
+            pack_code=pack_code,
+            keys=next_key,
+        )
+    await purge_billing_data(resources.database, [primary_id, other_id])

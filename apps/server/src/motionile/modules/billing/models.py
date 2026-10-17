@@ -140,7 +140,8 @@ class Order(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         CheckConstraint("(status = 'paid') = (paid_at IS NOT NULL)", name="paid_consistent"),
         CheckConstraint("(flagged_at IS NULL) = (flag_reason IS NULL)", name="flag_consistent"),
         CheckConstraint(
-            "flag_reason IS NULL OR flag_reason IN ('amount_mismatch', 'currency_mismatch')", name="flag_reason"
+            "flag_reason IS NULL OR flag_reason IN ('amount_mismatch', 'currency_mismatch', 'duplicate_payment')",
+            name="flag_reason",
         ),
         CheckConstraint("char_length(receipt) <= 40", name="receipt_length"),
         Index("ix_orders_user_id_created_at", "user_id", "created_at"),

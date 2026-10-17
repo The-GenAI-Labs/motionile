@@ -1249,6 +1249,103 @@
         "title": "ChangePasswordRequest",
         "type": "object"
       },
+      "CheckoutPrefillResponse": {
+        "properties": {
+          "contact": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "contact"
+        ],
+        "title": "CheckoutPrefillResponse",
+        "type": "object"
+      },
+      "CheckoutResponse": {
+        "properties": {
+          "amountPaise": {
+            "title": "Amountpaise",
+            "type": "integer"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "customerId": {
+            "title": "Customerid",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "keyId": {
+            "title": "Keyid",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "title": "Orderid",
+            "type": "string"
+          },
+          "prefill": {
+            "$ref": "#/components/schemas/CheckoutPrefillResponse"
+          },
+          "razorpayOrderId": {
+            "title": "Razorpayorderid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "keyId",
+          "razorpayOrderId",
+          "amountPaise",
+          "currency",
+          "name",
+          "description",
+          "customerId",
+          "prefill"
+        ],
+        "title": "CheckoutResponse",
+        "type": "object"
+      },
       "CodeRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1365,6 +1462,23 @@
           "code"
         ],
         "title": "ContactVerifyRequest",
+        "type": "object"
+      },
+      "CreateOrderRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "productCode": {
+            "maxLength": 60,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$",
+            "title": "Productcode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "productCode"
+        ],
+        "title": "CreateOrderRequest",
         "type": "object"
       },
       "CursorPage_CatalogTopicResponse_": {
@@ -1729,6 +1843,134 @@
         "title": "FlagRule",
         "type": "object"
       },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HistoryItemResponse": {
+        "properties": {
+          "amountPaise": {
+            "title": "Amountpaise",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "creditsGranted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creditsgranted"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "orderId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orderid"
+          },
+          "paymentId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paymentid"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/HistoryTypeName"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "status",
+          "amountPaise",
+          "currency",
+          "title",
+          "createdAt"
+        ],
+        "title": "HistoryItemResponse",
+        "type": "object"
+      },
+      "HistoryPageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page; null on the last page",
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "HistoryPageResponse",
+        "type": "object"
+      },
+      "HistoryTypeName": {
+        "enum": [
+          "order",
+          "payment",
+          "refund"
+        ],
+        "type": "string"
+      },
       "IdentifierRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1744,6 +1986,13 @@
         ],
         "title": "IdentifierRequest",
         "type": "object"
+      },
+      "IntervalName": {
+        "enum": [
+          "month",
+          "year"
+        ],
+        "type": "string"
       },
       "JwksResponse": {
         "properties": {
@@ -1968,6 +2217,101 @@
         "title": "OAuthStartResponse",
         "type": "object"
       },
+      "OrderKindName": {
+        "enum": [
+          "credit_pack",
+          "subscription"
+        ],
+        "type": "string"
+      },
+      "OrderResponse": {
+        "properties": {
+          "amountPaise": {
+            "title": "Amountpaise",
+            "type": "integer"
+          },
+          "creditsGranted": {
+            "title": "Creditsgranted",
+            "type": "integer"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          },
+          "failureReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failurereason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OrderKindName"
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paidat"
+          },
+          "productCode": {
+            "title": "Productcode",
+            "type": "string"
+          },
+          "productName": {
+            "title": "Productname",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatusName"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "kind",
+          "productCode",
+          "productName",
+          "amountPaise",
+          "currency",
+          "creditsGranted",
+          "paidAt",
+          "expiresAt"
+        ],
+        "title": "OrderResponse",
+        "type": "object"
+      },
+      "OrderStatusName": {
+        "enum": [
+          "created",
+          "pending",
+          "paid",
+          "failed",
+          "expired",
+          "cancelled"
+        ],
+        "type": "string"
+      },
       "PermissionResponse": {
         "properties": {
           "description": {
@@ -2067,6 +2411,111 @@
           "type"
         ],
         "title": "ProblemDetails",
+        "type": "object"
+      },
+      "ProductResponse": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "creditsGranted": {
+            "title": "Creditsgranted",
+            "type": "integer"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Features",
+            "type": "array"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntervalName"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "planKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plankey"
+          },
+          "pricePaise": {
+            "title": "Pricepaise",
+            "type": "integer"
+          },
+          "sortOrder": {
+            "title": "Sortorder",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "description",
+          "pricePaise",
+          "currency",
+          "interval",
+          "planKey",
+          "creditsGranted",
+          "features",
+          "sortOrder"
+        ],
+        "title": "ProductResponse",
+        "type": "object"
+      },
+      "ProductsResponse": {
+        "properties": {
+          "creditPacks": {
+            "items": {
+              "$ref": "#/components/schemas/ProductResponse"
+            },
+            "title": "Creditpacks",
+            "type": "array"
+          },
+          "subscriptions": {
+            "items": {
+              "$ref": "#/components/schemas/ProductResponse"
+            },
+            "title": "Subscriptions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "creditPacks",
+          "subscriptions"
+        ],
+        "title": "ProductsResponse",
         "type": "object"
       },
       "PublicSettingsResponse": {
@@ -3373,6 +3822,46 @@
         "title": "UserRoleMutationRequest",
         "type": "object"
       },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
       "VerificationProblem": {
         "properties": {
           "challenge": {
@@ -3453,6 +3942,68 @@
         "title": "VerificationProblem",
         "type": "object"
       },
+      "VerifiedStatus": {
+        "enum": [
+          "paid",
+          "pending"
+        ],
+        "type": "string"
+      },
+      "VerifyPaymentRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "razorpayOrderId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "title": "Razorpayorderid",
+            "type": "string"
+          },
+          "razorpayPaymentId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "title": "Razorpaypaymentid",
+            "type": "string"
+          },
+          "razorpaySignature": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Razorpaysignature",
+            "type": "string"
+          }
+        },
+        "required": [
+          "razorpayOrderId",
+          "razorpayPaymentId",
+          "razorpaySignature"
+        ],
+        "title": "VerifyPaymentRequest",
+        "type": "object"
+      },
+      "VerifyPaymentResponse": {
+        "properties": {
+          "creditsGranted": {
+            "title": "Creditsgranted",
+            "type": "integer"
+          },
+          "orderId": {
+            "format": "uuid",
+            "title": "Orderid",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VerifiedStatus"
+          }
+        },
+        "required": [
+          "orderId",
+          "status",
+          "creditsGranted"
+        ],
+        "title": "VerifyPaymentResponse",
+        "type": "object"
+      },
       "WalletResponse": {
         "properties": {
           "available": {
@@ -3483,6 +4034,25 @@
         ],
         "title": "WalletResponse",
         "type": "object"
+      },
+      "WebhookReceiptResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/WebhookReceiptStatus"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "WebhookReceiptResponse",
+        "type": "object"
+      },
+      "WebhookReceiptStatus": {
+        "enum": [
+          "received",
+          "duplicate"
+        ],
+        "type": "string"
       }
     },
     "securitySchemes": {
@@ -9994,6 +10564,517 @@
         "x-required-cookie": "__Secure-mo_vt"
       }
     },
+    "/v1/billing/history": {
+      "get": {
+        "operationId": "billing_list_history",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "List your orders, payments and refunds, newest first",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/orders": {
+      "post": {
+        "operationId": "billing_create_order",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "Create a credit pack order and return the checkout data",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/orders/{order_id}": {
+      "get": {
+        "operationId": "billing_get_order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "Get one of your orders",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/payments/verify": {
+      "post": {
+        "operationId": "billing_verify_payment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyPaymentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "Verify a checkout payment and settle the order",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/products": {
+      "get": {
+        "operationId": "billing_list_products",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Not Modified"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "List the active credit packs and subscription plans",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
     "/v1/catalog/categories/{category}": {
       "get": {
         "operationId": "catalog_catalog_category",
@@ -12734,6 +13815,133 @@
         "summary": "Replace video preferences",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/v1/webhooks/razorpay": {
+      "post": {
+        "operationId": "webhooks_receive_razorpay_webhook",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Razorpay-Signature",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Razorpay-Signature"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Razorpay-Event-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Razorpay-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookReceiptResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Receive a signed Razorpay webhook",
+        "tags": [
+          "webhooks"
         ]
       }
     }

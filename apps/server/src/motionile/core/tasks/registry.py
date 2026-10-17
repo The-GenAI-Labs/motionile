@@ -13,6 +13,7 @@ from motionile.core.db import after_commit
 
 TASK_MODULES: tuple[str, ...] = (
     "motionile.core.events",
+    "motionile.modules.billing.tasks",
     "motionile.modules.catalog.tasks",
     "motionile.modules.credits.tasks",
     "motionile.modules.notifications.tasks",

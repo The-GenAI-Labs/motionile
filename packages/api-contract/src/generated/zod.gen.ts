@@ -244,6 +244,30 @@ export const zChangePasswordRequest = z.object({
 });
 
 /**
+ * CheckoutPrefillResponse
+ */
+export const zCheckoutPrefillResponse = z.object({
+    contact: z.string().nullable(),
+    email: z.string().nullable(),
+    name: z.string().nullable()
+});
+
+/**
+ * CheckoutResponse
+ */
+export const zCheckoutResponse = z.object({
+    amountPaise: z.int(),
+    currency: z.string(),
+    customerId: z.string(),
+    description: z.string(),
+    keyId: z.string(),
+    name: z.string(),
+    orderId: z.uuid(),
+    prefill: zCheckoutPrefillResponse,
+    razorpayOrderId: z.string()
+});
+
+/**
  * CodeRequest
  */
 export const zCodeRequest = z.object({
@@ -284,6 +308,13 @@ export const zContactResponse = z.object({
 export const zContactVerifyRequest = z.object({
     challengeToken: z.string().min(20).max(128),
     code: z.string().regex(/^[0-9]{6}$/)
+});
+
+/**
+ * CreateOrderRequest
+ */
+export const zCreateOrderRequest = z.object({
+    productCode: z.string().min(1).max(60).regex(/^[a-z0-9]+(_[a-z0-9]+)*$/)
 });
 
 /**
@@ -407,12 +438,44 @@ export const zFeatureFlagWriteRequest = z.object({
     rules: z.array(zFlagRule).max(20).optional()
 });
 
+export const zHistoryTypeName = z.enum([
+    'order',
+    'payment',
+    'refund'
+]);
+
+/**
+ * HistoryItemResponse
+ */
+export const zHistoryItemResponse = z.object({
+    amountPaise: z.int(),
+    createdAt: z.iso.datetime(),
+    creditsGranted: z.int().nullish(),
+    currency: z.string(),
+    id: z.uuid(),
+    orderId: z.uuid().nullish(),
+    paymentId: z.uuid().nullish(),
+    status: z.string(),
+    title: z.string(),
+    type: zHistoryTypeName
+});
+
+/**
+ * HistoryPageResponse
+ */
+export const zHistoryPageResponse = z.object({
+    items: z.array(zHistoryItemResponse),
+    nextCursor: z.string().nullish()
+});
+
 /**
  * IdentifierRequest
  */
 export const zIdentifierRequest = z.object({
     identifier: z.string().min(3).max(254)
 });
+
+export const zIntervalName = z.enum(['month', 'year']);
 
 /**
  * JwksResponse
@@ -510,6 +573,34 @@ export const zOAuthStartResponse = z.object({
     url: z.string()
 });
 
+export const zOrderKindName = z.enum(['credit_pack', 'subscription']);
+
+export const zOrderStatusName = z.enum([
+    'created',
+    'pending',
+    'paid',
+    'failed',
+    'expired',
+    'cancelled'
+]);
+
+/**
+ * OrderResponse
+ */
+export const zOrderResponse = z.object({
+    amountPaise: z.int(),
+    creditsGranted: z.int(),
+    currency: z.string(),
+    expiresAt: z.iso.datetime(),
+    failureReason: z.string().nullish(),
+    id: z.uuid(),
+    kind: zOrderKindName,
+    paidAt: z.iso.datetime().nullable(),
+    productCode: z.string(),
+    productName: z.string(),
+    status: zOrderStatusName
+});
+
 /**
  * PermissionResponse
  */
@@ -530,6 +621,30 @@ export const zProblemDetails = z.object({
     status: z.int(),
     title: z.string(),
     type: z.string().readonly()
+});
+
+/**
+ * ProductResponse
+ */
+export const zProductResponse = z.object({
+    code: z.string(),
+    creditsGranted: z.int(),
+    currency: z.string(),
+    description: z.string().nullable(),
+    features: z.array(z.string()),
+    interval: zIntervalName.nullable(),
+    name: z.string(),
+    planKey: z.string().nullable(),
+    pricePaise: z.int(),
+    sortOrder: z.int()
+});
+
+/**
+ * ProductsResponse
+ */
+export const zProductsResponse = z.object({
+    creditPacks: z.array(zProductResponse),
+    subscriptions: z.array(zProductResponse)
 });
 
 /**
@@ -890,6 +1005,24 @@ export const zUserRoleMutationRequest = z.object({
 });
 
 /**
+ * ValidationError
+ */
+export const zValidationError = z.object({
+    ctx: z.record(z.string(), z.unknown()).optional(),
+    input: z.unknown().optional(),
+    loc: z.array(z.union([z.string(), z.int()])),
+    msg: z.string(),
+    type: z.string()
+});
+
+/**
+ * HTTPValidationError
+ */
+export const zHttpValidationError = z.object({
+    detail: z.array(zValidationError).optional()
+});
+
+/**
  * VerificationProblem
  */
 export const zVerificationProblem = z.object({
@@ -904,6 +1037,26 @@ export const zVerificationProblem = z.object({
     type: z.string().readonly()
 });
 
+export const zVerifiedStatus = z.enum(['paid', 'pending']);
+
+/**
+ * VerifyPaymentRequest
+ */
+export const zVerifyPaymentRequest = z.object({
+    razorpayOrderId: z.string().min(1).max(64).regex(/^[A-Za-z0-9_]+$/),
+    razorpayPaymentId: z.string().min(1).max(64).regex(/^[A-Za-z0-9_]+$/),
+    razorpaySignature: z.string().min(1).max(128)
+});
+
+/**
+ * VerifyPaymentResponse
+ */
+export const zVerifyPaymentResponse = z.object({
+    creditsGranted: z.int(),
+    orderId: z.uuid(),
+    status: zVerifiedStatus
+});
+
 /**
  * WalletResponse
  */
@@ -912,6 +1065,15 @@ export const zWalletResponse = z.object({
     balance: z.int(),
     expiringSoon: z.array(zExpiringLotResponse),
     reserved: z.int()
+});
+
+export const zWebhookReceiptStatus = z.enum(['received', 'duplicate']);
+
+/**
+ * WebhookReceiptResponse
+ */
+export const zWebhookReceiptResponse = z.object({
+    status: zWebhookReceiptStatus
 });
 
 /**
@@ -1415,6 +1577,44 @@ export const zAuthVerifyBody = zCodeRequest;
  */
 export const zAuthVerifyResponse = zSessionUser;
 
+export const zBillingListHistoryQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20)
+});
+
+/**
+ * Successful Response
+ */
+export const zBillingListHistoryResponse = zHistoryPageResponse;
+
+export const zBillingCreateOrderBody = zCreateOrderRequest;
+
+/**
+ * Successful Response
+ */
+export const zBillingCreateOrderResponse = zCheckoutResponse;
+
+export const zBillingGetOrderPath = z.object({
+    order_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zBillingGetOrderResponse = zOrderResponse;
+
+export const zBillingVerifyPaymentBody = zVerifyPaymentRequest;
+
+/**
+ * Successful Response
+ */
+export const zBillingVerifyPaymentResponse = zVerifyPaymentResponse;
+
+/**
+ * Successful Response
+ */
+export const zBillingListProductsResponse = zProductsResponse;
+
 export const zCatalogCatalogCategoryPath = z.object({
     category: z.string()
 });
@@ -1607,3 +1807,13 @@ export const zUsersUpdatePreferencesBody = zUserPreferencesUpdateRequest;
  * Successful Response
  */
 export const zUsersUpdatePreferencesResponse = zUserPreferencesResponse;
+
+export const zWebhooksReceiveRazorpayWebhookHeaders = z.object({
+    'X-Razorpay-Signature': z.string().max(256).nullish(),
+    'X-Razorpay-Event-Id': z.string().max(256).nullish()
+});
+
+/**
+ * Successful Response
+ */
+export const zWebhooksReceiveRazorpayWebhookResponse = zWebhookReceiptResponse;

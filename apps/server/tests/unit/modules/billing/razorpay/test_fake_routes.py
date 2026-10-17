@@ -1,13 +1,14 @@
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from typing import Any
 
 import httpx
 import orjson
 import pytest
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from pydantic import SecretStr
 from tests.fakes.razorpay import InMemoryFakeRazorpayStore
 from tests.fakes.resources import make_resources
 from tests.fakes.settings import deployed_settings, make_settings
@@ -25,6 +26,8 @@ from motionile.modules.billing import (
     verify_subscription_payment_signature,
     verify_webhook_signature,
 )
+from motionile.modules.billing.dependencies import get_billing_services
+from motionile.modules.billing.exceptions import InvalidWebhookSignatureError
 from motionile.modules.billing.razorpay.api import PlanParams, PlanPeriod
 from motionile.modules.billing.razorpay.credentials import RazorpayCredentials, razorpay_credentials
 from motionile.modules.billing.razorpay.factory import FAKE_STORE_KEY
@@ -69,15 +72,23 @@ class Harness:
         return subscription.id
 
 
-def install_receiver(application: FastAPI, harness_received: list[Received], resources: Resources) -> None:
-    secret = razorpay_credentials(resources.settings).webhook_secret
+class RecordingReceiver:
+    def __init__(self, received: list[Received], secret: SecretStr) -> None:
+        self.received = received
+        self.secret = secret
 
-    @application.post("/v1/webhooks/razorpay")
-    async def receive(request: Request) -> JSONResponse:
-        body = await request.body()
-        valid = verify_webhook_signature(body, request.headers.get("x-razorpay-signature", ""), secret)
-        harness_received.append(Received(request.headers["x-razorpay-event-id"], orjson.loads(body)["event"], valid))
-        return JSONResponse({"status": "ok"}, status_code=200 if valid else 401)
+    async def receive(self, raw_body: bytes, signature: str | None, event_id: str | None) -> str:
+        valid = signature is not None and verify_webhook_signature(raw_body, signature, self.secret)
+        assert event_id is not None
+        self.received.append(Received(event_id, orjson.loads(raw_body)["event"], valid))
+        if not valid:
+            raise InvalidWebhookSignatureError
+        return "received"
+
+
+def install_receiver(application: FastAPI, harness_received: list[Received], resources: Resources) -> None:
+    receiver = RecordingReceiver(harness_received, razorpay_credentials(resources.settings).webhook_secret)
+    application.dependency_overrides[get_billing_services] = lambda: SimpleNamespace(receiver=receiver)
 
 
 @dataclass

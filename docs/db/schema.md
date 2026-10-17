@@ -636,7 +636,7 @@ Module `billing` · Phase 7 · Mutable
 | `idempotency_key`   | `text`        | no   | -           | Client key from the `Idempotency-Key` header                                            |
 | `failure_reason`    | `text`        | yes  | -           | Explains `failed` and `cancelled` orders to support                                     |
 | `flagged_at`        | `timestamptz` | yes  | -           | Set when a captured payment did not match the order; the order is held for admin review |
-| `flag_reason`       | `text`        | yes  | -           | `amount_mismatch`, `currency_mismatch`                                                  |
+| `flag_reason`       | `text`        | yes  | -           | `amount_mismatch`, `currency_mismatch`, `duplicate_payment`                             |
 | `expires_at`        | `timestamptz` | no   | -           | Creation plus the order expiry setting (2 hours by default)                             |
 | `paid_at`           | `timestamptz` | yes  | -           |                                                                                         |
 | `created_at`        | `timestamptz` | no   | `now()`     |                                                                                         |
@@ -656,7 +656,7 @@ Module `billing` · Phase 7 · Mutable
 - `ck_orders_currency_format`: `currency ~ '^[A-Z]{3}$'`.
 - `ck_orders_paid_consistent`: `(status = 'paid') = (paid_at IS NOT NULL)`.
 - `ck_orders_flag_consistent`: `(flagged_at IS NULL) = (flag_reason IS NULL)`.
-- `ck_orders_flag_reason`: `flag_reason IS NULL OR flag_reason IN ('amount_mismatch', 'currency_mismatch')`.
+- `ck_orders_flag_reason`: `flag_reason IS NULL OR flag_reason IN ('amount_mismatch', 'currency_mismatch', 'duplicate_payment')`.
 - `ck_orders_receipt_length`: `char_length(receipt) <= 40`.
 - `ix_orders_user_id_created_at` (`user_id`, `created_at`): billing history; supports the user foreign key.
 - `ix_orders_product_id` (`product_id`), `ix_orders_subscription_id` (`subscription_id`): support foreign keys and the product immutability check.

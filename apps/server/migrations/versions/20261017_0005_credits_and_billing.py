@@ -279,7 +279,7 @@ def create_orders() -> None:
         sa.CheckConstraint("(status = 'paid') = (paid_at IS NOT NULL)", name=op.f("ck_orders_paid_consistent")),
         sa.CheckConstraint("(flagged_at IS NULL) = (flag_reason IS NULL)", name=op.f("ck_orders_flag_consistent")),
         sa.CheckConstraint(
-            "flag_reason IS NULL OR flag_reason IN ('amount_mismatch', 'currency_mismatch')",
+            "flag_reason IS NULL OR flag_reason IN ('amount_mismatch', 'currency_mismatch', 'duplicate_payment')",
             name=op.f("ck_orders_flag_reason"),
         ),
         sa.CheckConstraint("char_length(receipt) <= 40", name=op.f("ck_orders_receipt_length")),

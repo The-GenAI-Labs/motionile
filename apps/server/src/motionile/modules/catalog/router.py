@@ -34,7 +34,7 @@ from motionile.modules.catalog.service import CatalogService
 catalog_router = APIRouter(
     prefix="/catalog",
     tags=["catalog"],
-    dependencies=[Depends(enforce_csrf), Depends(rate_limit("api.default"))],
+    dependencies=[Depends(enforce_csrf), Depends(rate_limit("catalog.read"))],
     responses=problem_responses(404, 422),
 )
 catalog_admin_router = APIRouter(

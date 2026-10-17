@@ -57,6 +57,7 @@ runs:
       shell: bash
       env:
         API_INTERNAL_URL: http://127.0.0.1:8000
+        NODE_ENV: production
         PORT: "3000"
         HOSTNAME: 127.0.0.1
         NEXT_PUBLIC_SITE_URL: ${{ inputs.browser-auth == 'true' && 'https://localhost:3443' || 'http://localhost:3000' }}

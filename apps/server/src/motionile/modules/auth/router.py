@@ -77,11 +77,7 @@ def policies(
     policy: str, *, turnstile: str | None = None, identifier: bool = False, ticket: bool = False
 ) -> list[Dependency]:
     resolver = request_identifier if identifier else ticket_identifier if ticket else None
-    result = (
-        []
-        if policy in {"api.default", "auth.otp.send", "auth.refresh"}
-        else [Depends(rate_limit(policy, identifier=resolver))]
-    )
+    result = [] if policy in {"auth.otp.send", "auth.refresh"} else [Depends(rate_limit(policy, identifier=resolver))]
     if turnstile:
         result.append(Depends(require_turnstile(turnstile)))
     return result

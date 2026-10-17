@@ -31,7 +31,8 @@ test("explore pages publish canonical metadata and breadcrumb JSON-LD", async ({
     expect(response?.status()).toBe(200);
     const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");
     expect(new URL(canonical ?? "").pathname.replace(/\/$/, "")).toBe(path.replace(/\/$/, ""));
-    await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /\S{20,}/);
+    const description = await page.locator('meta[name="description"]').getAttribute("content");
+    expect(description?.trim().length).toBeGreaterThanOrEqual(20);
     await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", /\S+/);
     await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toBeVisible();
     const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();

@@ -1,5 +1,7 @@
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import timedelta
+from typing import cast
 from urllib.parse import urlsplit
 
 from redis.asyncio import Redis
@@ -39,6 +41,12 @@ class Resources:
     turnstile: TurnstileVerifier
     events: EventBus
     provider_clients: dict[str, SafeHttpClient] = field(default_factory=dict[str, SafeHttpClient])
+    shared: dict[str, object] = field(default_factory=dict[str, object])
+
+    def shared_instance[InstanceT](self, name: str, build: Callable[[], InstanceT]) -> InstanceT:
+        if name not in self.shared:
+            self.shared[name] = build()
+        return cast("InstanceT", self.shared[name])
 
     async def aclose(self) -> None:
         for client in self.provider_clients.values():

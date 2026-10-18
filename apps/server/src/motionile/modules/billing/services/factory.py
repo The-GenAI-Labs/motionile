@@ -232,6 +232,7 @@ def build_services(resources: Resources, hooks: ServiceHooks) -> BillingServices
                 store_factory=SqlBillingRepository,
                 audit=hooks.audit,
                 alert=hooks.alert,
+                clock=resources.clock,
             )
         ),
         settlement_check=SettlementCheck(

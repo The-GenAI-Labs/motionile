@@ -51,6 +51,7 @@ runs:
         NEXT_PUBLIC_SITE_URL: ${{ inputs.browser-auth == 'true' && 'https://localhost:3443' || 'http://localhost:3000' }}
         NEXT_PUBLIC_API_URL: ${{ inputs.browser-auth == 'true' && 'https://localhost:3443' || 'http://localhost:8000' }}
         NEXT_PUBLIC_JWKS_URL: http://127.0.0.1:8000/v1/auth/jwks.json
+        NEXT_PUBLIC_PROVIDERS_MODE: fake
       run: pnpm --filter @motionile/web build
     - name: Serve web app
       if: inputs.web == 'true'
@@ -63,6 +64,7 @@ runs:
         NEXT_PUBLIC_SITE_URL: ${{ inputs.browser-auth == 'true' && 'https://localhost:3443' || 'http://localhost:3000' }}
         NEXT_PUBLIC_API_URL: ${{ inputs.browser-auth == 'true' && 'https://localhost:3443' || 'http://localhost:8000' }}
         NEXT_PUBLIC_JWKS_URL: http://127.0.0.1:8000/v1/auth/jwks.json
+        NEXT_PUBLIC_PROVIDERS_MODE: fake
       run: |
         cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
         nohup node apps/web/.next/standalone/apps/web/server.js > web-server.log 2>&1 &

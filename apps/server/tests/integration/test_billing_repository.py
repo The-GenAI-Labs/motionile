@@ -491,6 +491,7 @@ async def test_the_timeline_merges_orders_payments_and_refunds_newest_first_with
             amount_paise=5_000,
             status="pending",
             reason="requested",
+            idempotency_key="k-history",
             created_at=base + timedelta(minutes=3),
         )
     )

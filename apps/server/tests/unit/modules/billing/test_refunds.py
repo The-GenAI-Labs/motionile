@@ -53,8 +53,12 @@ async def spend(harness: SubscriptionHarness, amount: int) -> None:
         await base.credits.commit(session, reservation.id, amount, f"c-{ref_id}")
 
 
-def command(payment_id: UUID, amount: int | None = None, reason: str = "Customer request") -> CreateRefundCommand:
-    return CreateRefundCommand(admin_id=ADMIN_ID, payment_id=payment_id, amount_paise=amount, reason=reason)
+def command(
+    payment_id: UUID, amount: int | None = None, reason: str = "Customer request", key: str | None = None
+) -> CreateRefundCommand:
+    return CreateRefundCommand(
+        admin_id=ADMIN_ID, payment_id=payment_id, amount_paise=amount, reason=reason, request_key=key or f"k-{new_id()}"
+    )
 
 
 async def refund_and_process(harness: SubscriptionHarness, payment: PaymentRecord, amount: int | None) -> RefundRecord:

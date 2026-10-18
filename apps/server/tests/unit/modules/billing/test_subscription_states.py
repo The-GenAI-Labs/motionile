@@ -129,7 +129,7 @@ async def test_refund_transition_function_applies_only_allowed_moves(
     subscription_harness: SubscriptionHarness, current: RefundStatus, target: RefundStatus
 ) -> None:
     store = subscription_harness.base.billing
-    refund = await store.insert_refund(NewRefund(new_id(), new_id(), 100, "reason", None))
+    refund = await store.insert_refund(NewRefund(new_id(), new_id(), 100, "reason", None, "k-state"))
     store.refunds[refund.id] = replace(refund, status=current)
 
     if REFUND_MACHINE.allows(current, target):

@@ -23,6 +23,7 @@ REVALIDATE_TASK = "billing.revalidate_products"
 FINALIZE_TASK = "billing.finalize_subscriptions"
 SYNC_TASK = "billing.sync_subscriptions"
 SETTLEMENT_TASK = "billing.settlement_check"
+REFUND_RECONCILE_TASK = "billing.reconcile_pending_refunds"
 EXPONENTIAL_WAIT_BASE = 2
 
 logger = structlog.get_logger(__name__)
@@ -116,6 +117,13 @@ async def settlement_check() -> None:
         mismatches=result.mismatches,
         report_key=result.report_key,
     )
+
+
+@periodic_task(name=REFUND_RECONCILE_TASK, queue=Queue.BILLING, cron="*/15 * * * *")
+async def reconcile_pending_refunds() -> None:
+    async with worker_services("motionile-billing-refund-reconciliation") as services:
+        counts = await services.refunds.reconcile_stale()
+    logger.info("billing.refunds_reconciled", linked=counts.linked, failed=counts.failed, errors=counts.errors)
 
 
 @task(name=REVALIDATE_TASK, queue=Queue.DEFAULT)

@@ -378,7 +378,7 @@ async def test_refunds_are_inserted_pending_and_transition_once(rolled_back_sess
     admin_id = await make_user(rolled_back_session, "Admin")
     payment_id = await make_payment(rolled_back_session, user_id, "pay_refunds")
 
-    refund = await repository.insert_refund(NewRefund(new_id(), payment_id, 4_000, "Duplicate", admin_id))
+    refund = await repository.insert_refund(NewRefund(new_id(), payment_id, 4_000, "Duplicate", admin_id, "k-dup"))
 
     assert (refund.status, refund.credits_clawed_back, refund.razorpay_refund_id, refund.initiated_by) == (
         RefundStatus.PENDING,
@@ -410,8 +410,8 @@ async def test_refund_rules_are_enforced_by_the_schema(rolled_back_session: Asyn
     repository = SqlBillingRepository(rolled_back_session)
     user_id = await make_user(rolled_back_session)
     payment_id = await make_payment(rolled_back_session, user_id, "pay_rules")
-    first = await repository.insert_refund(NewRefund(new_id(), payment_id, 100, "one", None))
-    second = await repository.insert_refund(NewRefund(new_id(), payment_id, 100, "two", None))
+    first = await repository.insert_refund(NewRefund(new_id(), payment_id, 100, "one", None, "k-one"))
+    second = await repository.insert_refund(NewRefund(new_id(), payment_id, 100, "two", None, "k-two"))
     await repository.update_refund(first.id, {"razorpay_refund_id": "rfnd_same"})
 
     with pytest.raises(IntegrityError, match="uq_refunds_razorpay_refund_id"):
@@ -419,7 +419,7 @@ async def test_refund_rules_are_enforced_by_the_schema(rolled_back_session: Asyn
             await repository.update_refund(second.id, {"razorpay_refund_id": "rfnd_same"})
     with pytest.raises(IntegrityError, match="ck_refunds_amount_paise_positive"):
         async with rolled_back_session.begin_nested():
-            await repository.insert_refund(NewRefund(new_id(), payment_id, 0, "zero", None))
+            await repository.insert_refund(NewRefund(new_id(), payment_id, 0, "zero", None, "k-zero"))
     with pytest.raises(IntegrityError, match="ck_refunds_processed_consistent"):
         async with rolled_back_session.begin_nested():
             await repository.transition_refund(second.id, RefundStatus.PENDING, RefundStatus.PROCESSED, {})

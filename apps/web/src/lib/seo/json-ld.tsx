@@ -1,5 +1,6 @@
 import { siteConfig } from "@/config/site";
 import { absoluteUrl } from "@/lib/seo/metadata";
+import { paiseToDecimalString } from "@/lib/utils/format";
 
 export const SCHEMA_CONTEXT = "https://schema.org";
 
@@ -66,8 +67,45 @@ export interface VideoObjectJsonLd extends JsonLdBase {
   publisher: { "@type": "Organization"; name: string; url: string };
 }
 
+export interface ProductJsonLdInput {
+  code: string;
+  name: string;
+  description: string | null;
+  pricePaise: number;
+  currency: string;
+  path: string;
+}
+
+export interface OfferJsonLd {
+  "@type": "Offer";
+  price: string;
+  priceCurrency: string;
+  availability: "https://schema.org/InStock";
+  url: string;
+  priceSpecification: {
+    "@type": "PriceSpecification";
+    price: string;
+    priceCurrency: string;
+    valueAddedTaxIncluded: true;
+  };
+}
+
+export interface ProductJsonLd extends JsonLdBase {
+  "@type": "Product";
+  name: string;
+  description: string;
+  sku: string;
+  url: string;
+  brand: { "@type": "Brand"; name: string };
+  offers: OfferJsonLd;
+}
+
 export type JsonLdDocument =
-  OrganizationJsonLd | SoftwareApplicationJsonLd | BreadcrumbListJsonLd | VideoObjectJsonLd;
+  | OrganizationJsonLd
+  | SoftwareApplicationJsonLd
+  | BreadcrumbListJsonLd
+  | VideoObjectJsonLd
+  | ProductJsonLd;
 
 const UNSAFE_JSON_CHARACTERS: Readonly<Record<string, string>> = {
   "<": "\\u003c",
@@ -146,6 +184,33 @@ export const buildVideoObjectJsonLd = (video: VideoObjectInput): VideoObjectJson
   ...(video.embedUrl === undefined ? {} : { embedUrl: absoluteUrl(video.embedUrl) }),
   publisher: publisher(),
 });
+
+export const buildProductJsonLd = (product: ProductJsonLdInput): ProductJsonLd => {
+  const price = paiseToDecimalString(product.pricePaise);
+  const url = absoluteUrl(product.path);
+  return {
+    "@context": SCHEMA_CONTEXT,
+    "@type": "Product",
+    name: product.name,
+    description: product.description ?? `${product.name} from ${siteConfig.name}`,
+    sku: product.code,
+    url,
+    brand: { "@type": "Brand", name: siteConfig.name },
+    offers: {
+      "@type": "Offer",
+      price,
+      priceCurrency: product.currency,
+      availability: "https://schema.org/InStock",
+      url,
+      priceSpecification: {
+        "@type": "PriceSpecification",
+        price,
+        priceCurrency: product.currency,
+        valueAddedTaxIncluded: true,
+      },
+    },
+  };
+};
 
 interface JsonLdProps {
   data: JsonLdDocument | readonly JsonLdDocument[];

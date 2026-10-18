@@ -59,6 +59,22 @@ describe("navigation proxy", () => {
       "https://motionile.test/login?next=%2Fsettings%2Fsecurity%3Ftab%3Dsessions",
     );
   });
+  it("sends signed-out visitors of a checkout link to login and back to the same purchase", () => {
+    const result = proxy(new NextRequest("https://motionile.test/billing/plans?plan=pro_monthly"));
+    expect(result.headers.get("location")).toBe(
+      "https://motionile.test/login?next=%2Fbilling%2Fplans%3Fplan%3Dpro_monthly",
+    );
+  });
+  it("keeps the billing path for signed-in visitors", () => {
+    const result = proxy(
+      new NextRequest("https://motionile.test/billing/credits?pack=pack_starter", {
+        headers: { cookie: "mo_auth=1" },
+      }),
+    );
+    expect(result.headers.get("x-middleware-request-x-mo-path")).toBe(
+      "/billing/credits?pack=pack_starter",
+    );
+  });
   it("overwrites caller-supplied navigation headers", () => {
     const result = proxy(
       new NextRequest("https://motionile.test/admin", {

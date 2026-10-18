@@ -140,6 +140,7 @@ class SubscriptionHarness:
                 store_factory=base.billing,
                 audit=base.audit,
                 alert=base.world.alert,
+                clock=base.clock,
             )
         )
         self.processor = WebhookProcessor(

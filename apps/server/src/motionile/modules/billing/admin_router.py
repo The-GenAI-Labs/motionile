@@ -1,11 +1,12 @@
+from dataclasses import dataclass
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
 
 from motionile.core.errors import problem_responses
-from motionile.core.idempotency import IdempotencyGuard, idempotent
+from motionile.core.idempotency import IdempotencyGuard, idempotent, read_key
 from motionile.core.ratelimit.limiter import rate_limit
 from motionile.modules.access import BillingRefundsCreateDep
 from motionile.modules.auth import enforce_csrf
@@ -38,6 +39,19 @@ for child in (
     billing_admin_router.include_router(child)
 
 
+@dataclass(frozen=True)
+class RefundContext:
+    admin_id: UUID | None
+    request_key: str
+
+
+def get_refund_context(request: Request, principal: BillingRefundsCreateDep) -> RefundContext:
+    return RefundContext(principal.user_id, read_key(request))
+
+
+RefundContextDep = Annotated[RefundContext, Depends(get_refund_context)]
+
+
 @billing_admin_router.post(
     "/payments/{payment_id}/refunds",
     response_model=RefundResponse,
@@ -47,13 +61,17 @@ for child in (
 async def create_refund(
     payment_id: UUID,
     body: CreateRefundRequest,
-    principal: BillingRefundsCreateDep,
+    context: RefundContextDep,
     services: BillingServicesDep,
     guard: Annotated[IdempotencyGuard, Depends(idempotent(REFUND_SCOPE))],
 ) -> JSONResponse:
     refund = await services.refunds.create(
         CreateRefundCommand(
-            admin_id=principal.user_id, payment_id=payment_id, amount_paise=body.amount_paise, reason=body.reason
+            admin_id=context.admin_id,
+            payment_id=payment_id,
+            amount_paise=body.amount_paise,
+            reason=body.reason,
+            request_key=context.request_key,
         )
     )
     return await guard.respond(

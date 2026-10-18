@@ -37,6 +37,15 @@ Run from the repository root:
 - Import the API contract from `@motionile/api-contract`; never hand-write API types.
 - Every component test asserts through accessible roles and names, not class names.
 
+## Billing and credits
+
+- `features/billing` and `features/credits` follow the standard feature shape. Money is integer paise; format it only for display with `formatPaise` in `src/lib/utils/format.ts` and show "incl. GST" wherever a price appears. Never hold money as a float.
+- Creating an order or subscription sends an `Idempotency-Key` that `useCheckout` generates when the user clicks and reuses for retries of that click. Verification keys are `verify:<razorpayPaymentId>`.
+- `lib/razorpay` loads Checkout lazily and once (`load-checkout.ts`). `checkout-launcher.tsx` loads the real checkout with `next/dynamic` and, only when `NEXT_PUBLIC_PROVIDERS_MODE=fake`, the simulated one that calls the API's `/v1/_test/razorpay` routes. The checkout never settles a payment: the success handler verifies, then always navigates to `/billing/status/[orderId]`, which polls the order until the webhook or verification settles it.
+- `NEXT_PUBLIC_PROVIDERS_MODE` is `live` unless set. `fake` is rejected unless `NEXT_PUBLIC_SITE_URL` is a local address, so CI can serve a production build with fake providers and a deployed build cannot.
+- The pricing page is static: it fetches `GET /v1/billing/products` with the `billing-products` tag and a five-minute revalidate. `/api/revalidate` only accepts `billing-products` and `catalog` tags. A failed fetch while building renders the page without products; a failed revalidation keeps the last good page.
+- The Razorpay theme colour comes from `siteConfig.themeColor`. It is the only place a hex value reaches Razorpay.
+
 ## Authentication
 
 - Auth API calls use generated writable request schemas so password fields remain present. Challenge UI metadata lives in a per-tab Zustand store; verification tickets remain HttpOnly cookies.

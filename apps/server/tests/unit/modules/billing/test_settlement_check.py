@@ -224,7 +224,7 @@ async def test_refunds_in_flight_or_processed_do_not_look_like_mismatches(
     pending_id, pending_payment = await matched_pair(harness)
     processed_id, processed_payment = await matched_pair(harness)
     await harness.base.razorpay.create_refund(pending_id, amount=5_000)
-    await harness.base.billing.insert_refund(NewRefund(new_id(), pending_payment.id, 5_000, "test", None))
+    await harness.base.billing.insert_refund(NewRefund(new_id(), pending_payment.id, 5_000, "test", None, "k-pending"))
     await harness.base.razorpay.create_refund(processed_id, amount=PACK_PRICE)
     harness.base.billing.payments[processed_payment.id] = replace(
         processed_payment, status=PaymentRecordStatus.REFUNDED, refunded_paise=PACK_PRICE

@@ -760,14 +760,30 @@ def test_refund_checks(connection: Connection) -> None:
     values: dict[str, Any] = {"payment_id": payment_id, "amount_paise": 1_000, "reason": "Requested by user"}
 
     with rejected(connection, "ck_refunds_processed_consistent"):
-        insert(connection, "refunds", **values, status="processed")
+        insert(connection, "refunds", **values, idempotency_key=token(), status="processed")
     with rejected(connection, "ck_refunds_reason_length"):
-        insert(connection, "refunds", **{**values, "reason": ""})
+        insert(connection, "refunds", **{**values, "reason": "", "idempotency_key": token()})
     with rejected(connection, "ck_refunds_amount_paise_positive"):
-        insert(connection, "refunds", **{**values, "amount_paise": 0})
-    insert(connection, "refunds", **values, status="processed", processed_at=NOW, razorpay_refund_id="rfnd_1")
+        insert(connection, "refunds", **{**values, "amount_paise": 0, "idempotency_key": token()})
+    insert(
+        connection,
+        "refunds",
+        **values,
+        idempotency_key=token(),
+        status="processed",
+        processed_at=NOW,
+        razorpay_refund_id="rfnd_1",
+    )
     with rejected(connection, "uq_refunds_razorpay_refund_id"):
-        insert(connection, "refunds", **values, razorpay_refund_id="rfnd_1")
+        insert(connection, "refunds", **values, idempotency_key=token(), razorpay_refund_id="rfnd_1")
+    shared = token()
+    insert(connection, "refunds", **values, idempotency_key=shared)
+    with rejected(connection, "uq_refunds_idempotency_key"):
+        insert(connection, "refunds", **values, idempotency_key=shared)
+    with rejected(connection, "ck_refunds_idempotency_key_length"):
+        insert(connection, "refunds", **values, idempotency_key="")
+    with rejected(connection, "ck_refunds_idempotency_key_length"):
+        insert(connection, "refunds", **values, idempotency_key="k" * 201)
 
 
 def test_webhook_events_deduplicate_per_provider(connection: Connection) -> None:

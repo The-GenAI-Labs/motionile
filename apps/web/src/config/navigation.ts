@@ -41,6 +41,11 @@ export interface AppNavigationArea {
   items: readonly AppNavigationItem[];
 }
 
+export interface BillingLink {
+  title: string;
+  href: AppPath;
+}
+
 export type AppArea = "user" | "admin";
 
 export interface PublicPage {
@@ -107,6 +112,13 @@ export const userNavigation = {
     { title: "Settings", href: "/settings/profile", icon: Settings },
   ],
 } as const satisfies AppNavigationArea;
+
+export const billingNavigation = [
+  { title: "Overview", href: "/billing" },
+  { title: "Plans", href: "/billing/plans" },
+  { title: "Credits", href: "/billing/credits" },
+  { title: "History", href: "/billing/history" },
+] as const satisfies readonly BillingLink[];
 
 export const adminNavigation = {
   label: "Admin",

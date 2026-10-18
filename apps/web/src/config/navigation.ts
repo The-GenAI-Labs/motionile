@@ -7,6 +7,7 @@ import {
   Library,
   type LucideIcon,
   PlusCircle,
+  Receipt,
   Settings,
   Share2,
   Shield,
@@ -44,6 +45,12 @@ export interface AppNavigationArea {
 export interface BillingLink {
   title: string;
   href: AppPath;
+}
+
+export interface AdminBillingLink {
+  title: string;
+  href: AppPath;
+  permission: string;
 }
 
 export type AppArea = "user" | "admin";
@@ -120,6 +127,17 @@ export const billingNavigation = [
   { title: "History", href: "/billing/history" },
 ] as const satisfies readonly BillingLink[];
 
+export const adminBillingNavigation = [
+  { title: "Overview", href: "/admin/billing", permission: "billing.read" },
+  { title: "Products", href: "/admin/billing/products", permission: "billing.read" },
+  { title: "Payments", href: "/admin/billing/payments", permission: "billing.read" },
+  { title: "Orders", href: "/admin/billing/orders", permission: "billing.read" },
+  { title: "Refunds", href: "/admin/billing/refunds", permission: "billing.read" },
+  { title: "Subscriptions", href: "/admin/billing/subscriptions", permission: "billing.read" },
+  { title: "Reconciliation", href: "/admin/billing/reconciliation", permission: "billing.read" },
+  { title: "Webhooks", href: "/admin/billing/webhooks", permission: "billing.webhooks.manage" },
+] as const satisfies readonly AdminBillingLink[];
+
 export const adminNavigation = {
   label: "Admin",
   homeHref: "/admin",
@@ -127,6 +145,7 @@ export const adminNavigation = {
     { title: "Overview", href: "/admin", icon: Gauge, permission: "analytics.read" },
     { title: "Users", href: "/admin/users", icon: Users, permission: "users.read" },
     { title: "Roles", href: "/admin/roles", icon: Shield, permission: "roles.read" },
+    { title: "Billing", href: "/admin/billing", icon: Receipt, permission: "billing.read" },
     { title: "Audit logs", href: "/admin/audit-logs", icon: History, permission: "audit.read" },
     { title: "Catalog", href: "/admin/catalog", icon: FolderTree, permission: "catalog.manage" },
     { title: "Feature flags", href: "/admin/flags", icon: Sparkles, permission: "flags.manage" },

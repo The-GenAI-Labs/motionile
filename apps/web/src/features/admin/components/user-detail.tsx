@@ -13,6 +13,8 @@ import {
   useRemoveRole,
 } from "@/features/admin/hooks/use-admin-users";
 import { useRoles } from "@/features/admin/hooks/use-roles";
+import { UserCredits } from "@/features/admin-billing/components/user-credits";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 export function UserDetail({ userId }: { userId: string }) {
   const user = useAdminUser(userId);
@@ -20,6 +22,7 @@ export function UserDetail({ userId }: { userId: string }) {
   const action = useAdminUserAction(userId);
   const assign = useAssignRole(userId);
   const remove = useRemoveRole(userId);
+  const { can } = usePermissions();
   if (user.isPending || roles.isPending) return <p role="status">Loading user…</p>;
   if (user.isError || roles.isError)
     return (
@@ -89,6 +92,7 @@ export function UserDetail({ userId }: { userId: string }) {
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="sessions">Sessions</TabsTrigger>
           <TabsTrigger value="audit">Audit</TabsTrigger>
+          {can("billing.read") ? <TabsTrigger value="credits">Credits</TabsTrigger> : null}
         </TabsList>
         <TabsContent value="profile">
           <Card>
@@ -160,6 +164,11 @@ export function UserDetail({ userId }: { userId: string }) {
             </ol>
           )}
         </TabsContent>
+        {can("billing.read") ? (
+          <TabsContent value="credits">
+            <UserCredits userId={userId} />
+          </TabsContent>
+        ) : null}
       </Tabs>
     </div>
   );

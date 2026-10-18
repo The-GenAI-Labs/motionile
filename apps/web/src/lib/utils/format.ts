@@ -32,6 +32,9 @@ export const formatPaise = (paise: number): string => {
   return format.format(paise / PAISE_PER_RUPEE);
 };
 
+export const formatSignedPaise = (paise: number): string =>
+  paise < 0 ? `-${formatPaise(-paise)}` : formatPaise(paise);
+
 export const paiseToDecimalString = (paise: number): string => {
   assertPaise(paise);
   const rupees = Math.floor(paise / PAISE_PER_RUPEE);

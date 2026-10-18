@@ -92,6 +92,7 @@ class Subscription(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         CheckConstraint(
             "(status IN ('cancelled', 'completed', 'expired')) = (ended_at IS NOT NULL)", name="ended_consistent"
         ),
+        CheckConstraint("status = 'created' OR razorpay_subscription_id IS NOT NULL", name="live_has_razorpay_id"),
         Index(
             "ix_subscriptions_user_id_live",
             "user_id",
@@ -112,7 +113,7 @@ class Subscription(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
     product_id: Mapped[UUID] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"))
     pending_product_id: Mapped[UUID | None] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"))
-    razorpay_subscription_id: Mapped[str]
+    razorpay_subscription_id: Mapped[str | None]
     status: Mapped[str] = mapped_column(server_default=text("'created'"))
     total_count: Mapped[int]
     paid_count: Mapped[int] = mapped_column(server_default="0")

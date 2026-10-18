@@ -18,8 +18,10 @@ from motionile.modules.billing.states import (
     InvalidTransitionError,
     OrderStatus,
     PaymentRecordStatus,
+    RefundStatus,
     RunStatus,
     StateMachine,
+    SubscriptionStatus,
     WebhookEventStatus,
 )
 from motionile.modules.billing.transitions import transition_event, transition_order, transition_payment
@@ -48,7 +50,9 @@ def diagram(section: str) -> tuple[Edges, set[str]]:
     return edges, initial
 
 
-def machine_edges[StateT: (OrderStatus, PaymentRecordStatus, WebhookEventStatus, RunStatus)](
+def machine_edges[
+    StateT: (OrderStatus, PaymentRecordStatus, WebhookEventStatus, RunStatus, SubscriptionStatus, RefundStatus)
+](
     machine: StateMachine[StateT],
 ) -> Edges:
     return {(source.value, target.value) for source, targets in machine.transitions.items() for target in targets}

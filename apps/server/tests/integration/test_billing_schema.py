@@ -476,6 +476,40 @@ def test_subscription_end_and_period_consistency(connection: Connection) -> None
         make_subscription(connection, user_id, product_id, status="trial")
 
 
+def test_only_a_created_subscription_may_lack_its_razorpay_id(connection: Connection) -> None:
+    product_id = make_plan(connection)
+    first_user = make_user(connection)
+    second_user = make_user(connection)
+
+    make_subscription(connection, first_user, product_id, status="created", razorpay_subscription_id=None)
+    make_subscription(connection, second_user, product_id, status="created", razorpay_subscription_id=None)
+    for status in ("authenticated", "active", "pending", "halted", "paused"):
+        with rejected(connection, "ck_subscriptions_live_has_razorpay_id"):
+            make_subscription(
+                connection, make_user(connection), product_id, status=status, razorpay_subscription_id=None
+            )
+    with rejected(connection, "ck_subscriptions_live_has_razorpay_id"):
+        make_subscription(
+            connection,
+            make_user(connection),
+            product_id,
+            status="cancelled",
+            razorpay_subscription_id=None,
+            ended_at=NOW,
+        )
+
+
+def test_a_razorpay_subscription_id_is_unique_once_set(connection: Connection) -> None:
+    product_id = make_plan(connection)
+    shared = f"sub_{token()}"
+    make_subscription(connection, make_user(connection), product_id, status="created", razorpay_subscription_id=shared)
+
+    with rejected(connection, "uq_subscriptions_razorpay_subscription_id"):
+        make_subscription(
+            connection, make_user(connection), product_id, status="created", razorpay_subscription_id=shared
+        )
+
+
 def test_one_active_product_per_plan_and_interval(connection: Connection) -> None:
     plan_key = f"key{token()[:12]}"
     make_plan(connection, plan_key=plan_key, interval="month")

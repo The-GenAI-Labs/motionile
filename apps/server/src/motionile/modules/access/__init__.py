@@ -1,6 +1,7 @@
 from motionile.modules.access.dependencies import (
     AnalyticsReadDep,
     AuditReadDep,
+    BillingRefundsCreateDep,
     CatalogManageDep,
     FlagsManageDep,
     RequirePermission,
@@ -31,6 +32,7 @@ __all__ = [
     "AccessService",
     "AnalyticsReadDep",
     "AuditReadDep",
+    "BillingRefundsCreateDep",
     "CatalogManageDep",
     "EffectiveAccess",
     "FlagsManageDep",

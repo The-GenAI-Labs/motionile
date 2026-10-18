@@ -714,7 +714,7 @@ Module `billing` · Phase 7 · Mutable
 | `user_id`                  | `uuid`        | no   | -           |                                                                                        |
 | `product_id`               | `uuid`        | no   | -           | The plan currently charged                                                             |
 | `pending_product_id`       | `uuid`        | yes  | -           | The plan that takes over from the next cycle after a plan change                       |
-| `razorpay_subscription_id` | `text`        | no   | -           |                                                                                        |
+| `razorpay_subscription_id` | `text`        | yes  | -           | Null only while `created`: the local row exists before the Razorpay subscription       |
 | `status`                   | `text`        | no   | `'created'` | See `state-machines.md`                                                                |
 | `total_count`              | `integer`     | no   | -           | Billing cycles requested at creation, from settings                                    |
 | `paid_count`               | `integer`     | no   | `0`         | Cycles paid, from Razorpay                                                             |
@@ -733,6 +733,7 @@ Module `billing` · Phase 7 · Mutable
 - `fk_subscriptions_product_id_products` → `products.id` **ON DELETE RESTRICT**.
 - `fk_subscriptions_pending_product_id_products` → `products.id` **ON DELETE RESTRICT**.
 - `uq_subscriptions_razorpay_subscription_id` unique (`razorpay_subscription_id`): webhook lookup.
+- `ck_subscriptions_live_has_razorpay_id`: `status = 'created' OR razorpay_subscription_id IS NOT NULL`.
 - `ck_subscriptions_status`: `status IN ('created', 'authenticated', 'active', 'pending', 'halted', 'paused', 'cancelled', 'completed', 'expired')`.
 - `ck_subscriptions_period_order`: `current_period_end IS NULL OR current_period_start IS NULL OR current_period_end > current_period_start`.
 - `ck_subscriptions_total_count_positive`: `total_count > 0`; `ck_subscriptions_paid_count_non_negative`: `paid_count >= 0`.

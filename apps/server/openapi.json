@@ -1249,6 +1249,23 @@
         "title": "ChangePasswordRequest",
         "type": "object"
       },
+      "ChangeSubscriptionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "productCode": {
+            "maxLength": 60,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$",
+            "title": "Productcode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "productCode"
+        ],
+        "title": "ChangeSubscriptionRequest",
+        "type": "object"
+      },
       "CheckoutPrefillResponse": {
         "properties": {
           "contact": {
@@ -1479,6 +1496,71 @@
           "productCode"
         ],
         "title": "CreateOrderRequest",
+        "type": "object"
+      },
+      "CreateRefundRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "amountPaise": {
+            "anyOf": [
+              {
+                "maximum": 10000000000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amountpaise"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "CreateRefundRequest",
+        "type": "object"
+      },
+      "CreateSubscriptionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "productCode": {
+            "maxLength": 60,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$",
+            "title": "Productcode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "productCode"
+        ],
+        "title": "CreateSubscriptionRequest",
+        "type": "object"
+      },
+      "CurrentSubscriptionResponse": {
+        "properties": {
+          "subscription": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "subscription"
+        ],
+        "title": "CurrentSubscriptionResponse",
         "type": "object"
       },
       "CursorPage_CatalogTopicResponse_": {
@@ -2571,6 +2653,65 @@
         "title": "ReadinessResponse",
         "type": "object"
       },
+      "RefundResponse": {
+        "properties": {
+          "amountPaise": {
+            "title": "Amountpaise",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "creditsClawedBack": {
+            "title": "Creditsclawedback",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "razorpayRefundId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Razorpayrefundid"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RefundStatusName"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "amountPaise",
+          "reason",
+          "creditsClawedBack",
+          "razorpayRefundId",
+          "createdAt"
+        ],
+        "title": "RefundResponse",
+        "type": "object"
+      },
+      "RefundStatusName": {
+        "enum": [
+          "pending",
+          "processed",
+          "failed"
+        ],
+        "type": "string"
+      },
       "RegisterRequest": {
         "additionalProperties": false,
         "properties": {
@@ -3088,6 +3229,223 @@
         ],
         "title": "SubcategoryDetailResponse",
         "type": "object"
+      },
+      "SubscriptionCheckoutResponse": {
+        "properties": {
+          "customerId": {
+            "title": "Customerid",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "keyId": {
+            "title": "Keyid",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "title": "Orderid",
+            "type": "string"
+          },
+          "prefill": {
+            "$ref": "#/components/schemas/CheckoutPrefillResponse"
+          },
+          "razorpaySubscriptionId": {
+            "title": "Razorpaysubscriptionid",
+            "type": "string"
+          },
+          "subscriptionId": {
+            "format": "uuid",
+            "title": "Subscriptionid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "subscriptionId",
+          "keyId",
+          "razorpaySubscriptionId",
+          "name",
+          "description",
+          "customerId",
+          "prefill"
+        ],
+        "title": "SubscriptionCheckoutResponse",
+        "type": "object"
+      },
+      "SubscriptionProductResponse": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "creditsGranted": {
+            "title": "Creditsgranted",
+            "type": "integer"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntervalName"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "planKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plankey"
+          },
+          "pricePaise": {
+            "title": "Pricepaise",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "interval",
+          "pricePaise",
+          "creditsGranted",
+          "planKey"
+        ],
+        "title": "SubscriptionProductResponse",
+        "type": "object"
+      },
+      "SubscriptionResponse": {
+        "properties": {
+          "cancelAtPeriodEnd": {
+            "title": "Cancelatperiodend",
+            "type": "boolean"
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelledat"
+          },
+          "currentPeriodEnd": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentperiodend"
+          },
+          "currentPeriodStart": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentperiodstart"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endsat"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "nextChargeAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextchargeat"
+          },
+          "pendingProduct": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionProductResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "product": {
+            "$ref": "#/components/schemas/SubscriptionProductResponse"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionStatusName"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "product",
+          "pendingProduct",
+          "currentPeriodStart",
+          "currentPeriodEnd",
+          "nextChargeAt",
+          "cancelAtPeriodEnd",
+          "cancelledAt",
+          "endsAt"
+        ],
+        "title": "SubscriptionResponse",
+        "type": "object"
+      },
+      "SubscriptionStatusName": {
+        "enum": [
+          "created",
+          "authenticated",
+          "active",
+          "pending",
+          "halted",
+          "paused",
+          "cancelled",
+          "completed",
+          "expired"
+        ],
+        "type": "string"
       },
       "TopicDetailResponse": {
         "properties": {
@@ -4004,6 +4362,38 @@
         "title": "VerifyPaymentResponse",
         "type": "object"
       },
+      "VerifySubscriptionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "razorpayPaymentId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "title": "Razorpaypaymentid",
+            "type": "string"
+          },
+          "razorpaySignature": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Razorpaysignature",
+            "type": "string"
+          },
+          "razorpaySubscriptionId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "title": "Razorpaysubscriptionid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "razorpayPaymentId",
+          "razorpaySubscriptionId",
+          "razorpaySignature"
+        ],
+        "title": "VerifySubscriptionRequest",
+        "type": "object"
+      },
       "WalletResponse": {
         "properties": {
           "available": {
@@ -4566,6 +4956,139 @@
         "summary": "Get an audit entry",
         "tags": [
           "admin-insights"
+        ]
+      }
+    },
+    "/v1/admin/billing/payments/{payment_id}/refunds": {
+      "post": {
+        "operationId": "admin_billing_create_refund",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "payment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Payment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRefundRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Refund a captured payment in full or in part",
+        "tags": [
+          "admin-billing"
         ]
       }
     },
@@ -11070,6 +11593,536 @@
           }
         },
         "summary": "List the active credit packs and subscription plans",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/subscription": {
+      "get": {
+        "operationId": "billing_get_subscription",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentSubscriptionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "Get your current subscription",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/subscription/cancel": {
+      "post": {
+        "operationId": "billing_cancel_subscription",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "Cancel your subscription at the end of the billing period",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/subscription/change": {
+      "post": {
+        "operationId": "billing_change_subscription",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "Switch your subscription to another plan from the next billing period",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/subscriptions": {
+      "post": {
+        "operationId": "billing_create_subscription",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionCheckoutResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "Start a subscription and return the checkout data",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/subscriptions/verify": {
+      "post": {
+        "operationId": "billing_verify_subscription",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifySubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "summary": "Verify the subscription authorization payment",
         "tags": [
           "billing"
         ]

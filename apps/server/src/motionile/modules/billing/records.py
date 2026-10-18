@@ -3,7 +3,14 @@ from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from motionile.modules.billing.states import OrderStatus, PaymentRecordStatus, RunStatus, WebhookEventStatus
+from motionile.modules.billing.states import (
+    OrderStatus,
+    PaymentRecordStatus,
+    RefundStatus,
+    RunStatus,
+    SubscriptionStatus,
+    WebhookEventStatus,
+)
 
 type JsonObject = dict[str, Any]
 type HistoryKind = Literal["order", "payment", "refund"]
@@ -59,6 +66,7 @@ class NewOrder:
     product: ProductRecord
     idempotency_key: str
     expires_at: datetime
+    subscription_id: UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -92,7 +100,7 @@ class PaymentRecord:
 @dataclass(frozen=True)
 class NewPayment:
     id: UUID
-    order_id: UUID
+    order_id: UUID | None
     user_id: UUID
     razorpay_payment_id: str
     amount_paise: int
@@ -104,6 +112,78 @@ class NewPayment:
     error_code: str | None = None
     error_description: str | None = None
     captured_at: datetime | None = None
+    subscription_id: UUID | None = None
+
+
+@dataclass(frozen=True)
+class SubscriptionRecord:
+    id: UUID
+    user_id: UUID
+    product_id: UUID
+    pending_product_id: UUID | None
+    razorpay_subscription_id: str | None
+    status: SubscriptionStatus
+    total_count: int
+    paid_count: int
+    current_period_start: datetime | None
+    current_period_end: datetime | None
+    next_charge_at: datetime | None
+    cancel_at_period_end: bool
+    cancelled_at: datetime | None
+    ended_at: datetime | None
+    last_event_at: datetime | None
+    created_at: datetime
+
+
+@dataclass(frozen=True)
+class NewSubscription:
+    id: UUID
+    user_id: UUID
+    product_id: UUID
+    total_count: int
+
+
+@dataclass(frozen=True)
+class SubscriptionView:
+    subscription: SubscriptionRecord
+    product: ProductRecord
+    pending_product: ProductRecord | None
+
+
+@dataclass(frozen=True)
+class RefundRecord:
+    id: UUID
+    payment_id: UUID
+    razorpay_refund_id: str | None
+    amount_paise: int
+    status: RefundStatus
+    reason: str
+    initiated_by: UUID | None
+    credits_clawed_back: int
+    failure_reason: str | None
+    processed_at: datetime | None
+    created_at: datetime
+
+
+@dataclass(frozen=True)
+class NewRefund:
+    id: UUID
+    payment_id: UUID
+    amount_paise: int
+    reason: str
+    initiated_by: UUID | None
+
+
+@dataclass(frozen=True)
+class LocalPayment:
+    payment: PaymentRecord
+    pending_refund_paise: int
+
+
+@dataclass(frozen=True)
+class RunClaim:
+    run_id: UUID
+    resumed: bool
 
 
 @dataclass(frozen=True)
@@ -168,6 +248,7 @@ class RunOutcome:
     finished_at: datetime
     summary: JsonObject = field(default_factory=dict[str, Any])
     error: str | None = None
+    report_storage_key: str | None = None
 
 
 @dataclass(frozen=True)

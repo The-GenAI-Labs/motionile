@@ -749,6 +749,12 @@ class CreditsService:
         return updated, entry
 
 
+async def lot_for_reference(
+    session: AsyncSession, ref: CreditRef, *, store_factory: StoreFactory = SqlCreditsRepository
+) -> LotRecord | None:
+    return await store_factory(session).lot_by_reference(ref.ref_type, ref.ref_id)
+
+
 async def record_usage(
     session: AsyncSession, entry: UsageEntry, *, store_factory: StoreFactory = SqlCreditsRepository
 ) -> UUID:

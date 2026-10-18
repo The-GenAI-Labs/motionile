@@ -244,6 +244,13 @@ export const zChangePasswordRequest = z.object({
 });
 
 /**
+ * ChangeSubscriptionRequest
+ */
+export const zChangeSubscriptionRequest = z.object({
+    productCode: z.string().min(1).max(60).regex(/^[a-z0-9]+(_[a-z0-9]+)*$/)
+});
+
+/**
  * CheckoutPrefillResponse
  */
 export const zCheckoutPrefillResponse = z.object({
@@ -314,6 +321,21 @@ export const zContactVerifyRequest = z.object({
  * CreateOrderRequest
  */
 export const zCreateOrderRequest = z.object({
+    productCode: z.string().min(1).max(60).regex(/^[a-z0-9]+(_[a-z0-9]+)*$/)
+});
+
+/**
+ * CreateRefundRequest
+ */
+export const zCreateRefundRequest = z.object({
+    amountPaise: z.int().gte(1).lte(10000000000).nullish(),
+    reason: z.string().min(1).max(500)
+});
+
+/**
+ * CreateSubscriptionRequest
+ */
+export const zCreateSubscriptionRequest = z.object({
     productCode: z.string().min(1).max(60).regex(/^[a-z0-9]+(_[a-z0-9]+)*$/)
 });
 
@@ -663,6 +685,25 @@ export const zReadinessResponse = z.object({
     status: z.enum(['ok', 'unavailable'])
 });
 
+export const zRefundStatusName = z.enum([
+    'pending',
+    'processed',
+    'failed'
+]);
+
+/**
+ * RefundResponse
+ */
+export const zRefundResponse = z.object({
+    amountPaise: z.int(),
+    createdAt: z.iso.datetime(),
+    creditsClawedBack: z.int(),
+    id: z.uuid(),
+    razorpayRefundId: z.string().nullable(),
+    reason: z.string(),
+    status: zRefundStatusName
+});
+
 /**
  * RegisterRequest
  */
@@ -814,6 +855,67 @@ export const zSubcategoryDetailResponse = z.object({
     category: zCatalogCategoryResponse,
     subcategory: zCatalogCategoryResponse,
     topics: zCursorPageCatalogTopicResponse
+});
+
+/**
+ * SubscriptionCheckoutResponse
+ */
+export const zSubscriptionCheckoutResponse = z.object({
+    customerId: z.string(),
+    description: z.string(),
+    keyId: z.string(),
+    name: z.string(),
+    orderId: z.uuid(),
+    prefill: zCheckoutPrefillResponse,
+    razorpaySubscriptionId: z.string(),
+    subscriptionId: z.uuid()
+});
+
+/**
+ * SubscriptionProductResponse
+ */
+export const zSubscriptionProductResponse = z.object({
+    code: z.string(),
+    creditsGranted: z.int(),
+    interval: zIntervalName.nullable(),
+    name: z.string(),
+    planKey: z.string().nullable(),
+    pricePaise: z.int()
+});
+
+export const zSubscriptionStatusName = z.enum([
+    'created',
+    'authenticated',
+    'active',
+    'pending',
+    'halted',
+    'paused',
+    'cancelled',
+    'completed',
+    'expired'
+]);
+
+/**
+ * SubscriptionResponse
+ */
+export const zSubscriptionResponse = z.object({
+    cancelAtPeriodEnd: z.boolean(),
+    cancelledAt: z.iso.datetime().nullable(),
+    currentPeriodEnd: z.iso.datetime().nullable(),
+    currentPeriodStart: z.iso.datetime().nullable(),
+    endsAt: z.iso.datetime().nullable(),
+    id: z.uuid(),
+    nextChargeAt: z.iso.datetime().nullable(),
+    pendingProduct: zSubscriptionProductResponse.nullable(),
+    product: zSubscriptionProductResponse,
+    status: zSubscriptionStatusName
+});
+
+/**
+ * CurrentSubscriptionResponse
+ */
+export const zCurrentSubscriptionResponse = z.object({
+    subscription: zSubscriptionResponse.nullable()
 });
 
 /**
@@ -1058,6 +1160,15 @@ export const zVerifyPaymentResponse = z.object({
 });
 
 /**
+ * VerifySubscriptionRequest
+ */
+export const zVerifySubscriptionRequest = z.object({
+    razorpayPaymentId: z.string().min(1).max(64).regex(/^[A-Za-z0-9_]+$/),
+    razorpaySignature: z.string().min(1).max(128),
+    razorpaySubscriptionId: z.string().min(1).max(64).regex(/^[A-Za-z0-9_]+$/)
+});
+
+/**
  * WalletResponse
  */
 export const zWalletResponse = z.object({
@@ -1168,6 +1279,17 @@ export const zAdminInsightsGetAuditEntryPath = z.object({
  * Successful Response
  */
 export const zAdminInsightsGetAuditEntryResponse = zAuditEntryResponse;
+
+export const zAdminBillingCreateRefundBody = zCreateRefundRequest;
+
+export const zAdminBillingCreateRefundPath = z.object({
+    payment_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminBillingCreateRefundResponse = zRefundResponse;
 
 export const zAdminCatalogCreateCategoryBody = zCategoryWriteRequest;
 
@@ -1614,6 +1736,37 @@ export const zBillingVerifyPaymentResponse = zVerifyPaymentResponse;
  * Successful Response
  */
 export const zBillingListProductsResponse = zProductsResponse;
+
+/**
+ * Successful Response
+ */
+export const zBillingGetSubscriptionResponse = zCurrentSubscriptionResponse;
+
+/**
+ * Successful Response
+ */
+export const zBillingCancelSubscriptionResponse = zSubscriptionResponse;
+
+export const zBillingChangeSubscriptionBody = zChangeSubscriptionRequest;
+
+/**
+ * Successful Response
+ */
+export const zBillingChangeSubscriptionResponse = zSubscriptionResponse;
+
+export const zBillingCreateSubscriptionBody = zCreateSubscriptionRequest;
+
+/**
+ * Successful Response
+ */
+export const zBillingCreateSubscriptionResponse = zSubscriptionCheckoutResponse;
+
+export const zBillingVerifySubscriptionBody = zVerifySubscriptionRequest;
+
+/**
+ * Successful Response
+ */
+export const zBillingVerifySubscriptionResponse = zSubscriptionResponse;
 
 export const zCatalogCatalogCategoryPath = z.object({
     category: z.string()

@@ -20,6 +20,24 @@ class PaymentRecordStatus(StrEnum):
     PARTIALLY_REFUNDED = "partially_refunded"
 
 
+class SubscriptionStatus(StrEnum):
+    CREATED = "created"
+    AUTHENTICATED = "authenticated"
+    ACTIVE = "active"
+    PENDING = "pending"
+    HALTED = "halted"
+    PAUSED = "paused"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
+    EXPIRED = "expired"
+
+
+class RefundStatus(StrEnum):
+    PENDING = "pending"
+    PROCESSED = "processed"
+    FAILED = "failed"
+
+
 class WebhookEventStatus(StrEnum):
     RECEIVED = "received"
     PROCESSING = "processing"
@@ -65,6 +83,22 @@ class StateMachine[StateT: StrEnum]:
     def terminal(self, state: StateT) -> bool:
         return not self.transitions.get(state)
 
+    def path(self, current: StateT, target: StateT) -> tuple[StateT, ...] | None:
+        if current == target:
+            return ()
+        frontier: list[tuple[StateT, tuple[StateT, ...]]] = [(current, ())]
+        seen = {current}
+        while frontier:
+            state, route = frontier.pop(0)
+            for following in sorted(self.transitions.get(state, frozenset())):
+                if following in seen:
+                    continue
+                if following == target:
+                    return (*route, following)
+                seen.add(following)
+                frontier.append((following, (*route, following)))
+        return None
+
 
 LATE_PAYMENT_ORIGINS = frozenset({OrderStatus.EXPIRED, OrderStatus.FAILED, OrderStatus.CANCELLED})
 PAYABLE_ORDER_STATUSES = frozenset({OrderStatus.CREATED, OrderStatus.PENDING, *LATE_PAYMENT_ORIGINS})
@@ -100,6 +134,63 @@ PAYMENT_MACHINE = StateMachine[PaymentRecordStatus](
     initial=frozenset({PaymentRecordStatus.AUTHORIZED, PaymentRecordStatus.CAPTURED, PaymentRecordStatus.FAILED}),
 )
 
+LIVE_SUBSCRIPTION_STATUSES = frozenset(
+    {
+        SubscriptionStatus.AUTHENTICATED,
+        SubscriptionStatus.ACTIVE,
+        SubscriptionStatus.PENDING,
+        SubscriptionStatus.HALTED,
+        SubscriptionStatus.PAUSED,
+    }
+)
+ENDED_SUBSCRIPTION_STATUSES = frozenset(
+    {SubscriptionStatus.CANCELLED, SubscriptionStatus.COMPLETED, SubscriptionStatus.EXPIRED}
+)
+
+SUBSCRIPTION_MACHINE = StateMachine[SubscriptionStatus](
+    name="subscriptions.status",
+    transitions={
+        SubscriptionStatus.CREATED: frozenset(
+            {
+                SubscriptionStatus.AUTHENTICATED,
+                SubscriptionStatus.ACTIVE,
+                SubscriptionStatus.EXPIRED,
+                SubscriptionStatus.CANCELLED,
+            }
+        ),
+        SubscriptionStatus.AUTHENTICATED: frozenset({SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED}),
+        SubscriptionStatus.ACTIVE: frozenset(
+            {
+                SubscriptionStatus.ACTIVE,
+                SubscriptionStatus.PENDING,
+                SubscriptionStatus.HALTED,
+                SubscriptionStatus.PAUSED,
+                SubscriptionStatus.CANCELLED,
+                SubscriptionStatus.COMPLETED,
+            }
+        ),
+        SubscriptionStatus.PENDING: frozenset(
+            {SubscriptionStatus.ACTIVE, SubscriptionStatus.HALTED, SubscriptionStatus.CANCELLED}
+        ),
+        SubscriptionStatus.HALTED: frozenset({SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED}),
+        SubscriptionStatus.PAUSED: frozenset({SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED}),
+        SubscriptionStatus.CANCELLED: frozenset(),
+        SubscriptionStatus.COMPLETED: frozenset(),
+        SubscriptionStatus.EXPIRED: frozenset(),
+    },
+    initial=frozenset({SubscriptionStatus.CREATED}),
+)
+
+REFUND_MACHINE = StateMachine[RefundStatus](
+    name="refunds.status",
+    transitions={
+        RefundStatus.PENDING: frozenset({RefundStatus.PROCESSED, RefundStatus.FAILED}),
+        RefundStatus.PROCESSED: frozenset(),
+        RefundStatus.FAILED: frozenset(),
+    },
+    initial=frozenset({RefundStatus.PENDING}),
+)
+
 WEBHOOK_MACHINE = StateMachine[WebhookEventStatus](
     name="webhook_events.status",
     transitions={
@@ -119,7 +210,7 @@ RUN_MACHINE = StateMachine[RunStatus](
     transitions={
         RunStatus.RUNNING: frozenset({RunStatus.COMPLETED, RunStatus.FAILED}),
         RunStatus.COMPLETED: frozenset(),
-        RunStatus.FAILED: frozenset(),
+        RunStatus.FAILED: frozenset({RunStatus.RUNNING}),
     },
     initial=frozenset({RunStatus.RUNNING}),
 )

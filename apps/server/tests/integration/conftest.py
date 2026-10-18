@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from testcontainers.community.minio import MinioContainer
 from testcontainers.community.postgres import PostgresContainer
 from testcontainers.community.redis import RedisContainer
+from tests.fakes.storage import InMemoryStorage
 from tests.integration.billing_support import (
     PROCESS_TASK_NAME,
     BillingApi,
@@ -200,12 +201,15 @@ async def billing_api(resources: Resources, monkeypatch: pytest.MonkeyPatch) -> 
 
     monkeypatch.setattr(auth_module, "enqueue_notification", enqueue)
     recorded = Recorded()
+    storage = InMemoryStorage()
+    resources.storage = storage
     services = build_services(
         resources,
         ServiceHooks(
             dispatch=recorded.dispatch,
             process_task_name=PROCESS_TASK_NAME,
             receipts=recorded.receipt,
+            notices=recorded.notice,
             alert=recorded.alert,
         ),
     )
@@ -238,5 +242,6 @@ async def billing_api(resources: Resources, monkeypatch: pytest.MonkeyPatch) -> 
             other_id=other_id,
             pack_code=pack_code,
             keys=next_key,
+            storage=storage,
         )
     await purge_billing_data(resources.database, [primary_id, other_id])

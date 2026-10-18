@@ -117,6 +117,7 @@ stateDiagram-v2
     active --> pending: charge failed, retrying
     pending --> active: retry succeeded
     pending --> halted: retries exhausted
+    active --> halted: pending event missed or out of order
     halted --> active: payment method updated and charged
     active --> paused: subscription.paused
     paused --> active: subscription.resumed
@@ -132,6 +133,13 @@ stateDiagram-v2
 ```
 
 - `subscription.updated` changes plan or period fields without changing status.
+- A transition to the state the subscription is already in is a no-op recorded as `processed`; a transition the diagram does not allow is recorded as `ignored` with reason `invalid_transition` and never applied.
+- `subscription.activated` after the subscription already left `created` and `authenticated` is a no-op recorded as `processed`: a `charged` event that arrived first has already activated it.
+- Period fields only move forward: an event or sync whose `current_end` is older than the stored one leaves them alone.
+- A subscription that leaves a live status needs no further events: `cancelled`, `completed` and `expired` rows no longer count toward the one-live-subscription-per-user index, so a new subscription can be started.
+- A `charged` event for a subscription that already ended (`cancelled`, `completed`, `expired`) still records the payment and grants the credits, leaves the status alone and raises an alert.
+- A subscription left in `created` by reordered events (for example an activation older than an already applied update) is repaired by the daily sync, which also covers `created` subscriptions that already have a Razorpay ID.
+- The daily subscription sync and the finalization task use the same machine; when Razorpay is further along than a webhook told us, the sync walks the shortest path of allowed transitions to the Razorpay state and never moves a subscription backwards.
 - A subscription event whose `created_at` is older than `subscriptions.last_event_at` never changes status, period or plan; it is stored with `webhook_events.status = 'ignored'` and `ignored_reason = 'stale'`.
 - A `subscription.charged` event is applied in full even when stale: recording the payment and granting credits is idempotent per payment ID, and money received is never ignored. Only its status and period effects are skipped when stale.
 - `subscription.cancelled` records `cancelled_at` and `cancel_at_period_end`. The status becomes `cancelled` immediately when there is no paid period left; otherwise it changes when the period ends, through the periodic finalization task, so access lasts to the end of the paid period.
@@ -190,9 +198,11 @@ stateDiagram-v2
     [*] --> running
     running --> completed
     running --> failed
+    failed --> running: settlement run resumed
     completed --> [*]
-    failed --> [*]
 ```
+
+- A `settlement` run is unique per UTC day. A `failed` run, or a `running` run older than one hour, is resumed by the next attempt; a `completed` run is never repeated.
 
 ## `publications.status`
 

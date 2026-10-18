@@ -1,17 +1,41 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
-from sqlalchemy import BigInteger, String, cast, func, literal, null, select, text, tuple_, union_all, update
+from sqlalchemy import (
+    BigInteger,
+    ColumnElement,
+    Select,
+    String,
+    cast,
+    func,
+    literal,
+    null,
+    select,
+    text,
+    tuple_,
+    union_all,
+    update,
+)
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.engine import RowMapping
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.ids import new_id
 from motionile.core.pagination import Cursor, keyset_page
-from motionile.modules.billing.models import BillingCustomer, Order, Payment, Product, ReconciliationRun, Refund
+from motionile.modules.billing.exceptions import LiveSubscriptionConflictError
+from motionile.modules.billing.models import (
+    BillingCustomer,
+    Order,
+    Payment,
+    Product,
+    ReconciliationRun,
+    Refund,
+    Subscription,
+)
 from motionile.modules.billing.models import WebhookEvent as WebhookEventModel
 from motionile.modules.billing.records import (
     CustomerRecord,
@@ -19,20 +43,29 @@ from motionile.modules.billing.records import (
     HistoryRow,
     NewOrder,
     NewPayment,
+    NewRefund,
+    NewSubscription,
     NewWebhookEvent,
     OrderRecord,
     OrderView,
     PaymentRecord,
     ProductRecord,
+    RefundRecord,
     RequeueQuery,
+    RunClaim,
     RunOutcome,
     SampleProductSpec,
+    SubscriptionRecord,
     WebhookEventRecord,
 )
 from motionile.modules.billing.states import (
+    LIVE_SUBSCRIPTION_STATUSES,
+    RUN_MACHINE,
     OrderStatus,
     PaymentRecordStatus,
+    RefundStatus,
     RunStatus,
+    SubscriptionStatus,
     WebhookEventStatus,
 )
 
@@ -45,6 +78,14 @@ EVENT_UNIQUE_CONSTRAINT = "uq_webhook_events_provider_event_id"
 ERROR_LIMIT = 2000
 RECONCILABLE_STATUSES = (OrderStatus.CREATED.value, OrderStatus.PENDING.value)
 HIDDEN_HISTORY_STATUS = OrderStatus.CREATED.value
+LIVE_SUBSCRIPTION_INDEX = "ix_subscriptions_user_id_live"
+LIVE_STATUS_VALUES = tuple(status.value for status in LIVE_SUBSCRIPTION_STATUSES)
+CAPTURED_FAMILY_VALUES = (
+    PaymentRecordStatus.CAPTURED.value,
+    PaymentRecordStatus.PARTIALLY_REFUNDED.value,
+    PaymentRecordStatus.REFUNDED.value,
+)
+SETTLEMENT_RUN_TYPE = "settlement"
 PAYMENT_TITLE_PREFIX = "Payment for "
 REFUND_TITLE_PREFIX = "Refund for "
 FALLBACK_SUBJECT = "your order"
@@ -112,6 +153,88 @@ class BillingStore(Protocol):
     async def start_run(self, run_id: UUID, run_type: str, now: datetime) -> None: ...
     async def finish_run(self, run_id: UUID, outcome: RunOutcome) -> bool: ...
     async def history(self, user_id: UUID, cursor: Cursor | None, limit: int) -> list[HistoryRow]: ...
+    async def product_by_plan_id(self, razorpay_plan_id: str) -> ProductRecord | None: ...
+    async def insert_subscription(self, subscription: NewSubscription) -> SubscriptionRecord: ...
+    async def subscription_for_user(self, subscription_id: UUID, user_id: UUID) -> SubscriptionRecord | None: ...
+    async def lock_subscription_for_user(self, subscription_id: UUID, user_id: UUID) -> SubscriptionRecord | None: ...
+    async def lock_subscription(self, subscription_id: UUID) -> SubscriptionRecord | None: ...
+    async def lock_subscription_by_razorpay_id(self, razorpay_subscription_id: str) -> SubscriptionRecord | None: ...
+    async def lock_subscription_by_razorpay_id_for_user(
+        self, razorpay_subscription_id: str, user_id: UUID
+    ) -> SubscriptionRecord | None: ...
+    async def live_subscription(self, user_id: UUID) -> SubscriptionRecord | None: ...
+    async def lock_live_subscription(self, user_id: UUID) -> SubscriptionRecord | None: ...
+    async def transition_subscription(
+        self,
+        subscription_id: UUID,
+        expected: SubscriptionStatus,
+        target: SubscriptionStatus,
+        values: Mapping[str, object],
+    ) -> bool: ...
+    async def update_subscription(self, subscription_id: UUID, values: Mapping[str, object]) -> None: ...
+    async def lock_subscription_order(self, subscription_id: UUID) -> OrderRecord | None: ...
+    async def subscription_payment_count(self, subscription_id: UUID) -> int: ...
+    async def due_cancellations(self, now: datetime, after: UUID | None, limit: int) -> list[SubscriptionRecord]: ...
+    async def abandoned_subscriptions(
+        self, now: datetime, after: UUID | None, limit: int
+    ) -> list[SubscriptionRecord]: ...
+    async def live_subscriptions(self, after: UUID | None, limit: int) -> list[SubscriptionRecord]: ...
+    async def unactivated_subscriptions(self, after: UUID | None, limit: int) -> list[SubscriptionRecord]: ...
+    async def payment_by_id(self, payment_id: UUID) -> PaymentRecord | None: ...
+    async def lock_payment(self, payment_id: UUID) -> PaymentRecord | None: ...
+    async def captured_payments_between(
+        self, start: datetime, end: datetime, after: UUID | None, limit: int
+    ) -> list[PaymentRecord]: ...
+    async def pending_refund_totals(self, payment_ids: Sequence[UUID]) -> dict[UUID, int]: ...
+    async def clawed_back_total(self, payment_id: UUID) -> int: ...
+    async def insert_refund(self, refund: NewRefund) -> RefundRecord: ...
+    async def refund_by_id(self, refund_id: UUID) -> RefundRecord | None: ...
+    async def refund_by_razorpay_id(self, razorpay_refund_id: str) -> RefundRecord | None: ...
+    async def lock_refund(self, refund_id: UUID) -> RefundRecord | None: ...
+    async def transition_refund(
+        self, refund_id: UUID, expected: RefundStatus, target: RefundStatus, values: Mapping[str, object]
+    ) -> bool: ...
+    async def update_refund(self, refund_id: UUID, values: Mapping[str, object]) -> None: ...
+    async def claim_settlement_run(
+        self, period_start: datetime, period_end: datetime, now: datetime, stale_before: datetime
+    ) -> RunClaim | None: ...
+
+
+def subscription_record(row: Subscription) -> SubscriptionRecord:
+    return SubscriptionRecord(
+        id=row.id,
+        user_id=row.user_id,
+        product_id=row.product_id,
+        pending_product_id=row.pending_product_id,
+        razorpay_subscription_id=row.razorpay_subscription_id,
+        status=SubscriptionStatus(row.status),
+        total_count=row.total_count,
+        paid_count=row.paid_count,
+        current_period_start=row.current_period_start,
+        current_period_end=row.current_period_end,
+        next_charge_at=row.next_charge_at,
+        cancel_at_period_end=row.cancel_at_period_end,
+        cancelled_at=row.cancelled_at,
+        ended_at=row.ended_at,
+        last_event_at=row.last_event_at,
+        created_at=row.created_at,
+    )
+
+
+def refund_record(row: Refund) -> RefundRecord:
+    return RefundRecord(
+        id=row.id,
+        payment_id=row.payment_id,
+        razorpay_refund_id=row.razorpay_refund_id,
+        amount_paise=row.amount_paise,
+        status=RefundStatus(row.status),
+        reason=row.reason,
+        initiated_by=row.initiated_by,
+        credits_clawed_back=row.credits_clawed_back,
+        failure_reason=row.failure_reason,
+        processed_at=row.processed_at,
+        created_at=row.created_at,
+    )
 
 
 def product_record(row: Product) -> ProductRecord:
@@ -297,6 +420,7 @@ class SqlBillingRepository:
                 currency=order.product.currency,
                 credits_granted=order.product.credits_granted,
                 status=OrderStatus.CREATED.value,
+                subscription_id=order.subscription_id,
                 receipt=str(order.id),
                 idempotency_key=order.idempotency_key,
                 expires_at=order.expires_at,
@@ -389,6 +513,7 @@ class SqlBillingRepository:
         row = Payment(
             id=payment.id,
             order_id=payment.order_id,
+            subscription_id=payment.subscription_id,
             user_id=payment.user_id,
             razorpay_payment_id=payment.razorpay_payment_id,
             amount_paise=payment.amount_paise,
@@ -504,12 +629,287 @@ class SqlBillingRepository:
                 repaired_count=outcome.counts.repaired,
                 mismatch_count=outcome.counts.mismatch,
                 summary=outcome.summary,
+                report_storage_key=outcome.report_storage_key,
                 error=outcome.error[:ERROR_LIMIT] if outcome.error is not None else None,
                 finished_at=outcome.finished_at,
             )
             .returning(ReconciliationRun.id)
         )
         return changed is not None
+
+    async def product_by_plan_id(self, razorpay_plan_id: str) -> ProductRecord | None:
+        row = await self.session.scalar(
+            select(Product).where(Product.razorpay_plan_id == razorpay_plan_id).execution_options(**FRESH_ROWS)
+        )
+        return product_record(row) if row is not None else None
+
+    async def insert_subscription(self, subscription: NewSubscription) -> SubscriptionRecord:
+        row = Subscription(
+            id=subscription.id,
+            user_id=subscription.user_id,
+            product_id=subscription.product_id,
+            status=SubscriptionStatus.CREATED.value,
+            total_count=subscription.total_count,
+            paid_count=0,
+            cancel_at_period_end=False,
+        )
+        self.session.add(row)
+        await self.session.flush()
+        await self.session.refresh(row)
+        return subscription_record(row)
+
+    async def _subscription(self, *conditions: ColumnElement[bool], lock: bool = False) -> SubscriptionRecord | None:
+        statement = select(Subscription).where(*conditions).execution_options(**FRESH_ROWS)
+        row = await self.session.scalar(statement.with_for_update() if lock else statement)
+        return subscription_record(row) if row is not None else None
+
+    async def subscription_for_user(self, subscription_id: UUID, user_id: UUID) -> SubscriptionRecord | None:
+        return await self._subscription(Subscription.id == subscription_id, Subscription.user_id == user_id)
+
+    async def lock_subscription_for_user(self, subscription_id: UUID, user_id: UUID) -> SubscriptionRecord | None:
+        return await self._subscription(Subscription.id == subscription_id, Subscription.user_id == user_id, lock=True)
+
+    async def lock_subscription(self, subscription_id: UUID) -> SubscriptionRecord | None:
+        return await self._subscription(Subscription.id == subscription_id, lock=True)
+
+    async def lock_subscription_by_razorpay_id(self, razorpay_subscription_id: str) -> SubscriptionRecord | None:
+        return await self._subscription(Subscription.razorpay_subscription_id == razorpay_subscription_id, lock=True)
+
+    async def lock_subscription_by_razorpay_id_for_user(
+        self, razorpay_subscription_id: str, user_id: UUID
+    ) -> SubscriptionRecord | None:
+        return await self._subscription(
+            Subscription.razorpay_subscription_id == razorpay_subscription_id,
+            Subscription.user_id == user_id,
+            lock=True,
+        )
+
+    async def live_subscription(self, user_id: UUID) -> SubscriptionRecord | None:
+        return await self._subscription(Subscription.user_id == user_id, Subscription.status.in_(LIVE_STATUS_VALUES))
+
+    async def lock_live_subscription(self, user_id: UUID) -> SubscriptionRecord | None:
+        return await self._subscription(
+            Subscription.user_id == user_id, Subscription.status.in_(LIVE_STATUS_VALUES), lock=True
+        )
+
+    async def transition_subscription(
+        self,
+        subscription_id: UUID,
+        expected: SubscriptionStatus,
+        target: SubscriptionStatus,
+        values: Mapping[str, object],
+    ) -> bool:
+        statement = (
+            update(Subscription)
+            .where(Subscription.id == subscription_id, Subscription.status == expected.value)
+            .values(status=target.value, **values)
+            .returning(Subscription.id)
+        )
+        try:
+            async with self.session.begin_nested():
+                changed = await self.session.scalar(statement)
+        except IntegrityError as error:
+            if LIVE_SUBSCRIPTION_INDEX in str(error.orig):
+                raise LiveSubscriptionConflictError from error
+            raise
+        return changed is not None
+
+    async def update_subscription(self, subscription_id: UUID, values: Mapping[str, object]) -> None:
+        await self.session.execute(update(Subscription).where(Subscription.id == subscription_id).values(**values))
+
+    async def lock_subscription_order(self, subscription_id: UUID) -> OrderRecord | None:
+        row = await self.session.scalar(
+            select(Order)
+            .where(Order.subscription_id == subscription_id)
+            .order_by(Order.created_at, Order.id)
+            .limit(1)
+            .with_for_update()
+            .execution_options(**FRESH_ROWS)
+        )
+        return order_record(row) if row is not None else None
+
+    async def subscription_payment_count(self, subscription_id: UUID) -> int:
+        count = await self.session.scalar(
+            select(func.count()).select_from(Payment).where(Payment.subscription_id == subscription_id)
+        )
+        return count or 0
+
+    async def due_cancellations(self, now: datetime, after: UUID | None, limit: int) -> list[SubscriptionRecord]:
+        statement = select(Subscription).where(
+            Subscription.status.in_(LIVE_STATUS_VALUES),
+            Subscription.cancel_at_period_end.is_(True),
+            Subscription.current_period_end <= now,
+        )
+        return await self._subscription_page(statement, after, limit)
+
+    async def abandoned_subscriptions(self, now: datetime, after: UUID | None, limit: int) -> list[SubscriptionRecord]:
+        statement = select(Subscription).where(
+            Subscription.status == SubscriptionStatus.CREATED.value,
+            Subscription.last_event_at.is_(None),
+            select(Order.id).where(Order.subscription_id == Subscription.id, Order.expires_at <= now).exists(),
+        )
+        return await self._subscription_page(statement, after, limit)
+
+    async def live_subscriptions(self, after: UUID | None, limit: int) -> list[SubscriptionRecord]:
+        statement = select(Subscription).where(Subscription.status.in_(LIVE_STATUS_VALUES))
+        return await self._subscription_page(statement, after, limit)
+
+    async def unactivated_subscriptions(self, after: UUID | None, limit: int) -> list[SubscriptionRecord]:
+        statement = select(Subscription).where(
+            Subscription.status == SubscriptionStatus.CREATED.value, Subscription.razorpay_subscription_id.is_not(None)
+        )
+        return await self._subscription_page(statement, after, limit)
+
+    async def _subscription_page(
+        self, statement: Select[Subscription], after: UUID | None, limit: int
+    ) -> list[SubscriptionRecord]:
+        if after is not None:
+            statement = statement.where(Subscription.id > after)
+        rows = await self.session.scalars(
+            statement.order_by(Subscription.id).limit(limit).execution_options(**FRESH_ROWS)
+        )
+        return [subscription_record(row) for row in rows]
+
+    async def payment_by_id(self, payment_id: UUID) -> PaymentRecord | None:
+        row = await self.session.scalar(select(Payment).where(Payment.id == payment_id).execution_options(**FRESH_ROWS))
+        return payment_record(row) if row is not None else None
+
+    async def lock_payment(self, payment_id: UUID) -> PaymentRecord | None:
+        row = await self.session.scalar(
+            select(Payment).where(Payment.id == payment_id).with_for_update().execution_options(**FRESH_ROWS)
+        )
+        return payment_record(row) if row is not None else None
+
+    async def captured_payments_between(
+        self, start: datetime, end: datetime, after: UUID | None, limit: int
+    ) -> list[PaymentRecord]:
+        statement = select(Payment).where(
+            Payment.status.in_(CAPTURED_FAMILY_VALUES), Payment.created_at >= start, Payment.created_at < end
+        )
+        if after is not None:
+            statement = statement.where(Payment.id > after)
+        rows = await self.session.scalars(statement.order_by(Payment.id).limit(limit).execution_options(**FRESH_ROWS))
+        return [payment_record(row) for row in rows]
+
+    async def pending_refund_totals(self, payment_ids: Sequence[UUID]) -> dict[UUID, int]:
+        if not payment_ids:
+            return {}
+        rows = await self.session.execute(
+            select(Refund.payment_id, func.coalesce(func.sum(Refund.amount_paise), 0))
+            .where(Refund.payment_id.in_(payment_ids), Refund.status == RefundStatus.PENDING.value)
+            .group_by(Refund.payment_id)
+        )
+        return {row[0]: int(row[1]) for row in rows}
+
+    async def clawed_back_total(self, payment_id: UUID) -> int:
+        total = await self.session.scalar(
+            select(func.coalesce(func.sum(Refund.credits_clawed_back), 0)).where(
+                Refund.payment_id == payment_id, Refund.status == RefundStatus.PROCESSED.value
+            )
+        )
+        return int(total or 0)
+
+    async def insert_refund(self, refund: NewRefund) -> RefundRecord:
+        row = Refund(
+            id=refund.id,
+            payment_id=refund.payment_id,
+            amount_paise=refund.amount_paise,
+            status=RefundStatus.PENDING.value,
+            reason=refund.reason,
+            initiated_by=refund.initiated_by,
+            credits_clawed_back=0,
+        )
+        self.session.add(row)
+        await self.session.flush()
+        await self.session.refresh(row)
+        return refund_record(row)
+
+    async def refund_by_id(self, refund_id: UUID) -> RefundRecord | None:
+        row = await self.session.scalar(select(Refund).where(Refund.id == refund_id).execution_options(**FRESH_ROWS))
+        return refund_record(row) if row is not None else None
+
+    async def refund_by_razorpay_id(self, razorpay_refund_id: str) -> RefundRecord | None:
+        row = await self.session.scalar(
+            select(Refund).where(Refund.razorpay_refund_id == razorpay_refund_id).execution_options(**FRESH_ROWS)
+        )
+        return refund_record(row) if row is not None else None
+
+    async def lock_refund(self, refund_id: UUID) -> RefundRecord | None:
+        row = await self.session.scalar(
+            select(Refund).where(Refund.id == refund_id).with_for_update().execution_options(**FRESH_ROWS)
+        )
+        return refund_record(row) if row is not None else None
+
+    async def transition_refund(
+        self, refund_id: UUID, expected: RefundStatus, target: RefundStatus, values: Mapping[str, object]
+    ) -> bool:
+        changed = await self.session.scalar(
+            update(Refund)
+            .where(Refund.id == refund_id, Refund.status == expected.value)
+            .values(status=target.value, **values)
+            .returning(Refund.id)
+        )
+        return changed is not None
+
+    async def update_refund(self, refund_id: UUID, values: Mapping[str, object]) -> None:
+        await self.session.execute(update(Refund).where(Refund.id == refund_id).values(**values))
+
+    async def claim_settlement_run(
+        self, period_start: datetime, period_end: datetime, now: datetime, stale_before: datetime
+    ) -> RunClaim | None:
+        inserted = await self.session.scalar(
+            pg_insert(ReconciliationRun)
+            .values(
+                id=new_id(),
+                type=SETTLEMENT_RUN_TYPE,
+                period_start=period_start,
+                period_end=period_end,
+                status=RunStatus.RUNNING.value,
+                started_at=now,
+            )
+            .on_conflict_do_nothing(
+                index_elements=[ReconciliationRun.period_start],
+                index_where=ReconciliationRun.type == SETTLEMENT_RUN_TYPE,
+            )
+            .returning(ReconciliationRun.id)
+        )
+        if inserted is not None:
+            return RunClaim(inserted, resumed=False)
+        existing = await self.session.scalar(
+            select(ReconciliationRun)
+            .where(ReconciliationRun.type == SETTLEMENT_RUN_TYPE, ReconciliationRun.period_start == period_start)
+            .with_for_update()
+            .execution_options(**FRESH_ROWS)
+        )
+        if existing is None:
+            return None
+        restart: dict[str, object] = {
+            "started_at": now,
+            "finished_at": None,
+            "error": None,
+            "summary": {},
+            "checked_count": 0,
+            "repaired_count": 0,
+            "mismatch_count": 0,
+            "report_storage_key": None,
+        }
+        if existing.status == RunStatus.FAILED.value:
+            RUN_MACHINE.require(RunStatus.FAILED, RunStatus.RUNNING)
+            return await self._restart_run(
+                existing.id, RunStatus.FAILED, {"status": RunStatus.RUNNING.value, **restart}
+            )
+        if existing.status == RunStatus.RUNNING.value and existing.started_at < stale_before:
+            return await self._restart_run(existing.id, RunStatus.RUNNING, restart)
+        return None
+
+    async def _restart_run(self, run_id: UUID, expected: RunStatus, values: Mapping[str, object]) -> RunClaim | None:
+        changed = await self.session.scalar(
+            update(ReconciliationRun)
+            .where(ReconciliationRun.id == run_id, ReconciliationRun.status == expected.value)
+            .values(**values)
+            .returning(ReconciliationRun.id)
+        )
+        return RunClaim(changed, resumed=True) if changed is not None else None
 
     async def history(self, user_id: UUID, cursor: Cursor | None, limit: int) -> list[HistoryRow]:
         orders = (

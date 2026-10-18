@@ -160,6 +160,10 @@ class FakeCreditsStore:
         lot = self.lots.get(lot_id)
         return lot.user_id if lot else None
 
+    async def lot_by_reference(self, ref_type: str, ref_id: UUID) -> LotRecord | None:
+        matches = [lot for lot in self.lots.values() if lot.ref_type == ref_type and lot.ref_id == ref_id]
+        return min(matches, key=lambda lot: (lot.created_at, lot.id), default=None)
+
     async def lock_lot(self, lot_id: UUID) -> LotRecord | None:
         return self.lots.get(lot_id)
 

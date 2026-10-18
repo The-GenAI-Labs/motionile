@@ -95,6 +95,7 @@ class CreditsStore(Protocol):
     async def ledger_by_key(self, key: str) -> LedgerRecord | None: ...
     async def add_ledger(self, entry: LedgerRecord) -> None: ...
     async def lot_owner(self, lot_id: UUID) -> UUID | None: ...
+    async def lot_by_reference(self, ref_type: str, ref_id: UUID) -> LotRecord | None: ...
     async def lock_lot(self, lot_id: UUID) -> LotRecord | None: ...
     async def lock_open_lots(self, user_id: UUID) -> list[LotRecord]: ...
     async def lock_expired_lots(self, user_id: UUID, now: datetime) -> list[LotRecord]: ...
@@ -242,6 +243,16 @@ class SqlCreditsRepository:
 
     async def lot_owner(self, lot_id: UUID) -> UUID | None:
         return await self.session.scalar(select(CreditLot.user_id).where(CreditLot.id == lot_id))
+
+    async def lot_by_reference(self, ref_type: str, ref_id: UUID) -> LotRecord | None:
+        model = await self.session.scalar(
+            select(CreditLot)
+            .where(CreditLot.ref_type == ref_type, CreditLot.ref_id == ref_id)
+            .order_by(CreditLot.created_at, CreditLot.id)
+            .limit(1)
+            .execution_options(**FRESH_ROWS)
+        )
+        return lot_record(model) if model is not None else None
 
     async def lock_lot(self, lot_id: UUID) -> LotRecord | None:
         model = await self.session.scalar(

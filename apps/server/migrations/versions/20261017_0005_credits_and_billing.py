@@ -183,7 +183,7 @@ def create_subscriptions() -> None:
         sa.Column("user_id", sa.Uuid(), nullable=False),
         sa.Column("product_id", sa.Uuid(), nullable=False),
         sa.Column("pending_product_id", sa.Uuid(), nullable=True),
-        sa.Column("razorpay_subscription_id", sa.Text(), nullable=False),
+        sa.Column("razorpay_subscription_id", sa.Text(), nullable=True),
         sa.Column("status", sa.Text(), server_default=sa.text("'created'"), nullable=False),
         sa.Column("total_count", sa.Integer(), nullable=False),
         sa.Column("paid_count", sa.Integer(), server_default="0", nullable=False),
@@ -209,6 +209,10 @@ def create_subscriptions() -> None:
         sa.CheckConstraint(
             "(status IN ('cancelled', 'completed', 'expired')) = (ended_at IS NOT NULL)",
             name=op.f("ck_subscriptions_ended_consistent"),
+        ),
+        sa.CheckConstraint(
+            "status = 'created' OR razorpay_subscription_id IS NOT NULL",
+            name=op.f("ck_subscriptions_live_has_razorpay_id"),
         ),
         sa.ForeignKeyConstraint(
             ["user_id"], ["users.id"], name=op.f("fk_subscriptions_user_id_users"), ondelete="RESTRICT"

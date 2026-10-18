@@ -1,6 +1,6 @@
-from collections.abc import AsyncGenerator, Mapping
+from collections.abc import AsyncGenerator, Mapping, Sequence
 from contextlib import asynccontextmanager
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -11,26 +11,41 @@ from tests.fakes.credits import FakeAudit, FakeCreditsStore
 from motionile.core.clock import Clock
 from motionile.core.ids import new_id
 from motionile.core.pagination import Cursor
+from motionile.modules.billing.exceptions import LiveSubscriptionConflictError
 from motionile.modules.billing.records import (
     CustomerRecord,
     HistoryRow,
     NewOrder,
     NewPayment,
+    NewRefund,
+    NewSubscription,
     NewWebhookEvent,
     OrderRecord,
     OrderView,
     PaymentRecord,
     ProductRecord,
+    RefundRecord,
     RequeueQuery,
+    RunClaim,
     RunOutcome,
     SampleProductSpec,
+    SubscriptionRecord,
     WebhookEventRecord,
 )
+from motionile.modules.billing.services.notices import BillingNotice
 from motionile.modules.billing.services.receipts import PaymentReceipt
 from motionile.modules.billing.states import (
+    LIVE_SUBSCRIPTION_STATUSES,
     OrderStatus,
     PaymentRecordStatus,
+    RefundStatus,
+    RunStatus,
+    SubscriptionStatus,
     WebhookEventStatus,
+)
+
+CAPTURED_FAMILY = frozenset(
+    {PaymentRecordStatus.CAPTURED, PaymentRecordStatus.PARTIALLY_REFUNDED, PaymentRecordStatus.REFUNDED}
 )
 
 
@@ -47,6 +62,10 @@ class BillingState:
     events: dict[UUID, WebhookEventRecord]
     runs: dict[UUID, RunOutcome | None]
     run_types: dict[UUID, str]
+    subscriptions: dict[UUID, SubscriptionRecord] = field(default_factory=dict[UUID, SubscriptionRecord])
+    refunds: dict[UUID, RefundRecord] = field(default_factory=dict[UUID, RefundRecord])
+    run_periods: dict[UUID, tuple[datetime, datetime]] = field(default_factory=dict[UUID, tuple[datetime, datetime]])
+    run_started: dict[UUID, datetime] = field(default_factory=dict[UUID, datetime])
 
 
 class FakeBillingStore:
@@ -59,6 +78,10 @@ class FakeBillingStore:
         self.events: dict[UUID, WebhookEventRecord] = {}
         self.runs: dict[UUID, RunOutcome | None] = {}
         self.run_types: dict[UUID, str] = {}
+        self.subscriptions: dict[UUID, SubscriptionRecord] = {}
+        self.refunds: dict[UUID, RefundRecord] = {}
+        self.run_periods: dict[UUID, tuple[datetime, datetime]] = {}
+        self.run_started: dict[UUID, datetime] = {}
         self.pending_candidates: list[UUID] = []
 
     def __call__(self, session: AsyncSession) -> "FakeBillingStore":
@@ -74,6 +97,10 @@ class FakeBillingStore:
             dict(self.events),
             dict(self.runs),
             dict(self.run_types),
+            dict(self.subscriptions),
+            dict(self.refunds),
+            dict(self.run_periods),
+            dict(self.run_started),
         )
 
     def restore(self, state: BillingState) -> None:
@@ -84,6 +111,10 @@ class FakeBillingStore:
         self.events = dict(state.events)
         self.runs = dict(state.runs)
         self.run_types = dict(state.run_types)
+        self.subscriptions = dict(state.subscriptions)
+        self.refunds = dict(state.refunds)
+        self.run_periods = dict(state.run_periods)
+        self.run_started = dict(state.run_started)
 
     @asynccontextmanager
     async def transaction(self) -> AsyncGenerator[AsyncSession]:
@@ -179,7 +210,7 @@ class FakeBillingStore:
             credits_granted=order.product.credits_granted,
             status=OrderStatus.CREATED,
             razorpay_order_id=None,
-            subscription_id=None,
+            subscription_id=order.subscription_id,
             receipt=str(order.id),
             idempotency_key=order.idempotency_key,
             failure_reason=None,
@@ -251,7 +282,7 @@ class FakeBillingStore:
         record = PaymentRecord(
             id=payment.id,
             order_id=payment.order_id,
-            subscription_id=None,
+            subscription_id=payment.subscription_id,
             user_id=payment.user_id,
             razorpay_payment_id=payment.razorpay_payment_id,
             amount_paise=payment.amount_paise,
@@ -346,6 +377,262 @@ class FakeBillingStore:
         del user_id, cursor, limit
         return []
 
+    async def product_by_plan_id(self, razorpay_plan_id: str) -> ProductRecord | None:
+        return next(
+            (product for product in self.products.values() if product.razorpay_plan_id == razorpay_plan_id), None
+        )
+
+    async def insert_subscription(self, subscription: NewSubscription) -> SubscriptionRecord:
+        record = SubscriptionRecord(
+            id=subscription.id,
+            user_id=subscription.user_id,
+            product_id=subscription.product_id,
+            pending_product_id=None,
+            razorpay_subscription_id=None,
+            status=SubscriptionStatus.CREATED,
+            total_count=subscription.total_count,
+            paid_count=0,
+            current_period_start=None,
+            current_period_end=None,
+            next_charge_at=None,
+            cancel_at_period_end=False,
+            cancelled_at=None,
+            ended_at=None,
+            last_event_at=None,
+            created_at=self.clock.now(),
+        )
+        self.subscriptions[record.id] = record
+        return record
+
+    async def subscription_for_user(self, subscription_id: UUID, user_id: UUID) -> SubscriptionRecord | None:
+        found = self.subscriptions.get(subscription_id)
+        return found if found is not None and found.user_id == user_id else None
+
+    async def lock_subscription_for_user(self, subscription_id: UUID, user_id: UUID) -> SubscriptionRecord | None:
+        return await self.subscription_for_user(subscription_id, user_id)
+
+    async def lock_subscription(self, subscription_id: UUID) -> SubscriptionRecord | None:
+        return self.subscriptions.get(subscription_id)
+
+    async def lock_subscription_by_razorpay_id(self, razorpay_subscription_id: str) -> SubscriptionRecord | None:
+        return next(
+            (
+                subscription
+                for subscription in self.subscriptions.values()
+                if subscription.razorpay_subscription_id == razorpay_subscription_id
+            ),
+            None,
+        )
+
+    async def lock_subscription_by_razorpay_id_for_user(
+        self, razorpay_subscription_id: str, user_id: UUID
+    ) -> SubscriptionRecord | None:
+        found = await self.lock_subscription_by_razorpay_id(razorpay_subscription_id)
+        return found if found is not None and found.user_id == user_id else None
+
+    async def live_subscription(self, user_id: UUID) -> SubscriptionRecord | None:
+        return next(
+            (
+                subscription
+                for subscription in self.subscriptions.values()
+                if subscription.user_id == user_id and subscription.status in LIVE_SUBSCRIPTION_STATUSES
+            ),
+            None,
+        )
+
+    async def lock_live_subscription(self, user_id: UUID) -> SubscriptionRecord | None:
+        return await self.live_subscription(user_id)
+
+    async def transition_subscription(
+        self,
+        subscription_id: UUID,
+        expected: SubscriptionStatus,
+        target: SubscriptionStatus,
+        values: Mapping[str, object],
+    ) -> bool:
+        subscription = self.subscriptions.get(subscription_id)
+        if subscription is None or subscription.status is not expected:
+            return False
+        if target in LIVE_SUBSCRIPTION_STATUSES and any(
+            other.id != subscription_id
+            and other.user_id == subscription.user_id
+            and other.status in LIVE_SUBSCRIPTION_STATUSES
+            for other in self.subscriptions.values()
+        ):
+            raise LiveSubscriptionConflictError
+        self.subscriptions[subscription_id] = replace(subscription, status=target, **values)
+        return True
+
+    async def update_subscription(self, subscription_id: UUID, values: Mapping[str, object]) -> None:
+        self.subscriptions[subscription_id] = replace(self.subscriptions[subscription_id], **values)
+
+    async def lock_subscription_order(self, subscription_id: UUID) -> OrderRecord | None:
+        matches = [order for order in self.orders.values() if order.subscription_id == subscription_id]
+        return min(matches, key=lambda order: (order.created_at, order.id), default=None)
+
+    async def subscription_payment_count(self, subscription_id: UUID) -> int:
+        return sum(1 for payment in self.payments.values() if payment.subscription_id == subscription_id)
+
+    def _page(self, records: list[SubscriptionRecord], after: UUID | None, limit: int) -> list[SubscriptionRecord]:
+        ordered = sorted(records, key=lambda record: record.id)
+        return [record for record in ordered if after is None or record.id > after][:limit]
+
+    async def due_cancellations(self, now: datetime, after: UUID | None, limit: int) -> list[SubscriptionRecord]:
+        return self._page(
+            [
+                subscription
+                for subscription in self.subscriptions.values()
+                if subscription.status in LIVE_SUBSCRIPTION_STATUSES
+                and subscription.cancel_at_period_end
+                and subscription.current_period_end is not None
+                and subscription.current_period_end <= now
+            ],
+            after,
+            limit,
+        )
+
+    async def abandoned_subscriptions(self, now: datetime, after: UUID | None, limit: int) -> list[SubscriptionRecord]:
+        return self._page(
+            [
+                subscription
+                for subscription in self.subscriptions.values()
+                if subscription.status is SubscriptionStatus.CREATED
+                and subscription.last_event_at is None
+                and any(
+                    order.subscription_id == subscription.id and order.expires_at <= now
+                    for order in self.orders.values()
+                )
+            ],
+            after,
+            limit,
+        )
+
+    async def live_subscriptions(self, after: UUID | None, limit: int) -> list[SubscriptionRecord]:
+        return self._page(
+            [
+                subscription
+                for subscription in self.subscriptions.values()
+                if subscription.status in LIVE_SUBSCRIPTION_STATUSES
+            ],
+            after,
+            limit,
+        )
+
+    async def unactivated_subscriptions(self, after: UUID | None, limit: int) -> list[SubscriptionRecord]:
+        return self._page(
+            [
+                subscription
+                for subscription in self.subscriptions.values()
+                if subscription.status is SubscriptionStatus.CREATED
+                and subscription.razorpay_subscription_id is not None
+            ],
+            after,
+            limit,
+        )
+
+    async def payment_by_id(self, payment_id: UUID) -> PaymentRecord | None:
+        return self.payments.get(payment_id)
+
+    async def lock_payment(self, payment_id: UUID) -> PaymentRecord | None:
+        return self.payments.get(payment_id)
+
+    async def captured_payments_between(
+        self, start: datetime, end: datetime, after: UUID | None, limit: int
+    ) -> list[PaymentRecord]:
+        matches = sorted(
+            (
+                payment
+                for payment in self.payments.values()
+                if payment.status in CAPTURED_FAMILY
+                and start <= payment.created_at < end
+                and (after is None or payment.id > after)
+            ),
+            key=lambda payment: payment.id,
+        )
+        return matches[:limit]
+
+    async def pending_refund_totals(self, payment_ids: Sequence[UUID]) -> dict[UUID, int]:
+        totals: dict[UUID, int] = {}
+        for refund in self.refunds.values():
+            if refund.payment_id in payment_ids and refund.status is RefundStatus.PENDING:
+                totals[refund.payment_id] = totals.get(refund.payment_id, 0) + refund.amount_paise
+        return totals
+
+    async def clawed_back_total(self, payment_id: UUID) -> int:
+        return sum(
+            refund.credits_clawed_back
+            for refund in self.refunds.values()
+            if refund.payment_id == payment_id and refund.status is RefundStatus.PROCESSED
+        )
+
+    async def insert_refund(self, refund: NewRefund) -> RefundRecord:
+        record = RefundRecord(
+            id=refund.id,
+            payment_id=refund.payment_id,
+            razorpay_refund_id=None,
+            amount_paise=refund.amount_paise,
+            status=RefundStatus.PENDING,
+            reason=refund.reason,
+            initiated_by=refund.initiated_by,
+            credits_clawed_back=0,
+            failure_reason=None,
+            processed_at=None,
+            created_at=self.clock.now(),
+        )
+        self.refunds[record.id] = record
+        return record
+
+    async def refund_by_id(self, refund_id: UUID) -> RefundRecord | None:
+        return self.refunds.get(refund_id)
+
+    async def refund_by_razorpay_id(self, razorpay_refund_id: str) -> RefundRecord | None:
+        return next(
+            (refund for refund in self.refunds.values() if refund.razorpay_refund_id == razorpay_refund_id), None
+        )
+
+    async def lock_refund(self, refund_id: UUID) -> RefundRecord | None:
+        return self.refunds.get(refund_id)
+
+    async def transition_refund(
+        self, refund_id: UUID, expected: RefundStatus, target: RefundStatus, values: Mapping[str, object]
+    ) -> bool:
+        refund = self.refunds.get(refund_id)
+        if refund is None or refund.status is not expected:
+            return False
+        self.refunds[refund_id] = replace(refund, status=target, **values)
+        return True
+
+    async def update_refund(self, refund_id: UUID, values: Mapping[str, object]) -> None:
+        self.refunds[refund_id] = replace(self.refunds[refund_id], **values)
+
+    async def claim_settlement_run(
+        self, period_start: datetime, period_end: datetime, now: datetime, stale_before: datetime
+    ) -> RunClaim | None:
+        existing = next(
+            (
+                run_id
+                for run_id, period in self.run_periods.items()
+                if self.run_types.get(run_id) == "settlement" and period[0] == period_start
+            ),
+            None,
+        )
+        if existing is None:
+            run_id = new_id()
+            self.runs[run_id] = None
+            self.run_types[run_id] = "settlement"
+            self.run_periods[run_id] = (period_start, period_end)
+            self.run_started[run_id] = now
+            return RunClaim(run_id, resumed=False)
+        outcome = self.runs[existing]
+        restartable = (outcome is not None and outcome.status is RunStatus.FAILED) or (
+            outcome is None and self.run_started[existing] < stale_before
+        )
+        if not restartable:
+            return None
+        self.runs[existing] = None
+        self.run_started[existing] = now
+        return RunClaim(existing, resumed=True)
+
 
 @dataclass
 class BillingWorld:
@@ -355,6 +642,7 @@ class BillingWorld:
     audit: FakeAudit
     alerts: list[tuple[str, dict[str, Any]]]
     receipts: list[PaymentReceipt]
+    notices: list[BillingNotice] = field(default_factory=list[BillingNotice])
 
     @asynccontextmanager
     async def transaction(self) -> AsyncGenerator[AsyncSession]:
@@ -376,3 +664,7 @@ class BillingWorld:
     async def send_receipt(self, session: AsyncSession, receipt: PaymentReceipt) -> None:
         del session
         self.receipts.append(receipt)
+
+    async def send_notice(self, session: AsyncSession, notice: BillingNotice) -> None:
+        del session
+        self.notices.append(notice)

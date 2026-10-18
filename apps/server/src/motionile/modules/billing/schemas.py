@@ -120,3 +120,77 @@ class WebhookEnvelope(BaseModel):
     event: str = Field(min_length=1, max_length=100)
     created_at: int | None = Field(default=None, ge=0)
     payload: dict[str, Any] = Field(default_factory=dict[str, Any])
+
+
+type SubscriptionStatusName = Literal[
+    "created", "authenticated", "active", "pending", "halted", "paused", "cancelled", "completed", "expired"
+]
+type RefundStatusName = Literal["pending", "processed", "failed"]
+MAX_REFUND_PAISE = 10_000_000_000
+MAX_REFUND_REASON_LENGTH = 500
+
+
+class CreateSubscriptionRequest(StrictModel):
+    product_code: str = Field(min_length=1, max_length=MAX_PRODUCT_CODE_LENGTH, pattern=PRODUCT_CODE_PATTERN)
+
+
+class ChangeSubscriptionRequest(StrictModel):
+    product_code: str = Field(min_length=1, max_length=MAX_PRODUCT_CODE_LENGTH, pattern=PRODUCT_CODE_PATTERN)
+
+
+class SubscriptionCheckoutResponse(ResponseModel):
+    order_id: UUID
+    subscription_id: UUID
+    key_id: str
+    razorpay_subscription_id: str
+    name: str
+    description: str
+    customer_id: str
+    prefill: CheckoutPrefillResponse
+
+
+class VerifySubscriptionRequest(StrictModel):
+    razorpay_payment_id: str = Field(min_length=1, max_length=MAX_RAZORPAY_ID_LENGTH, pattern=RAZORPAY_ID_PATTERN)
+    razorpay_subscription_id: str = Field(min_length=1, max_length=MAX_RAZORPAY_ID_LENGTH, pattern=RAZORPAY_ID_PATTERN)
+    razorpay_signature: str = Field(min_length=1, max_length=MAX_SIGNATURE_LENGTH)
+
+
+class SubscriptionProductResponse(ResponseModel):
+    code: str
+    name: str
+    interval: IntervalName | None
+    price_paise: int
+    credits_granted: int
+    plan_key: str | None
+
+
+class SubscriptionResponse(ResponseModel):
+    id: UUID
+    status: SubscriptionStatusName
+    product: SubscriptionProductResponse
+    pending_product: SubscriptionProductResponse | None
+    current_period_start: datetime | None
+    current_period_end: datetime | None
+    next_charge_at: datetime | None
+    cancel_at_period_end: bool
+    cancelled_at: datetime | None
+    ends_at: datetime | None
+
+
+class CurrentSubscriptionResponse(ResponseModel):
+    subscription: SubscriptionResponse | None
+
+
+class CreateRefundRequest(StrictModel):
+    amount_paise: int | None = Field(default=None, ge=1, le=MAX_REFUND_PAISE)
+    reason: str = Field(min_length=1, max_length=MAX_REFUND_REASON_LENGTH)
+
+
+class RefundResponse(ResponseModel):
+    id: UUID
+    status: RefundStatusName
+    amount_paise: int
+    reason: str
+    credits_clawed_back: int
+    razorpay_refund_id: str | None
+    created_at: datetime

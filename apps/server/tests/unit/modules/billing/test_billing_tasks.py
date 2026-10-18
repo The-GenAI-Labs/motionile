@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 from uuid import UUID
@@ -29,6 +29,9 @@ from motionile.modules.catalog import tasks as catalog_tasks
 EXPECTED_SCHEDULES = {
     "motionile:billing.requeue_stuck_webhooks": "*/2 * * * *",
     "motionile:billing.reconcile_pending_orders": "*/15 * * * *",
+    "motionile:billing.finalize_subscriptions": "*/15 * * * *",
+    "motionile:billing.sync_subscriptions": "15 3 * * *",
+    "motionile:billing.settlement_check": "0 4 * * *",
 }
 
 
@@ -66,6 +69,9 @@ def test_every_task_runs_on_its_queue() -> None:
     assert queues["motionile:billing.process_webhook_event"] == "billing"
     assert queues["motionile:billing.requeue_stuck_webhooks"] == "billing"
     assert queues["motionile:billing.reconcile_pending_orders"] == "billing"
+    assert queues["motionile:billing.finalize_subscriptions"] == "billing"
+    assert queues["motionile:billing.sync_subscriptions"] == "billing"
+    assert queues["motionile:billing.settlement_check"] == "billing"
     assert queues["motionile:billing.revalidate_products"] == "default"
 
 
@@ -192,6 +198,71 @@ async def test_scheduled_runs_accept_the_timestamp_procrastinate_passes(
 
     assert [job["status"] for job in connector.jobs.values()] == [Status.SUCCEEDED.value]
     assert reconciliation.runs == (1 if task_name == "reconcile_pending_orders" else 0)
+
+
+@dataclass
+class StubFinalizer:
+    runs: int = 0
+
+    async def finalize(self) -> Any:
+        self.runs += 1
+        return SimpleNamespace(cancelled=2, expired=1)
+
+
+@dataclass
+class StubSync:
+    runs: int = 0
+
+    async def run(self) -> Any:
+        self.runs += 1
+        return SimpleNamespace(checked=3, repaired=1, mismatch=0, errors=0)
+
+
+@dataclass
+class StubSettlementCheck:
+    result: Any
+    runs: int = 0
+
+    async def run(self) -> Any:
+        self.runs += 1
+        return self.result
+
+
+@pytest.mark.parametrize("task_name", ["finalize_subscriptions", "sync_subscriptions", "settlement_check"])
+async def test_the_new_scheduled_runs_call_their_services_with_the_timestamp_procrastinate_passes(
+    in_memory_app: tuple[App, InMemoryConnector], monkeypatch: pytest.MonkeyPatch, task_name: str
+) -> None:
+    app, connector = in_memory_app
+    finalizer = StubFinalizer()
+    sync = StubSync()
+    check = StubSettlementCheck(
+        SimpleNamespace(day=date(2026, 10, 17), checked=2, mismatches=0, report_key="billing/x.json")
+    )
+    install_services(monkeypatch, subscriptions=SimpleNamespace(finalizer=finalizer, sync=sync), settlement_check=check)
+    await getattr(tasks, task_name).defer_async(timestamp=1_760_000_000)
+
+    await app.run_worker_async(wait=False, install_signal_handlers=False)
+
+    assert [job["status"] for job in connector.jobs.values()] == [Status.SUCCEEDED.value]
+    assert (finalizer.runs, sync.runs, check.runs) == {
+        "finalize_subscriptions": (1, 0, 0),
+        "sync_subscriptions": (0, 1, 0),
+        "settlement_check": (0, 0, 1),
+    }[task_name]
+
+
+async def test_a_settlement_check_that_finds_the_day_already_done_succeeds_quietly(
+    in_memory_app: tuple[App, InMemoryConnector], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app, connector = in_memory_app
+    check = StubSettlementCheck(None)
+    install_services(monkeypatch, settlement_check=check)
+    await tasks.settlement_check.defer_async(timestamp=1_760_000_000)
+
+    await app.run_worker_async(wait=False, install_signal_handlers=False)
+
+    assert check.runs == 1
+    assert [job["status"] for job in connector.jobs.values()] == [Status.SUCCEEDED.value]
 
 
 async def test_events_are_queued_only_after_the_transaction_commits(

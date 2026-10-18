@@ -40,3 +40,4 @@ SettingsReadDep = Annotated[Principal, Depends(RequirePermission("settings.read"
 SettingsManageDep = Annotated[Principal, Depends(RequirePermission("settings.manage"))]
 FlagsManageDep = Annotated[Principal, Depends(RequirePermission("flags.manage"))]
 CatalogManageDep = Annotated[Principal, Depends(RequirePermission("catalog.manage"))]
+BillingRefundsCreateDep = Annotated[Principal, Depends(RequirePermission("billing.refunds.create"))]

@@ -13,6 +13,7 @@ from motionile.modules.credits.domain import (
     GrantResult,
     IntegrityProblem,
     IntegrityViolation,
+    LotRecord,
     ReleaseResult,
     ReservationResult,
     ReserveCommand,
@@ -40,7 +41,7 @@ from motionile.modules.credits.exceptions import (
     ReservationNotFoundError,
 )
 from motionile.modules.credits.models import CreditLedgerEntry, CreditLot, CreditReservation, CreditWallet, UsageRecord
-from motionile.modules.credits.service import CreditsService, record_usage
+from motionile.modules.credits.service import CreditsService, lot_for_reference, record_usage
 
 __all__ = [
     "AdjustCommand",
@@ -77,6 +78,7 @@ __all__ = [
     "InvalidUsageRangeError",
     "InvalidUsageRecordError",
     "LotNotFoundError",
+    "LotRecord",
     "ReleaseResult",
     "ReservationAlreadyActiveError",
     "ReservationNotActiveError",
@@ -86,5 +88,6 @@ __all__ = [
     "UsageEntry",
     "UsageRecord",
     "WalletView",
+    "lot_for_reference",
     "record_usage",
 ]

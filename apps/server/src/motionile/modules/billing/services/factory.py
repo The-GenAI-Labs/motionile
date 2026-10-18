@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from pydantic import SecretStr
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.alerts import raise_alert
 from motionile.core.resources import Resources
@@ -8,20 +9,41 @@ from motionile.modules.audit import record as record_audit
 from motionile.modules.billing.ports import Alert, AuditRecorder, EventDispatcher, Savepoint, begin_savepoint
 from motionile.modules.billing.razorpay.credentials import razorpay_credentials
 from motionile.modules.billing.razorpay.factory import razorpay_for
+from motionile.modules.billing.repository import SqlBillingRepository
 from motionile.modules.billing.services.customers import CustomerService
 from motionile.modules.billing.services.history import HistoryService
+from motionile.modules.billing.services.notices import NoticeMailer, NoticeSender
 from motionile.modules.billing.services.orders import OrderDependencies, OrderService
 from motionile.modules.billing.services.payment_events import PaymentEventHandlers
 from motionile.modules.billing.services.products import ProductsService
 from motionile.modules.billing.services.receipts import BillingMailer, ReceiptSender
 from motionile.modules.billing.services.reconciliation import OrderReconciliation, ReconciliationDependencies
+from motionile.modules.billing.services.refund_events import RefundEventHandlers
+from motionile.modules.billing.services.refund_settlement import RefundPorts, RefundSettlement
+from motionile.modules.billing.services.refunds import RefundDependencies, RefundService
 from motionile.modules.billing.services.settlement import SettlementPorts, SettlementService
+from motionile.modules.billing.services.settlement_check import SettlementCheck, SettlementCheckDependencies
+from motionile.modules.billing.services.subscription_charges import ChargePorts, ChargeRecorder
+from motionile.modules.billing.services.subscription_events import SubscriptionEventHandlers, SubscriptionHandlerPorts
+from motionile.modules.billing.services.subscription_maintenance import (
+    MaintenanceDependencies,
+    SubscriptionFinalizer,
+    SubscriptionSync,
+)
+from motionile.modules.billing.services.subscription_management import (
+    ManagementDependencies,
+    SubscriptionManagement,
+)
+from motionile.modules.billing.services.subscriptions import SubscriptionCheckout, SubscriptionDependencies
 from motionile.modules.billing.services.verification import PaymentVerificationService
 from motionile.modules.billing.services.webhook_processor import ProcessorPorts, WebhookProcessor
 from motionile.modules.billing.services.webhook_recovery import RequeuePolicy, WebhookRequeuer
 from motionile.modules.billing.services.webhook_registry import HandlerRegistry
 from motionile.modules.billing.services.webhooks import WebhookReceiver
 from motionile.modules.credits import CreditsService
+from motionile.modules.platform import PlatformService
+
+ROLLOVER_SETTING = "billing.subscription_rollover"
 
 
 @dataclass(frozen=True)
@@ -29,9 +51,18 @@ class ServiceHooks:
     dispatch: EventDispatcher
     process_task_name: str
     receipts: ReceiptSender | None = None
+    notices: NoticeSender | None = None
     audit: AuditRecorder = record_audit
     alert: Alert = raise_alert
     savepoint: Savepoint = begin_savepoint
+
+
+@dataclass(frozen=True)
+class SubscriptionServices:
+    checkout: SubscriptionCheckout
+    management: SubscriptionManagement
+    finalizer: SubscriptionFinalizer
+    sync: SubscriptionSync
 
 
 @dataclass(frozen=True)
@@ -47,6 +78,9 @@ class BillingServices:
     reconciliation: OrderReconciliation
     history: HistoryService
     registry: HandlerRegistry
+    subscriptions: SubscriptionServices
+    refunds: RefundService
+    settlement_check: SettlementCheck
 
 
 def build_services(resources: Resources, hooks: ServiceHooks) -> BillingServices:
@@ -67,16 +101,46 @@ def build_services(resources: Resources, hooks: ServiceHooks) -> BillingServices
     def max_attempts() -> int:
         return billing.webhook_max_attempts
 
+    async def subscription_rollover(session: AsyncSession) -> bool:
+        return await PlatformService(session, resources.redis_store).setting_value(ROLLOVER_SETTING) is True
+
+    credit_service = CreditsService(resources.clock, billing)
     receipts = hooks.receipts or BillingMailer(resources).payment_receipt
+    notices = hooks.notices or NoticeMailer(resources).send
     settlement = SettlementService(
         resources.clock,
-        CreditsService(resources.clock, billing),
+        credit_service,
         receipts,
         SettlementPorts(audit=hooks.audit, alert=hooks.alert),
     )
     registry = HandlerRegistry()
     PaymentEventHandlers(settlement).register(registry)
+    SubscriptionEventHandlers(
+        resources.clock,
+        ChargeRecorder(
+            resources.clock,
+            credit_service,
+            ChargePorts(audit=hooks.audit, alert=hooks.alert, rollover=subscription_rollover),
+        ),
+        SubscriptionHandlerPorts(
+            store_factory=SqlBillingRepository, audit=hooks.audit, alert=hooks.alert, notices=notices
+        ),
+    ).register(registry)
+    refund_settlement = RefundSettlement(
+        resources.clock,
+        credit_service,
+        RefundPorts(store_factory=SqlBillingRepository, audit=hooks.audit, alert=hooks.alert, notices=notices),
+    )
+    RefundEventHandlers(refund_settlement, SqlBillingRepository, hooks.alert).register(registry)
     customers = CustomerService(transaction, razorpay)
+    maintenance = MaintenanceDependencies(
+        transaction=transaction,
+        razorpay=razorpay,
+        clock=resources.clock,
+        audit=hooks.audit,
+        notices=notices,
+        alert=hooks.alert,
+    )
     return BillingServices(
         products=ProductsService(transaction, resources.redis_store),
         customers=customers,
@@ -99,4 +163,32 @@ def build_services(resources: Resources, hooks: ServiceHooks) -> BillingServices
         ),
         history=HistoryService(transaction, resources.cursor_codec),
         registry=registry,
+        subscriptions=SubscriptionServices(
+            checkout=SubscriptionCheckout(
+                SubscriptionDependencies(
+                    transaction, razorpay, customers, resources.clock, billing, key_id, hooks.audit
+                ),
+                SqlBillingRepository,
+            ),
+            management=SubscriptionManagement(
+                ManagementDependencies(transaction, razorpay, resources.clock, key_secret, hooks.audit, notices),
+                SqlBillingRepository,
+            ),
+            finalizer=SubscriptionFinalizer(maintenance),
+            sync=SubscriptionSync(maintenance),
+        ),
+        refunds=RefundService(
+            RefundDependencies(
+                transaction=transaction,
+                razorpay=razorpay,
+                settlement=refund_settlement,
+                store_factory=SqlBillingRepository,
+                audit=hooks.audit,
+                alert=hooks.alert,
+            )
+        ),
+        settlement_check=SettlementCheck(
+            SettlementCheckDependencies(transaction, razorpay, resources.storage, resources.clock, billing),
+            alert=hooks.alert,
+        ),
     )

@@ -11,19 +11,29 @@ from motionile.core.schemas import PageQuery
 from motionile.modules.auth import enforce_csrf
 from motionile.modules.billing.dependencies import BillingServicesDep, CurrentUserIdDep
 from motionile.modules.billing.schemas import (
+    ChangeSubscriptionRequest,
     CheckoutResponse,
     CreateOrderRequest,
+    CreateSubscriptionRequest,
+    CurrentSubscriptionResponse,
     HistoryPageResponse,
     OrderResponse,
     ProductsResponse,
+    SubscriptionCheckoutResponse,
+    SubscriptionResponse,
     VerifyPaymentRequest,
     VerifyPaymentResponse,
+    VerifySubscriptionRequest,
 )
 from motionile.modules.billing.services.products import CACHE_CONTROL, etag_matches
+from motionile.modules.billing.services.subscription_management import VerifySubscriptionCommand
+from motionile.modules.billing.services.subscription_views import current_response, subscription_response
 from motionile.modules.billing.services.verification import VerifyCommand
 
 ORDER_SCOPE = "billing.order.create"
 VERIFY_SCOPE = "billing.payment.verify"
+SUBSCRIPTION_SCOPE = "billing.subscription.create"
+SUBSCRIPTION_VERIFY_SCOPE = "billing.subscription.verify"
 
 billing_router = APIRouter(
     prefix="/billing",
@@ -148,3 +158,110 @@ async def list_history(
     query: Annotated[PageQuery, Query()], user_id: CurrentUserIdDep, services: BillingServicesDep
 ) -> HistoryPageResponse:
     return await services.history.page(user_id, query.cursor, query.limit)
+
+
+@billing_router.post(
+    "/subscriptions",
+    response_model=SubscriptionCheckoutResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Start a subscription and return the checkout data",
+    dependencies=[Depends(rate_limit("billing.order.create"))],
+    responses=problem_responses(
+        status.HTTP_400_BAD_REQUEST,
+        status.HTTP_401_UNAUTHORIZED,
+        status.HTTP_404_NOT_FOUND,
+        status.HTTP_409_CONFLICT,
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
+        status.HTTP_502_BAD_GATEWAY,
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+    ),
+)
+async def create_subscription(
+    body: CreateSubscriptionRequest,
+    request: Request,
+    user_id: CurrentUserIdDep,
+    services: BillingServicesDep,
+    guard: Annotated[IdempotencyGuard, Depends(idempotent(SUBSCRIPTION_SCOPE))],
+) -> JSONResponse:
+    checkout = await services.subscriptions.checkout.create(user_id, body.product_code, read_key(request))
+    return await guard.respond(checkout, status_code=status.HTTP_201_CREATED)
+
+
+@billing_router.post(
+    "/subscriptions/verify",
+    response_model=SubscriptionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Verify the subscription authorization payment",
+    dependencies=[Depends(rate_limit("api.default"))],
+    responses=problem_responses(
+        status.HTTP_400_BAD_REQUEST,
+        status.HTTP_401_UNAUTHORIZED,
+        status.HTTP_404_NOT_FOUND,
+        status.HTTP_409_CONFLICT,
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
+        status.HTTP_502_BAD_GATEWAY,
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+    ),
+)
+async def verify_subscription(
+    body: VerifySubscriptionRequest,
+    user_id: CurrentUserIdDep,
+    services: BillingServicesDep,
+    guard: Annotated[IdempotencyGuard, Depends(idempotent(SUBSCRIPTION_VERIFY_SCOPE))],
+) -> JSONResponse:
+    view = await services.subscriptions.management.verify(
+        user_id,
+        VerifySubscriptionCommand(body.razorpay_payment_id, body.razorpay_subscription_id, body.razorpay_signature),
+    )
+    return await guard.respond(subscription_response(view))
+
+
+@billing_router.get(
+    "/subscription",
+    response_model=CurrentSubscriptionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get your current subscription",
+    dependencies=[Depends(rate_limit("api.default"))],
+    responses=problem_responses(status.HTTP_401_UNAUTHORIZED),
+)
+async def get_subscription(user_id: CurrentUserIdDep, services: BillingServicesDep) -> CurrentSubscriptionResponse:
+    return current_response(await services.subscriptions.management.current(user_id))
+
+
+@billing_router.post(
+    "/subscription/cancel",
+    response_model=SubscriptionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Cancel your subscription at the end of the billing period",
+    dependencies=[Depends(rate_limit("api.default"))],
+    responses=problem_responses(
+        status.HTTP_401_UNAUTHORIZED,
+        status.HTTP_404_NOT_FOUND,
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
+        status.HTTP_502_BAD_GATEWAY,
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+    ),
+)
+async def cancel_subscription(user_id: CurrentUserIdDep, services: BillingServicesDep) -> SubscriptionResponse:
+    return subscription_response(await services.subscriptions.management.cancel(user_id))
+
+
+@billing_router.post(
+    "/subscription/change",
+    response_model=SubscriptionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Switch your subscription to another plan from the next billing period",
+    dependencies=[Depends(rate_limit("api.default"))],
+    responses=problem_responses(
+        status.HTTP_401_UNAUTHORIZED,
+        status.HTTP_404_NOT_FOUND,
+        status.HTTP_409_CONFLICT,
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
+        status.HTTP_502_BAD_GATEWAY,
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+    ),
+)
+async def change_subscription(
+    body: ChangeSubscriptionRequest, user_id: CurrentUserIdDep, services: BillingServicesDep
+) -> SubscriptionResponse:
+    return subscription_response(await services.subscriptions.management.change(user_id, body.product_code))

@@ -5,9 +5,13 @@ from motionile.modules.billing.repository import BillingStore
 from motionile.modules.billing.states import (
     ORDER_MACHINE,
     PAYMENT_MACHINE,
+    REFUND_MACHINE,
+    SUBSCRIPTION_MACHINE,
     WEBHOOK_MACHINE,
     OrderStatus,
     PaymentRecordStatus,
+    RefundStatus,
+    SubscriptionStatus,
     WebhookEventStatus,
 )
 
@@ -45,3 +49,25 @@ async def transition_event(
 ) -> bool:
     WEBHOOK_MACHINE.require(expected, target)
     return await store.transition_event(event_row_id, expected, target, values)
+
+
+async def transition_subscription(
+    store: BillingStore,
+    subscription_id: UUID,
+    expected: SubscriptionStatus,
+    target: SubscriptionStatus,
+    values: Mapping[str, object] = NO_VALUES,
+) -> bool:
+    SUBSCRIPTION_MACHINE.require(expected, target)
+    return await store.transition_subscription(subscription_id, expected, target, values)
+
+
+async def transition_refund(
+    store: BillingStore,
+    refund_id: UUID,
+    expected: RefundStatus,
+    target: RefundStatus,
+    values: Mapping[str, object] = NO_VALUES,
+) -> bool:
+    REFUND_MACHINE.require(expected, target)
+    return await store.transition_refund(refund_id, expected, target, values)

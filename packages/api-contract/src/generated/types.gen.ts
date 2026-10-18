@@ -680,6 +680,16 @@ export type ChangePasswordRequest = {
 };
 
 /**
+ * ChangeSubscriptionRequest
+ */
+export type ChangeSubscriptionRequest = {
+    /**
+     * Productcode
+     */
+    productCode: string;
+};
+
+/**
  * CheckoutPrefillResponse
  */
 export type CheckoutPrefillResponse = {
@@ -826,6 +836,37 @@ export type CreateOrderRequest = {
      * Productcode
      */
     productCode: string;
+};
+
+/**
+ * CreateRefundRequest
+ */
+export type CreateRefundRequest = {
+    /**
+     * Amountpaise
+     */
+    amountPaise?: number | null;
+    /**
+     * Reason
+     */
+    reason: string;
+};
+
+/**
+ * CreateSubscriptionRequest
+ */
+export type CreateSubscriptionRequest = {
+    /**
+     * Productcode
+     */
+    productCode: string;
+};
+
+/**
+ * CurrentSubscriptionResponse
+ */
+export type CurrentSubscriptionResponse = {
+    subscription: SubscriptionResponse | null;
 };
 
 /**
@@ -1442,6 +1483,39 @@ export type ReadinessResponse = {
 };
 
 /**
+ * RefundResponse
+ */
+export type RefundResponse = {
+    /**
+     * Amountpaise
+     */
+    amountPaise: number;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Creditsclawedback
+     */
+    creditsClawedBack: number;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Razorpayrefundid
+     */
+    razorpayRefundId: string | null;
+    /**
+     * Reason
+     */
+    reason: string;
+    status: RefundStatusName;
+};
+
+export type RefundStatusName = 'pending' | 'processed' | 'failed';
+
+/**
  * RegisterRequest
  */
 export type RegisterRequest = {
@@ -1705,6 +1779,107 @@ export type SubcategoryDetailResponse = {
     subcategory: CatalogCategoryResponse;
     topics: CursorPageCatalogTopicResponse;
 };
+
+/**
+ * SubscriptionCheckoutResponse
+ */
+export type SubscriptionCheckoutResponse = {
+    /**
+     * Customerid
+     */
+    customerId: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Keyid
+     */
+    keyId: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Orderid
+     */
+    orderId: string;
+    prefill: CheckoutPrefillResponse;
+    /**
+     * Razorpaysubscriptionid
+     */
+    razorpaySubscriptionId: string;
+    /**
+     * Subscriptionid
+     */
+    subscriptionId: string;
+};
+
+/**
+ * SubscriptionProductResponse
+ */
+export type SubscriptionProductResponse = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    interval: IntervalName | null;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Plankey
+     */
+    planKey: string | null;
+    /**
+     * Pricepaise
+     */
+    pricePaise: number;
+};
+
+/**
+ * SubscriptionResponse
+ */
+export type SubscriptionResponse = {
+    /**
+     * Cancelatperiodend
+     */
+    cancelAtPeriodEnd: boolean;
+    /**
+     * Cancelledat
+     */
+    cancelledAt: string | null;
+    /**
+     * Currentperiodend
+     */
+    currentPeriodEnd: string | null;
+    /**
+     * Currentperiodstart
+     */
+    currentPeriodStart: string | null;
+    /**
+     * Endsat
+     */
+    endsAt: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Nextchargeat
+     */
+    nextChargeAt: string | null;
+    pendingProduct: SubscriptionProductResponse | null;
+    product: SubscriptionProductResponse;
+    status: SubscriptionStatusName;
+};
+
+export type SubscriptionStatusName = 'created' | 'authenticated' | 'active' | 'pending' | 'halted' | 'paused' | 'cancelled' | 'completed' | 'expired';
 
 /**
  * TopicDetailResponse
@@ -2210,6 +2385,24 @@ export type VerifyPaymentResponse = {
 };
 
 /**
+ * VerifySubscriptionRequest
+ */
+export type VerifySubscriptionRequest = {
+    /**
+     * Razorpaypaymentid
+     */
+    razorpayPaymentId: string;
+    /**
+     * Razorpaysignature
+     */
+    razorpaySignature: string;
+    /**
+     * Razorpaysubscriptionid
+     */
+    razorpaySubscriptionId: string;
+};
+
+/**
  * WalletResponse
  */
 export type WalletResponse = {
@@ -2597,6 +2790,68 @@ export type AdminInsightsGetAuditEntryResponses = {
 };
 
 export type AdminInsightsGetAuditEntryResponse = AdminInsightsGetAuditEntryResponses[keyof AdminInsightsGetAuditEntryResponses];
+
+export type AdminBillingCreateRefundData = {
+    body: CreateRefundRequest;
+    path: {
+        /**
+         * Payment Id
+         */
+        payment_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/payments/{payment_id}/refunds';
+};
+
+export type AdminBillingCreateRefundErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingCreateRefundError = AdminBillingCreateRefundErrors[keyof AdminBillingCreateRefundErrors];
+
+export type AdminBillingCreateRefundResponses = {
+    /**
+     * Successful Response
+     */
+    201: RefundResponse;
+};
+
+export type AdminBillingCreateRefundResponse = AdminBillingCreateRefundResponses[keyof AdminBillingCreateRefundResponses];
 
 export type AdminCatalogCreateCategoryData = {
     body: CategoryWriteRequest;
@@ -5471,6 +5726,259 @@ export type BillingListProductsResponses = {
 };
 
 export type BillingListProductsResponse = BillingListProductsResponses[keyof BillingListProductsResponses];
+
+export type BillingGetSubscriptionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/billing/subscription';
+};
+
+export type BillingGetSubscriptionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type BillingGetSubscriptionError = BillingGetSubscriptionErrors[keyof BillingGetSubscriptionErrors];
+
+export type BillingGetSubscriptionResponses = {
+    /**
+     * Successful Response
+     */
+    200: CurrentSubscriptionResponse;
+};
+
+export type BillingGetSubscriptionResponse = BillingGetSubscriptionResponses[keyof BillingGetSubscriptionResponses];
+
+export type BillingCancelSubscriptionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/billing/subscription/cancel';
+};
+
+export type BillingCancelSubscriptionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type BillingCancelSubscriptionError = BillingCancelSubscriptionErrors[keyof BillingCancelSubscriptionErrors];
+
+export type BillingCancelSubscriptionResponses = {
+    /**
+     * Successful Response
+     */
+    200: SubscriptionResponse;
+};
+
+export type BillingCancelSubscriptionResponse = BillingCancelSubscriptionResponses[keyof BillingCancelSubscriptionResponses];
+
+export type BillingChangeSubscriptionData = {
+    body: ChangeSubscriptionRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/billing/subscription/change';
+};
+
+export type BillingChangeSubscriptionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type BillingChangeSubscriptionError = BillingChangeSubscriptionErrors[keyof BillingChangeSubscriptionErrors];
+
+export type BillingChangeSubscriptionResponses = {
+    /**
+     * Successful Response
+     */
+    200: SubscriptionResponse;
+};
+
+export type BillingChangeSubscriptionResponse = BillingChangeSubscriptionResponses[keyof BillingChangeSubscriptionResponses];
+
+export type BillingCreateSubscriptionData = {
+    body: CreateSubscriptionRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/billing/subscriptions';
+};
+
+export type BillingCreateSubscriptionErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type BillingCreateSubscriptionError = BillingCreateSubscriptionErrors[keyof BillingCreateSubscriptionErrors];
+
+export type BillingCreateSubscriptionResponses = {
+    /**
+     * Successful Response
+     */
+    201: SubscriptionCheckoutResponse;
+};
+
+export type BillingCreateSubscriptionResponse = BillingCreateSubscriptionResponses[keyof BillingCreateSubscriptionResponses];
+
+export type BillingVerifySubscriptionData = {
+    body: VerifySubscriptionRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/billing/subscriptions/verify';
+};
+
+export type BillingVerifySubscriptionErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type BillingVerifySubscriptionError = BillingVerifySubscriptionErrors[keyof BillingVerifySubscriptionErrors];
+
+export type BillingVerifySubscriptionResponses = {
+    /**
+     * Successful Response
+     */
+    200: SubscriptionResponse;
+};
+
+export type BillingVerifySubscriptionResponse = BillingVerifySubscriptionResponses[keyof BillingVerifySubscriptionResponses];
 
 export type CatalogCatalogCategoryData = {
     body?: never;

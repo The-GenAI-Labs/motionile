@@ -20,6 +20,9 @@ PROCESS_EVENT_TASK = "billing.process_webhook_event"
 REQUEUE_TASK = "billing.requeue_stuck_webhooks"
 RECONCILE_TASK = "billing.reconcile_pending_orders"
 REVALIDATE_TASK = "billing.revalidate_products"
+FINALIZE_TASK = "billing.finalize_subscriptions"
+SYNC_TASK = "billing.sync_subscriptions"
+SETTLEMENT_TASK = "billing.settlement_check"
 EXPONENTIAL_WAIT_BASE = 2
 
 logger = structlog.get_logger(__name__)
@@ -72,6 +75,42 @@ async def reconcile_pending_orders() -> None:
         repaired=counts.repaired,
         mismatch=counts.mismatch,
         errors=counts.errors,
+    )
+
+
+@periodic_task(name=FINALIZE_TASK, queue=Queue.BILLING, cron="*/15 * * * *")
+async def finalize_subscriptions() -> None:
+    async with worker_services("motionile-billing-finalization") as services:
+        counts = await services.subscriptions.finalizer.finalize()
+    logger.info("billing.subscriptions_finalized", cancelled=counts.cancelled, expired=counts.expired)
+
+
+@periodic_task(name=SYNC_TASK, queue=Queue.BILLING, cron="15 3 * * *")
+async def sync_subscriptions() -> None:
+    async with worker_services("motionile-billing-subscription-sync") as services:
+        counts = await services.subscriptions.sync.run()
+    logger.info(
+        "billing.subscriptions_synced",
+        checked=counts.checked,
+        repaired=counts.repaired,
+        mismatch=counts.mismatch,
+        errors=counts.errors,
+    )
+
+
+@periodic_task(name=SETTLEMENT_TASK, queue=Queue.BILLING, cron="0 4 * * *")
+async def settlement_check() -> None:
+    async with worker_services("motionile-billing-settlement-check") as services:
+        result = await services.settlement_check.run()
+    if result is None:
+        logger.info("billing.settlement_check_skipped")
+        return
+    logger.info(
+        "billing.settlement_checked",
+        day=result.day.isoformat(),
+        checked=result.checked,
+        mismatches=result.mismatches,
+        report_key=result.report_key,
     )
 
 

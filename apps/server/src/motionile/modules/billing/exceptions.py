@@ -110,3 +110,64 @@ class SettlementError(Exception):
 class UnexpectedOrderStateError(SettlementError):
     def __init__(self, order_id: str, expected: str) -> None:
         super().__init__(f"order {order_id} was not {expected} while its row was locked")
+
+
+class SubscriptionNotFoundError(NotFoundError):
+    default_code = "subscription_not_found"
+    title = "Subscription not found"
+
+
+class SubscriptionExistsError(ConflictError):
+    default_code = "subscription_exists"
+    title = "You already have a subscription"
+
+
+class SubscriptionNotChangeableError(ConflictError):
+    default_code = "subscription_not_changeable"
+    title = "Subscription cannot be changed"
+
+
+class PaymentNotFoundError(NotFoundError):
+    default_code = "payment_not_found"
+    title = "Payment not found"
+
+
+class PaymentNotRefundableError(ConflictError):
+    default_code = "payment_not_refundable"
+    title = "Payment cannot be refunded"
+
+
+class RefundExceedsRefundableError(ValidationAppError):
+    default_code = "refund_exceeds_refundable"
+    title = "Refund exceeds the refundable amount"
+
+    def __init__(self, refundable_paise: int) -> None:
+        super().__init__(
+            f"At most {refundable_paise} paise can still be refunded for this payment.",
+            extensions={"refundablePaise": max(refundable_paise, 0)},
+        )
+
+
+class RefundRejectedError(ValidationAppError):
+    default_code = "refund_rejected"
+    title = "Payment provider rejected the refund"
+
+
+class LiveSubscriptionConflictError(Exception):
+    def __init__(self) -> None:
+        super().__init__("the user already has a live subscription")
+
+
+class SettlementCheckError(Exception):
+    pass
+
+
+class SettlementWindowTooLargeError(SettlementCheckError):
+    def __init__(self, pages: int) -> None:
+        super().__init__(f"the settlement window needs more than {pages} pages of payments")
+
+
+class SweepFailedError(RuntimeError):
+    def __init__(self, task_name: str, failures: int) -> None:
+        super().__init__(f"{task_name} failed for {failures} item(s)")
+        self.failures = failures

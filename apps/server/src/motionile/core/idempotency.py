@@ -259,6 +259,7 @@ class IdempotencyService:
 class IdempotencyGuard:
     service: IdempotencyService
     record_id: UUID
+    key: str
     completed: bool = field(default=False)
 
     async def respond(
@@ -319,7 +320,7 @@ def idempotent(scope: str) -> Callable[[Request], AsyncIterator[IdempotencyGuard
         outcome = await service.begin(target, fingerprint)
         if isinstance(outcome, Replay):
             raise IdempotentReplay(outcome.response)
-        guard = IdempotencyGuard(service=service, record_id=outcome.record_id)
+        guard = IdempotencyGuard(service=service, record_id=outcome.record_id, key=key)
         try:
             yield guard
         except BaseException:

@@ -11,7 +11,9 @@ from motionile.core.ids import new_id
 from motionile.core.pagination import Cursor
 from motionile.modules.audit import AuditEvent
 from motionile.modules.credits.domain import (
+    BalanceTotals,
     DailyUsage,
+    LedgerDayTotal,
     LedgerRecord,
     LotRecord,
     ReservationRecord,
@@ -287,6 +289,36 @@ class FakeCreditsStore:
         if cursor is not None:
             rows = [entry for entry in rows if (entry.created_at, entry.id) < (cursor.created_at, cursor.id)]
         return rows[: limit + 1]
+
+    async def lot_page(self, user_id: UUID, cursor: Cursor | None, limit: int) -> list[LotRecord]:
+        rows = [lot for lot in self.lots.values() if lot.user_id == user_id]
+        rows.sort(key=lambda lot: (lot.created_at, lot.id), reverse=True)
+        if cursor is not None:
+            rows = [lot for lot in rows if (lot.created_at, lot.id) < (cursor.created_at, cursor.id)]
+        return rows[: limit + 1]
+
+    async def ledger_daily_totals(self, start: date, end: date) -> list[LedgerDayTotal]:
+        totals: dict[tuple[date, str], tuple[int, int]] = {}
+        for entry in self.ledger:
+            day = entry.created_at.date()
+            if entry.delta == 0 or not start <= day <= end:
+                continue
+            granted, removed = totals.get((day, entry.reason), (0, 0))
+            totals[(day, entry.reason)] = (
+                granted + max(entry.delta, 0),
+                removed + max(-entry.delta, 0),
+            )
+        return [
+            LedgerDayTotal(day=day, reason=reason, granted=amounts[0], removed=amounts[1])
+            for (day, reason), amounts in sorted(totals.items())
+        ]
+
+    async def balance_totals(self) -> BalanceTotals:
+        return BalanceTotals(
+            wallets=len(self.wallets),
+            balance=sum(wallet.balance for wallet in self.wallets.values()),
+            reserved=sum(wallet.reserved for wallet in self.wallets.values()),
+        )
 
     async def usage_page(self, user_id: UUID, cursor: Cursor | None, limit: int) -> list[UsageRow]:
         rows = [item for item in self.usage if item.entry.user_id == user_id]

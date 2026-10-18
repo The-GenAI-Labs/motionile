@@ -10,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from motionile.core.ids import new_id
 from motionile.core.pagination import Cursor, keyset_page
 from motionile.modules.credits.domain import (
+    BalanceTotals,
     DailyUsage,
+    LedgerDayTotal,
     LedgerRecord,
     LotRecord,
     ReservationRecord,
@@ -113,6 +115,9 @@ class CreditsStore(Protocol):
     async def stale_reservations(self, now: datetime, after: UUID | None, limit: int) -> list[ReservationRecord]: ...
     async def claim_expiry_reminders(self, now: datetime, before: datetime, limit: int) -> list[LotRecord]: ...
     async def ledger_page(self, user_id: UUID, cursor: Cursor | None, limit: int) -> list[LedgerRecord]: ...
+    async def lot_page(self, user_id: UUID, cursor: Cursor | None, limit: int) -> list[LotRecord]: ...
+    async def ledger_daily_totals(self, start: date, end: date) -> list[LedgerDayTotal]: ...
+    async def balance_totals(self) -> BalanceTotals: ...
     async def usage_page(self, user_id: UUID, cursor: Cursor | None, limit: int) -> list[UsageRow]: ...
     async def usage_daily(self, user_id: UUID, start: date, end: date) -> list[DailyUsage]: ...
     async def insert_usage(self, entry: UsageEntry) -> UUID: ...
@@ -450,6 +455,46 @@ class SqlCreditsRepository:
             limit=limit,
         ).execution_options(**FRESH_ROWS)
         return [ledger_record(model) for model in await self.session.scalars(statement)]
+
+    async def lot_page(self, user_id: UUID, cursor: Cursor | None, limit: int) -> list[LotRecord]:
+        statement = keyset_page(
+            select(CreditLot).where(CreditLot.user_id == user_id),
+            created_at=CreditLot.created_at,
+            id_=CreditLot.id,
+            cursor=cursor,
+            limit=limit,
+        ).execution_options(**FRESH_ROWS)
+        return [lot_record(model) for model in await self.session.scalars(statement)]
+
+    async def ledger_daily_totals(self, start: date, end: date) -> list[LedgerDayTotal]:
+        day = cast(func.timezone("UTC", CreditLedgerEntry.created_at), Date)
+        lower = datetime.combine(start, time.min).replace(tzinfo=UTC)
+        upper = datetime.combine(end + timedelta(days=1), time.min).replace(tzinfo=UTC)
+        granted = func.coalesce(func.sum(CreditLedgerEntry.delta).filter(CreditLedgerEntry.delta > 0), 0)
+        removed = func.coalesce(-func.sum(CreditLedgerEntry.delta).filter(CreditLedgerEntry.delta < 0), 0)
+        rows = await self.session.execute(
+            select(day.label("day"), CreditLedgerEntry.reason, granted, removed)
+            .where(
+                CreditLedgerEntry.created_at >= lower,
+                CreditLedgerEntry.created_at < upper,
+                CreditLedgerEntry.delta != 0,
+            )
+            .group_by(day, CreditLedgerEntry.reason)
+            .order_by(day, CreditLedgerEntry.reason)
+        )
+        return [LedgerDayTotal(day=row[0], reason=row[1], granted=int(row[2]), removed=int(row[3])) for row in rows]
+
+    async def balance_totals(self) -> BalanceTotals:
+        row = (
+            await self.session.execute(
+                select(
+                    func.count(),
+                    func.coalesce(func.sum(CreditWallet.balance), 0),
+                    func.coalesce(func.sum(CreditWallet.reserved), 0),
+                )
+            )
+        ).one()
+        return BalanceTotals(wallets=int(row[0]), balance=int(row[1]), reserved=int(row[2]))
 
     async def usage_page(self, user_id: UUID, cursor: Cursor | None, limit: int) -> list[UsageRow]:
         statement = keyset_page(

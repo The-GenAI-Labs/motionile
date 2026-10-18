@@ -106,6 +106,21 @@ class DailyUsage:
 
 
 @dataclass(frozen=True)
+class LedgerDayTotal:
+    day: date
+    reason: str
+    granted: int
+    removed: int
+
+
+@dataclass(frozen=True)
+class BalanceTotals:
+    wallets: int
+    balance: int
+    reserved: int
+
+
+@dataclass(frozen=True)
 class Page[ItemT]:
     items: list[ItemT]
     next_cursor: Cursor | None

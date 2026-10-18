@@ -24,6 +24,7 @@ from motionile.modules.credits.domain import (
     AdjustCommand,
     AdjustResult,
     Allocation,
+    BalanceTotals,
     ClawbackCommand,
     ClawbackResult,
     CommitResult,
@@ -35,6 +36,7 @@ from motionile.modules.credits.domain import (
     GrantResult,
     IntegrityViolation,
     JsonObject,
+    LedgerDayTotal,
     LedgerRecord,
     LotRecord,
     Page,
@@ -577,6 +579,17 @@ class CreditsService:
         self, session: AsyncSession, user_id: UUID, cursor: Cursor | None, limit: int
     ) -> Page[LedgerRecord]:
         return page_of(await self._store(session).ledger_page(user_id, cursor, limit), limit)
+
+    async def lots(self, session: AsyncSession, user_id: UUID, cursor: Cursor | None, limit: int) -> Page[LotRecord]:
+        return page_of(await self._store(session).lot_page(user_id, cursor, limit), limit)
+
+    async def ledger_daily_totals(self, session: AsyncSession, start: date, end: date) -> list[LedgerDayTotal]:
+        if start > end or (end - start).days + 1 > MAX_USAGE_RANGE_DAYS:
+            raise InvalidUsageRangeError
+        return await self._store(session).ledger_daily_totals(start, end)
+
+    async def balance_totals(self, session: AsyncSession) -> BalanceTotals:
+        return await self._store(session).balance_totals()
 
     async def usage(self, session: AsyncSession, user_id: UUID, cursor: Cursor | None, limit: int) -> Page[UsageRow]:
         return page_of(await self._store(session).usage_page(user_id, cursor, limit), limit)

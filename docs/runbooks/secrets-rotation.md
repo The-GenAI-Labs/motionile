@@ -14,16 +14,18 @@ Placeholders:
 
 ## Schedule
 
-| Secret                                     | Where it lives                                                                                   | Rotate every | Downtime                                |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------------ | --------------------------------------- |
-| Neon `motionile` role password             | SSM `DATABASE_URL`, `DATABASE_DIRECT_URL`                                                        | 180 days     | Minutes, between reset and redeploy     |
-| `REDIS_PASSWORD`                           | SSM                                                                                              | 365 days     | Seconds, while containers are recreated |
-| JWT signing key (from Phase 4)             | SSM, parameter added to `deploy/parameters.csv` in Phase 4                                       | 180 days     | None with the overlap procedure         |
-| `ENCRYPTION_KEYS`                          | SSM                                                                                              | 365 days     | None                                    |
-| CloudFront signing key pair (from Phase 9) | Public key in OpenTofu, private key in SSM `CLOUDFRONT_PRIVATE_KEY`                              | 365 days     | None with the overlap procedure         |
-| SSH deploy key                             | `ci_ssh_public_key`, `/home/deploy/.ssh/authorized_keys`, GitHub secret `DEPLOY_SSH_PRIVATE_KEY` | 180 days     | None                                    |
-| `TURNSTILE_SECRET_KEY`                     | SSM and Cloudflare                                                                               | 365 days     | None if done within 2 hours             |
-| `SECURITY_PAGINATION_SECRET`               | SSM                                                                                              | 365 days     | None; open cursors become invalid       |
+| Secret                                                                      | Where it lives                                                                                   | Rotate every | Downtime                                |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------ | --------------------------------------- |
+| Neon `motionile` role password                                              | SSM `DATABASE_URL`, `DATABASE_DIRECT_URL`                                                        | 180 days     | Minutes, between reset and redeploy     |
+| `REDIS_PASSWORD`                                                            | SSM                                                                                              | 365 days     | Seconds, while containers are recreated |
+| JWT signing key (from Phase 4)                                              | SSM, parameter added to `deploy/parameters.csv` in Phase 4                                       | 180 days     | None with the overlap procedure         |
+| `ENCRYPTION_KEYS`                                                           | SSM                                                                                              | 365 days     | None                                    |
+| CloudFront signing key pair (from Phase 9)                                  | Public key in OpenTofu, private key in SSM `CLOUDFRONT_PRIVATE_KEY`                              | 365 days     | None with the overlap procedure         |
+| SSH deploy key                                                              | `ci_ssh_public_key`, `/home/deploy/.ssh/authorized_keys`, GitHub secret `DEPLOY_SSH_PRIVATE_KEY` | 180 days     | None                                    |
+| `TURNSTILE_SECRET_KEY`                                                      | SSM and Cloudflare                                                                               | 365 days     | None if done within 2 hours             |
+| `SECURITY_PAGINATION_SECRET`                                                | SSM                                                                                              | 365 days     | None; open cursors become invalid       |
+| Razorpay API key (`BILLING_RAZORPAY_KEY_ID`, `BILLING_RAZORPAY_KEY_SECRET`) | SSM and the Razorpay dashboard                                                                   | 365 days     | Minutes of failed checkouts at most     |
+| Razorpay webhook secret (`BILLING_RAZORPAY_WEBHOOK_SECRET`)                 | SSM and the Razorpay dashboard                                                                   | 365 days     | None with the two-webhook procedure     |
 
 Rotate any secret immediately when it may have leaked, when someone with access leaves, or when a laptop holding a copy is lost. After each rotation, update the password manager entry and record the date in the operations log.
 
@@ -296,3 +298,84 @@ printf 'SECURITY_PAGINATION_SECRET=%s\n' "$(openssl rand -hex 32)" > infra/param
 Upload ([Upload owner parameters](#upload-owner-parameters)) and redeploy ([Redeploy with the current tag](#redeploy-with-the-current-tag)). The server refuses to start with fewer than 32 characters; the command produces 64.
 
 Verify: readiness `ok`, and a paginated list on the web app loads its first and second pages.
+
+## 9. Razorpay key and webhook secret
+
+Three values connect an environment to Razorpay ([razorpay-setup.md](razorpay-setup.md#1-what-goes-where)): the key ID and key secret (a pair, used for API calls and for verifying Checkout signatures) and the webhook secret (verifies every webhook body). Staging uses Razorpay test mode and production uses live mode, so each environment has its own values; rotate staging first. Keep the new values in the password manager under `Motionile / Razorpay / <ENV>` before touching anything.
+
+The pair and the webhook secret are independent: rotate them separately, and never reuse one as the other.
+
+### 9.1 API key and secret
+
+Regenerating a key creates a new key ID and a new secret. Until the new pair is deployed, API calls made with the old pair may start failing, depending on how long Razorpay keeps the old key valid after regeneration; read the dialog's wording and do the steps back to back.
+
+1. Pick a quiet period. While the old key is rejected, `POST /v1/billing/orders` and `POST /v1/billing/subscriptions` return `502 payment_provider_error`. Nothing is lost: no money moves, webhooks are unaffected (they use the webhook secret) and checkouts that were already paid are settled by webhooks and reconciliation.
+2. In the Razorpay dashboard, switch to the mode of the environment (Test for staging, Live for production), open **Account & Settings**, then **API keys**, and choose **Regenerate key**. Copy the new key ID and secret; the secret is shown once.
+3. Write both to the rotation file and upload ([Upload owner parameters](#upload-owner-parameters)):
+
+   ```bash
+   umask 077
+   cat > infra/parameters/<ENV>-rotation.env <<'EOF'
+   BILLING_RAZORPAY_KEY_ID=<NEW_KEY_ID>
+   BILLING_RAZORPAY_KEY_SECRET=<NEW_KEY_SECRET>
+   EOF
+   ```
+
+4. Redeploy with Option B ([Redeploy with the current tag](#redeploy-with-the-current-tag)).
+5. Verify:
+
+   ```bash
+   curl -fsS https://<API_DOMAIN>/health/ready
+   ```
+
+   Then sign in to the web app, open `/pricing` and start a checkout for the smallest credit pack. Expected result: Razorpay Checkout opens with the new key ID (on staging, complete a test payment and confirm the order becomes `paid`). In CloudWatch Logs Insights confirm no Razorpay authentication failures after the redeploy:
+
+   ```text
+   fields @timestamp, method, path, error
+   | filter event = "razorpay.request_failed" and error = "RazorpayAuthenticationError"
+   | sort @timestamp desc
+   | limit 20
+   ```
+
+   Expected result: no rows after the redeploy time.
+
+6. A customer who opened Checkout with the old key before the redeploy cannot pass the browser-side signature check, because the signature uses the key secret. Their payment still settles through the webhook or the 15-minute reconciliation, so no action is needed. Mention it in the change ticket if you rotated in business hours.
+7. After the Razorpay dialog's overlap period has ended and the query above stays empty, revoke or delete the old key if the dashboard still lists it, and update the password manager.
+
+### 9.2 Webhook secret
+
+Razorpay signs each webhook with the secret of the webhook that sends it, and the API verifies against exactly one secret (`BILLING_RAZORPAY_WEBHOOK_SECRET`). To rotate without losing events, run two webhooks side by side for a short time: events are then delivered by both, whichever webhook the API currently accepts succeeds, and the other is retried by Razorpay or dropped as a duplicate. Event deduplication by event ID and idempotent handlers make the duplicates harmless.
+
+1. Generate the new secret and store it in the password manager:
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+2. Add the new secret in Razorpay: in the same mode, open **Account & Settings**, then **Webhooks**, and add a second webhook with the same URL (`https://<API_DOMAIN>/v1/webhooks/razorpay`), the same alert email and exactly the same 16 events as the existing one ([razorpay-setup.md](razorpay-setup.md#22-create-the-test-webhook)), with the new secret. Leave the existing webhook untouched.
+
+   If the dashboard refuses a second webhook on the same URL, use the single-webhook variant at the end of this section.
+
+3. Add the new secret to SSM and deploy:
+
+   ```bash
+   umask 077
+   printf 'BILLING_RAZORPAY_WEBHOOK_SECRET=%s\n' '<NEW_WEBHOOK_SECRET>' > infra/parameters/<ENV>-rotation.env
+   ```
+
+   Upload ([Upload owner parameters](#upload-owner-parameters)) and redeploy with Option B ([Redeploy with the current tag](#redeploy-with-the-current-tag)). From this point the API accepts only the new secret: the new webhook's deliveries succeed and the old webhook's deliveries are answered with `401 invalid_webhook_signature` and are not stored.
+
+4. Verify:
+   - In the Razorpay dashboard the new webhook's recent deliveries show HTTP 200 and the old webhook's show 401.
+   - In the admin console, **Billing**, then **Webhooks** shows new events arriving with status `processed` (make a test purchase on staging, or wait for traffic on production).
+   - Nothing sits `received` or `failed` for more than a few minutes.
+
+5. Remove the old webhook in the Razorpay dashboard. Keep the new one active and confirm it still lists all 16 events.
+6. Update the password manager and delete the rotation file (`rm infra/parameters/<ENV>-rotation.env`).
+
+If anything goes wrong between steps 3 and 5, put the old secret back in SSM, upload and redeploy: the old webhook then succeeds again and the new one fails until you correct it. Events rejected during any window are redelivered by Razorpay, and the periodic reconciliation repairs gaps after that ([billing.md](../billing.md#dropped-webhooks)).
+
+Single-webhook variant (only if a second webhook cannot be created). There is a window of a few minutes in which every delivery fails, so do it when traffic is lowest:
+
+1. Upload the new secret to SSM first, then edit the existing webhook's secret in the Razorpay dashboard, then redeploy immediately. Deliveries between the edit and the end of the redeploy get `401` and are redelivered by Razorpay.
+2. Verify as in step 4 and keep an eye on **Reconciliation** the next morning; the settlement check will list any payment whose events were lost.

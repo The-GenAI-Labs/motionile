@@ -6,10 +6,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from motionile.core.alerts import raise_alert
 from motionile.core.resources import Resources
 from motionile.modules.audit import record as record_audit
-from motionile.modules.billing.ports import Alert, AuditRecorder, EventDispatcher, Savepoint, begin_savepoint
+from motionile.modules.billing.ports import (
+    Alert,
+    AuditRecorder,
+    EventDispatcher,
+    Revalidation,
+    Savepoint,
+    begin_savepoint,
+)
 from motionile.modules.billing.razorpay.credentials import razorpay_credentials
 from motionile.modules.billing.razorpay.factory import razorpay_for
 from motionile.modules.billing.repository import SqlBillingRepository
+from motionile.modules.billing.services.admin_credits import CreditsAdminService
+from motionile.modules.billing.services.admin_payments import PaymentAdminService
+from motionile.modules.billing.services.admin_products import ProductAdminDependencies, ProductAdminService
+from motionile.modules.billing.services.admin_reconciliation import ReconciliationAdminService
+from motionile.modules.billing.services.admin_subscriptions import SubscriptionAdminService
+from motionile.modules.billing.services.admin_webhooks import WebhookAdminService
+from motionile.modules.billing.services.analytics import AnalyticsService
 from motionile.modules.billing.services.customers import CustomerService
 from motionile.modules.billing.services.history import HistoryService
 from motionile.modules.billing.services.notices import NoticeMailer, NoticeSender
@@ -50,6 +64,7 @@ ROLLOVER_SETTING = "billing.subscription_rollover"
 class ServiceHooks:
     dispatch: EventDispatcher
     process_task_name: str
+    revalidate: Revalidation
     receipts: ReceiptSender | None = None
     notices: NoticeSender | None = None
     audit: AuditRecorder = record_audit
@@ -63,6 +78,17 @@ class SubscriptionServices:
     management: SubscriptionManagement
     finalizer: SubscriptionFinalizer
     sync: SubscriptionSync
+
+
+@dataclass(frozen=True)
+class AdminServices:
+    products: ProductAdminService
+    payments: PaymentAdminService
+    subscriptions: SubscriptionAdminService
+    webhooks: WebhookAdminService
+    reconciliation: ReconciliationAdminService
+    credits: CreditsAdminService
+    analytics: AnalyticsService
 
 
 @dataclass(frozen=True)
@@ -81,6 +107,7 @@ class BillingServices:
     subscriptions: SubscriptionServices
     refunds: RefundService
     settlement_check: SettlementCheck
+    admin: AdminServices
 
 
 def build_services(resources: Resources, hooks: ServiceHooks) -> BillingServices:
@@ -141,6 +168,29 @@ def build_services(resources: Resources, hooks: ServiceHooks) -> BillingServices
         notices=notices,
         alert=hooks.alert,
     )
+    subscription_management = SubscriptionManagement(
+        ManagementDependencies(transaction, razorpay, resources.clock, key_secret, hooks.audit, notices),
+        SqlBillingRepository,
+    )
+    admin = AdminServices(
+        products=ProductAdminService(
+            ProductAdminDependencies(
+                transaction=transaction,
+                razorpay=razorpay,
+                redis=resources.redis_store,
+                codec=resources.cursor_codec,
+                audit=hooks.audit,
+                alert=hooks.alert,
+                revalidate=hooks.revalidate,
+            )
+        ),
+        payments=PaymentAdminService(transaction, resources.cursor_codec),
+        subscriptions=SubscriptionAdminService(transaction, resources.cursor_codec, subscription_management),
+        webhooks=WebhookAdminService(transaction, resources.cursor_codec, hooks.dispatch, hooks.audit),
+        reconciliation=ReconciliationAdminService(transaction, resources.cursor_codec, resources.storage),
+        credits=CreditsAdminService(transaction, resources.cursor_codec, credit_service),
+        analytics=AnalyticsService(transaction, resources.clock, credit_service),
+    )
     return BillingServices(
         products=ProductsService(transaction, resources.redis_store),
         customers=customers,
@@ -170,10 +220,7 @@ def build_services(resources: Resources, hooks: ServiceHooks) -> BillingServices
                 ),
                 SqlBillingRepository,
             ),
-            management=SubscriptionManagement(
-                ManagementDependencies(transaction, razorpay, resources.clock, key_secret, hooks.audit, notices),
-                SqlBillingRepository,
-            ),
+            management=subscription_management,
             finalizer=SubscriptionFinalizer(maintenance),
             sync=SubscriptionSync(maintenance),
         ),
@@ -191,4 +238,5 @@ def build_services(resources: Resources, hooks: ServiceHooks) -> BillingServices
             SettlementCheckDependencies(transaction, razorpay, resources.storage, resources.clock, billing),
             alert=hooks.alert,
         ),
+        admin=admin,
     )

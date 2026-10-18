@@ -15,6 +15,7 @@ from motionile.modules.billing.exceptions import (
     ProductNotFoundError,
     ProductNotPurchasableError,
     SubscriptionExistsError,
+    SubscriptionNotCancellableError,
     SubscriptionNotChangeableError,
     SubscriptionNotFoundError,
 )
@@ -62,6 +63,24 @@ class ManagementDependencies:
 @dataclass(frozen=True)
 class CancelDecision:
     immediate: bool
+
+
+@dataclass(frozen=True)
+class AdminCancelCommand:
+    admin_id: UUID | None
+    subscription_id: UUID
+    immediately: bool
+
+
+@dataclass(frozen=True)
+class CancelActor:
+    actor_type: ActorType
+    actor_user_id: UUID | None
+    action: str
+
+
+def user_cancel_actor(subscription: SubscriptionRecord) -> CancelActor:
+    return CancelActor(ActorType.USER, subscription.user_id, "billing.subscription.cancel_requested")
 
 
 class SubscriptionManagement:
@@ -118,8 +137,33 @@ class SubscriptionManagement:
             if locked is None:
                 raise SubscriptionNotFoundError
             if not locked.cancel_at_period_end and locked.status in LIVE_SUBSCRIPTION_STATUSES:
-                await self._record_cancellation(session, store, locked, decision)
+                await self._record_cancellation(session, store, locked, decision, user_cancel_actor(locked))
             refreshed = await store.subscription_for_user(subscription.id, user_id)
+            if refreshed is None:
+                raise SubscriptionNotFoundError
+            return await self._view(store, refreshed)
+
+    async def cancel_as_admin(self, command: AdminCancelCommand) -> SubscriptionView:
+        actor = CancelActor(ActorType.ADMIN, command.admin_id, "billing.subscription.cancelled_by_admin")
+        async with self._transaction() as session:
+            store = self._store_factory(session)
+            subscription = await store.lock_subscription(command.subscription_id)
+            if subscription is None:
+                raise SubscriptionNotFoundError
+            if subscription.status not in LIVE_SUBSCRIPTION_STATUSES:
+                raise SubscriptionNotCancellableError("Only a live subscription can be cancelled.")
+            if subscription.cancel_at_period_end and not command.immediately:
+                return await self._view(store, subscription)
+        decision = CancelDecision(immediate=command.immediately or subscription.status is not SubscriptionStatus.ACTIVE)
+        await self._cancel_remote(subscription, decision)
+        async with self._transaction() as session:
+            store = self._store_factory(session)
+            locked = await store.lock_subscription(subscription.id)
+            if locked is None:
+                raise SubscriptionNotFoundError
+            if locked.status in LIVE_SUBSCRIPTION_STATUSES and (not locked.cancel_at_period_end or decision.immediate):
+                await self._record_cancellation(session, store, locked, decision, actor)
+            refreshed = await store.subscription_for_user(subscription.id, locked.user_id)
             if refreshed is None:
                 raise SubscriptionNotFoundError
             return await self._view(store, refreshed)
@@ -205,7 +249,12 @@ class SubscriptionManagement:
             raise provider_error(error) from error
 
     async def _record_cancellation(
-        self, session: AsyncSession, store: BillingStore, subscription: SubscriptionRecord, decision: CancelDecision
+        self,
+        session: AsyncSession,
+        store: BillingStore,
+        subscription: SubscriptionRecord,
+        decision: CancelDecision,
+        actor: CancelActor,
     ) -> None:
         now = self._clock.now()
         flags = {"cancel_at_period_end": True, "cancelled_at": now}
@@ -228,9 +277,9 @@ class SubscriptionManagement:
         await self._audit(
             session,
             AuditEvent(
-                action="billing.subscription.cancel_requested",
-                actor_type=ActorType.USER,
-                actor_user_id=subscription.user_id,
+                action=actor.action,
+                actor_type=actor.actor_type,
+                actor_user_id=actor.actor_user_id,
                 target_type="subscription",
                 target_id=str(subscription.id),
                 metadata={"immediate": decision.immediate, "status": subscription.status.value},

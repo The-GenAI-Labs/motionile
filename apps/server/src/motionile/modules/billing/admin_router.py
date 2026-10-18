@@ -9,6 +9,12 @@ from motionile.core.idempotency import IdempotencyGuard, idempotent
 from motionile.core.ratelimit.limiter import rate_limit
 from motionile.modules.access import BillingRefundsCreateDep
 from motionile.modules.auth import enforce_csrf
+from motionile.modules.billing.admin_credits_router import credits_router
+from motionile.modules.billing.admin_payments_router import payments_router
+from motionile.modules.billing.admin_products_router import products_router
+from motionile.modules.billing.admin_reports_router import reports_router
+from motionile.modules.billing.admin_subscriptions_router import subscriptions_router
+from motionile.modules.billing.admin_webhooks_router import webhooks_router
 from motionile.modules.billing.dependencies import BillingServicesDep
 from motionile.modules.billing.schemas import CreateRefundRequest, RefundResponse
 from motionile.modules.billing.services.refunds import CreateRefundCommand
@@ -21,6 +27,15 @@ billing_admin_router = APIRouter(
     dependencies=[Depends(enforce_csrf), Depends(rate_limit("api.default"))],
     responses=problem_responses(401, 403, 404, 409, 422, 502, 503),
 )
+for child in (
+    products_router,
+    payments_router,
+    subscriptions_router,
+    webhooks_router,
+    credits_router,
+    reports_router,
+):
+    billing_admin_router.include_router(child)
 
 
 @billing_admin_router.post(

@@ -33,6 +33,50 @@ export type AccountDeletionConfirmRequest = {
 };
 
 /**
+ * AdjustCreditsRequest
+ */
+export type AdjustCreditsRequest = {
+    /**
+     * Delta
+     */
+    delta: number;
+    /**
+     * Expiresat
+     */
+    expiresAt?: string | null;
+    /**
+     * Reason
+     */
+    reason: string;
+};
+
+/**
+ * AdjustCreditsResponse
+ */
+export type AdjustCreditsResponse = {
+    /**
+     * Actionid
+     */
+    actionId: string;
+    /**
+     * Balanceafter
+     */
+    balanceAfter: number;
+    /**
+     * Delta
+     */
+    delta: number;
+    /**
+     * Lotid
+     */
+    lotId: string | null;
+    /**
+     * Userid
+     */
+    userId: string;
+};
+
+/**
  * AdminCatalogTreeResponse
  */
 export type AdminCatalogTreeResponse = {
@@ -44,6 +88,1001 @@ export type AdminCatalogTreeResponse = {
      * Topics
      */
     topics: Array<CatalogTopicResponse>;
+};
+
+/**
+ * AdminLedgerEntryResponse
+ */
+export type AdminLedgerEntryResponse = {
+    /**
+     * Balanceafter
+     */
+    balanceAfter: number;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Delta
+     */
+    delta: number;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Idempotencykey
+     */
+    idempotencyKey: string;
+    /**
+     * Metadata
+     */
+    metadata: {
+        [key: string]: unknown;
+    };
+    /**
+     * Reason
+     */
+    reason: string;
+    /**
+     * Refid
+     */
+    refId: string | null;
+    /**
+     * Reftype
+     */
+    refType: string | null;
+    /**
+     * Reservedafter
+     */
+    reservedAfter: number;
+    /**
+     * Reserveddelta
+     */
+    reservedDelta: number;
+};
+
+/**
+ * AdminLedgerPageResponse
+ */
+export type AdminLedgerPageResponse = {
+    /**
+     * Items
+     */
+    items: Array<AdminLedgerEntryResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AdminLotResponse
+ */
+export type AdminLotResponse = {
+    /**
+     * Amount
+     */
+    amount: number;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Expiredat
+     */
+    expiredAt: string | null;
+    /**
+     * Expiresat
+     */
+    expiresAt: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Refid
+     */
+    refId: string | null;
+    /**
+     * Reftype
+     */
+    refType: string | null;
+    /**
+     * Remaining
+     */
+    remaining: number;
+    /**
+     * Source
+     */
+    source: 'purchase' | 'subscription' | 'admin' | 'promo';
+};
+
+/**
+ * AdminOrderDetailResponse
+ */
+export type AdminOrderDetailResponse = {
+    /**
+     * Amountpaise
+     */
+    amountPaise: number;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Expiresat
+     */
+    expiresAt: string;
+    /**
+     * Failurereason
+     */
+    failureReason: string | null;
+    flagReason: FlagReasonName | null;
+    /**
+     * Flaggedat
+     */
+    flaggedAt: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    kind: OrderKindName;
+    /**
+     * Paidat
+     */
+    paidAt: string | null;
+    /**
+     * Payments
+     */
+    payments: Array<AdminPaymentResponse>;
+    /**
+     * Productcode
+     */
+    productCode: string;
+    /**
+     * Productid
+     */
+    productId: string;
+    /**
+     * Productname
+     */
+    productName: string;
+    /**
+     * Productversion
+     */
+    productVersion: number;
+    /**
+     * Razorpayorderid
+     */
+    razorpayOrderId: string | null;
+    /**
+     * Receipt
+     */
+    receipt: string;
+    status: OrderStatusName;
+    /**
+     * Subscriptionid
+     */
+    subscriptionId: string | null;
+    /**
+     * Userid
+     */
+    userId: string;
+};
+
+/**
+ * AdminOrderPageResponse
+ */
+export type AdminOrderPageResponse = {
+    /**
+     * Items
+     */
+    items: Array<AdminOrderResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AdminOrderResponse
+ */
+export type AdminOrderResponse = {
+    /**
+     * Amountpaise
+     */
+    amountPaise: number;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Expiresat
+     */
+    expiresAt: string;
+    /**
+     * Failurereason
+     */
+    failureReason: string | null;
+    flagReason: FlagReasonName | null;
+    /**
+     * Flaggedat
+     */
+    flaggedAt: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    kind: OrderKindName;
+    /**
+     * Paidat
+     */
+    paidAt: string | null;
+    /**
+     * Productcode
+     */
+    productCode: string;
+    /**
+     * Productid
+     */
+    productId: string;
+    /**
+     * Productname
+     */
+    productName: string;
+    /**
+     * Productversion
+     */
+    productVersion: number;
+    /**
+     * Razorpayorderid
+     */
+    razorpayOrderId: string | null;
+    /**
+     * Receipt
+     */
+    receipt: string;
+    status: OrderStatusName;
+    /**
+     * Subscriptionid
+     */
+    subscriptionId: string | null;
+    /**
+     * Userid
+     */
+    userId: string;
+};
+
+/**
+ * AdminPaymentDetailResponse
+ */
+export type AdminPaymentDetailResponse = {
+    /**
+     * Amountpaise
+     */
+    amountPaise: number;
+    /**
+     * Capturedat
+     */
+    capturedAt: string | null;
+    clawbackPreview: ClawbackPreviewResponse;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Errorcode
+     */
+    errorCode: string | null;
+    /**
+     * Errordescription
+     */
+    errorDescription: string | null;
+    /**
+     * Feepaise
+     */
+    feePaise: number | null;
+    /**
+     * Flagged
+     */
+    flagged: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    lot: AdminLotResponse | null;
+    /**
+     * Method
+     */
+    method: string | null;
+    order: AdminOrderResponse | null;
+    /**
+     * Orderid
+     */
+    orderId: string | null;
+    /**
+     * Pendingrefundpaise
+     */
+    pendingRefundPaise: number;
+    /**
+     * Productcode
+     */
+    productCode: string | null;
+    /**
+     * Productname
+     */
+    productName: string | null;
+    /**
+     * Razorpaypaymentid
+     */
+    razorpayPaymentId: string;
+    /**
+     * Refundablepaise
+     */
+    refundablePaise: number;
+    /**
+     * Refundedpaise
+     */
+    refundedPaise: number;
+    /**
+     * Refunds
+     */
+    refunds: Array<AdminRefundResponse>;
+    status: PaymentStatusName;
+    subscription: PaymentSubscriptionResponse | null;
+    /**
+     * Subscriptionid
+     */
+    subscriptionId: string | null;
+    /**
+     * Taxpaise
+     */
+    taxPaise: number | null;
+    /**
+     * Userid
+     */
+    userId: string;
+};
+
+/**
+ * AdminPaymentPageResponse
+ */
+export type AdminPaymentPageResponse = {
+    /**
+     * Items
+     */
+    items: Array<AdminPaymentResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AdminPaymentResponse
+ */
+export type AdminPaymentResponse = {
+    /**
+     * Amountpaise
+     */
+    amountPaise: number;
+    /**
+     * Capturedat
+     */
+    capturedAt: string | null;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Errorcode
+     */
+    errorCode: string | null;
+    /**
+     * Errordescription
+     */
+    errorDescription: string | null;
+    /**
+     * Feepaise
+     */
+    feePaise: number | null;
+    /**
+     * Flagged
+     */
+    flagged: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Method
+     */
+    method: string | null;
+    /**
+     * Orderid
+     */
+    orderId: string | null;
+    /**
+     * Productcode
+     */
+    productCode: string | null;
+    /**
+     * Productname
+     */
+    productName: string | null;
+    /**
+     * Razorpaypaymentid
+     */
+    razorpayPaymentId: string;
+    /**
+     * Refundedpaise
+     */
+    refundedPaise: number;
+    status: PaymentStatusName;
+    /**
+     * Subscriptionid
+     */
+    subscriptionId: string | null;
+    /**
+     * Taxpaise
+     */
+    taxPaise: number | null;
+    /**
+     * Userid
+     */
+    userId: string;
+};
+
+/**
+ * AdminProductDetailResponse
+ */
+export type AdminProductDetailResponse = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Description
+     */
+    description: string | null;
+    /**
+     * Features
+     */
+    features: Array<string>;
+    /**
+     * Id
+     */
+    id: string;
+    interval: IntervalName | null;
+    /**
+     * Isactive
+     */
+    isActive: boolean;
+    /**
+     * Issample
+     */
+    isSample: boolean;
+    /**
+     * Isused
+     */
+    isUsed: boolean;
+    kind: ProductKindName;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Plankey
+     */
+    planKey: string | null;
+    /**
+     * Pricepaise
+     */
+    pricePaise: number;
+    /**
+     * Razorpayplanid
+     */
+    razorpayPlanId: string | null;
+    /**
+     * Sortorder
+     */
+    sortOrder: number;
+    /**
+     * Supersededby
+     */
+    supersededBy: Array<ProductLinkResponse>;
+    supersedes: ProductLinkResponse | null;
+    /**
+     * Supersedesproductid
+     */
+    supersedesProductId: string | null;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * AdminProductPageResponse
+ */
+export type AdminProductPageResponse = {
+    /**
+     * Items
+     */
+    items: Array<AdminProductResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AdminProductResponse
+ */
+export type AdminProductResponse = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Description
+     */
+    description: string | null;
+    /**
+     * Features
+     */
+    features: Array<string>;
+    /**
+     * Id
+     */
+    id: string;
+    interval: IntervalName | null;
+    /**
+     * Isactive
+     */
+    isActive: boolean;
+    /**
+     * Issample
+     */
+    isSample: boolean;
+    /**
+     * Isused
+     */
+    isUsed: boolean;
+    kind: ProductKindName;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Plankey
+     */
+    planKey: string | null;
+    /**
+     * Pricepaise
+     */
+    pricePaise: number;
+    /**
+     * Razorpayplanid
+     */
+    razorpayPlanId: string | null;
+    /**
+     * Sortorder
+     */
+    sortOrder: number;
+    /**
+     * Supersedesproductid
+     */
+    supersedesProductId: string | null;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * AdminRefundPageResponse
+ */
+export type AdminRefundPageResponse = {
+    /**
+     * Items
+     */
+    items: Array<AdminRefundResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AdminRefundResponse
+ */
+export type AdminRefundResponse = {
+    /**
+     * Amountpaise
+     */
+    amountPaise: number;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Creditsclawedback
+     */
+    creditsClawedBack: number;
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Failurereason
+     */
+    failureReason: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Initiatedby
+     */
+    initiatedBy: string | null;
+    /**
+     * Paymentamountpaise
+     */
+    paymentAmountPaise: number;
+    /**
+     * Paymentid
+     */
+    paymentId: string;
+    /**
+     * Processedat
+     */
+    processedAt: string | null;
+    /**
+     * Razorpayrefundid
+     */
+    razorpayRefundId: string | null;
+    /**
+     * Reason
+     */
+    reason: string;
+    status: RefundStatusName;
+    /**
+     * Userid
+     */
+    userId: string;
+};
+
+/**
+ * AdminRunPageResponse
+ */
+export type AdminRunPageResponse = {
+    /**
+     * Items
+     */
+    items: Array<AdminRunResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AdminRunResponse
+ */
+export type AdminRunResponse = {
+    /**
+     * Checkedcount
+     */
+    checkedCount: number;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Error
+     */
+    error: string | null;
+    /**
+     * Finishedat
+     */
+    finishedAt: string | null;
+    /**
+     * Hasreport
+     */
+    hasReport: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Mismatchcount
+     */
+    mismatchCount: number;
+    /**
+     * Periodend
+     */
+    periodEnd: string | null;
+    /**
+     * Periodstart
+     */
+    periodStart: string | null;
+    /**
+     * Repairedcount
+     */
+    repairedCount: number;
+    /**
+     * Startedat
+     */
+    startedAt: string;
+    status: RunStatusName;
+    /**
+     * Summary
+     */
+    summary: {
+        [key: string]: unknown;
+    };
+    type: RunTypeName;
+};
+
+/**
+ * AdminSubscriptionCancelRequest
+ */
+export type AdminSubscriptionCancelRequest = {
+    /**
+     * Immediately
+     */
+    immediately: boolean;
+};
+
+/**
+ * AdminSubscriptionDetailResponse
+ */
+export type AdminSubscriptionDetailResponse = {
+    /**
+     * Cancelatperiodend
+     */
+    cancelAtPeriodEnd: boolean;
+    /**
+     * Cancelledat
+     */
+    cancelledAt: string | null;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Currentperiodend
+     */
+    currentPeriodEnd: string | null;
+    /**
+     * Currentperiodstart
+     */
+    currentPeriodStart: string | null;
+    /**
+     * Endedat
+     */
+    endedAt: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Nextchargeat
+     */
+    nextChargeAt: string | null;
+    /**
+     * Orders
+     */
+    orders: Array<AdminOrderResponse>;
+    /**
+     * Paidcount
+     */
+    paidCount: number;
+    /**
+     * Payments
+     */
+    payments: Array<AdminPaymentResponse>;
+    pendingProduct: AdminSubscriptionProductResponse | null;
+    product: AdminSubscriptionProductResponse;
+    /**
+     * Razorpaysubscriptionid
+     */
+    razorpaySubscriptionId: string | null;
+    status: SubscriptionStatusName;
+    /**
+     * Totalcount
+     */
+    totalCount: number;
+    /**
+     * Userid
+     */
+    userId: string;
+};
+
+/**
+ * AdminSubscriptionPageResponse
+ */
+export type AdminSubscriptionPageResponse = {
+    /**
+     * Items
+     */
+    items: Array<AdminSubscriptionResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AdminSubscriptionProductResponse
+ */
+export type AdminSubscriptionProductResponse = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    /**
+     * Id
+     */
+    id: string;
+    interval: IntervalName | null;
+    /**
+     * Isactive
+     */
+    isActive: boolean;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Plankey
+     */
+    planKey: string | null;
+    /**
+     * Pricepaise
+     */
+    pricePaise: number;
+};
+
+/**
+ * AdminSubscriptionResponse
+ */
+export type AdminSubscriptionResponse = {
+    /**
+     * Cancelatperiodend
+     */
+    cancelAtPeriodEnd: boolean;
+    /**
+     * Cancelledat
+     */
+    cancelledAt: string | null;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Currentperiodend
+     */
+    currentPeriodEnd: string | null;
+    /**
+     * Currentperiodstart
+     */
+    currentPeriodStart: string | null;
+    /**
+     * Endedat
+     */
+    endedAt: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Nextchargeat
+     */
+    nextChargeAt: string | null;
+    /**
+     * Paidcount
+     */
+    paidCount: number;
+    pendingProduct: AdminSubscriptionProductResponse | null;
+    product: AdminSubscriptionProductResponse;
+    /**
+     * Razorpaysubscriptionid
+     */
+    razorpaySubscriptionId: string | null;
+    status: SubscriptionStatusName;
+    /**
+     * Totalcount
+     */
+    totalCount: number;
+    /**
+     * Userid
+     */
+    userId: string;
 };
 
 /**
@@ -74,6 +1113,38 @@ export type AdminUserAuditEntry = {
      * Targettype
      */
     targetType: string | null;
+};
+
+/**
+ * AdminUserCreditsResponse
+ */
+export type AdminUserCreditsResponse = {
+    /**
+     * Available
+     */
+    available: number;
+    /**
+     * Balance
+     */
+    balance: number;
+    /**
+     * Lots
+     */
+    lots: Array<AdminLotResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page of lots; null on the last page
+     */
+    nextCursor?: string | null;
+    /**
+     * Reserved
+     */
+    reserved: number;
+    /**
+     * Userid
+     */
+    userId: string;
 };
 
 /**
@@ -166,6 +1237,122 @@ export type AdminUserSummary = {
      * Status
      */
     status: string;
+};
+
+/**
+ * AdminWebhookEventDetailResponse
+ */
+export type AdminWebhookEventDetailResponse = {
+    /**
+     * Attempts
+     */
+    attempts: number;
+    /**
+     * Eventcreatedat
+     */
+    eventCreatedAt: string | null;
+    /**
+     * Eventid
+     */
+    eventId: string;
+    /**
+     * Eventtype
+     */
+    eventType: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Ignoredreason
+     */
+    ignoredReason: string | null;
+    /**
+     * Lasterror
+     */
+    lastError: string | null;
+    /**
+     * Payload
+     */
+    payload: {
+        [key: string]: unknown;
+    };
+    /**
+     * Processedat
+     */
+    processedAt: string | null;
+    /**
+     * Provider
+     */
+    provider: string;
+    /**
+     * Receivedat
+     */
+    receivedAt: string;
+    status: WebhookStatusName;
+};
+
+/**
+ * AdminWebhookEventPageResponse
+ */
+export type AdminWebhookEventPageResponse = {
+    /**
+     * Items
+     */
+    items: Array<AdminWebhookEventResponse>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AdminWebhookEventResponse
+ */
+export type AdminWebhookEventResponse = {
+    /**
+     * Attempts
+     */
+    attempts: number;
+    /**
+     * Eventcreatedat
+     */
+    eventCreatedAt: string | null;
+    /**
+     * Eventid
+     */
+    eventId: string;
+    /**
+     * Eventtype
+     */
+    eventType: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Ignoredreason
+     */
+    ignoredReason: string | null;
+    /**
+     * Lasterror
+     */
+    lastError: string | null;
+    /**
+     * Processedat
+     */
+    processedAt: string | null;
+    /**
+     * Provider
+     */
+    provider: string;
+    /**
+     * Receivedat
+     */
+    receivedAt: string;
+    status: WebhookStatusName;
 };
 
 /**
@@ -747,6 +1934,20 @@ export type CheckoutResponse = {
 };
 
 /**
+ * ClawbackPreviewResponse
+ */
+export type ClawbackPreviewResponse = {
+    /**
+     * Amountpaise
+     */
+    amountPaise: number;
+    /**
+     * Creditstoclawback
+     */
+    creditsToClawBack: number;
+};
+
+/**
  * CodeRequest
  */
 export type CodeRequest = {
@@ -839,6 +2040,56 @@ export type CreateOrderRequest = {
 };
 
 /**
+ * CreateProductRequest
+ */
+export type CreateProductRequest = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Creditsgranted
+     */
+    creditsGranted: number;
+    /**
+     * Currency
+     */
+    currency?: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Features
+     */
+    features?: Array<string>;
+    interval?: IntervalName | null;
+    /**
+     * Isactive
+     *
+     * Ignored for subscriptions, which start inactive
+     */
+    isActive?: boolean;
+    kind: ProductKindName;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Plankey
+     */
+    planKey?: string | null;
+    /**
+     * Pricepaise
+     */
+    pricePaise: number;
+    /**
+     * Sortorder
+     */
+    sortOrder?: number;
+};
+
+/**
  * CreateRefundRequest
  */
 export type CreateRefundRequest = {
@@ -860,6 +2111,117 @@ export type CreateSubscriptionRequest = {
      * Productcode
      */
     productCode: string;
+};
+
+/**
+ * CreditsAnalyticsResponse
+ */
+export type CreditsAnalyticsResponse = {
+    /**
+     * Balance
+     */
+    balance: number;
+    /**
+     * Days
+     */
+    days: Array<CreditsDayResponse>;
+    /**
+     * Rangeend
+     */
+    rangeEnd: string;
+    /**
+     * Rangestart
+     */
+    rangeStart: string;
+    /**
+     * Reserved
+     */
+    reserved: number;
+    totals: CreditsTotalsResponse;
+    /**
+     * Wallets
+     */
+    wallets: number;
+};
+
+/**
+ * CreditsDayResponse
+ */
+export type CreditsDayResponse = {
+    /**
+     * Adjusteddown
+     */
+    adjustedDown: number;
+    /**
+     * Clawedback
+     */
+    clawedBack: number;
+    /**
+     * Consumed
+     */
+    consumed: number;
+    /**
+     * Date
+     */
+    date: string;
+    /**
+     * Expired
+     */
+    expired: number;
+    granted: CreditsGrantedResponse;
+    /**
+     * Grantedtotal
+     */
+    grantedTotal: number;
+};
+
+/**
+ * CreditsGrantedResponse
+ */
+export type CreditsGrantedResponse = {
+    /**
+     * Admin
+     */
+    admin: number;
+    /**
+     * Promo
+     */
+    promo: number;
+    /**
+     * Purchase
+     */
+    purchase: number;
+    /**
+     * Subscription
+     */
+    subscription: number;
+};
+
+/**
+ * CreditsTotalsResponse
+ */
+export type CreditsTotalsResponse = {
+    /**
+     * Adjusteddown
+     */
+    adjustedDown: number;
+    /**
+     * Clawedback
+     */
+    clawedBack: number;
+    /**
+     * Consumed
+     */
+    consumed: number;
+    /**
+     * Expired
+     */
+    expired: number;
+    granted: CreditsGrantedResponse;
+    /**
+     * Grantedtotal
+     */
+    grantedTotal: number;
 };
 
 /**
@@ -931,6 +2293,33 @@ export type DailyUsers = {
  * DependencyStatus
  */
 export type DependencyStatus = 'ok' | 'unavailable';
+
+/**
+ * DuplicateProductRequest
+ */
+export type DuplicateProductRequest = {
+    /**
+     * Creditsgranted
+     */
+    creditsGranted?: number | null;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Features
+     */
+    features?: Array<string> | null;
+    interval?: IntervalName | null;
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Pricepaise
+     */
+    pricePaise?: number | null;
+};
 
 /**
  * EvaluatedFlagsResponse
@@ -1082,6 +2471,8 @@ export type FieldError = {
      */
     type: string;
 };
+
+export type FlagReasonName = 'amount_mismatch' | 'currency_mismatch' | 'duplicate_payment';
 
 /**
  * FlagRule
@@ -1342,6 +2733,32 @@ export type OrderResponse = {
 
 export type OrderStatusName = 'created' | 'pending' | 'paid' | 'failed' | 'expired' | 'cancelled';
 
+export type PaymentStatusName = 'authorized' | 'captured' | 'failed' | 'refunded' | 'partially_refunded';
+
+/**
+ * PaymentSubscriptionResponse
+ */
+export type PaymentSubscriptionResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    interval: IntervalName | null;
+    /**
+     * Plankey
+     */
+    planKey: string | null;
+    /**
+     * Productcode
+     */
+    productCode: string;
+    /**
+     * Productname
+     */
+    productName: string;
+    status: SubscriptionStatusName;
+};
+
 /**
  * PermissionResponse
  */
@@ -1354,6 +2771,36 @@ export type PermissionResponse = {
      * Key
      */
     key: string;
+};
+
+/**
+ * PlanCountResponse
+ */
+export type PlanCountResponse = {
+    /**
+     * Activecount
+     */
+    activeCount: number;
+    /**
+     * Interval
+     */
+    interval: string | null;
+    /**
+     * Livecount
+     */
+    liveCount: number;
+    /**
+     * Plankey
+     */
+    planKey: string | null;
+    /**
+     * Productcode
+     */
+    productCode: string;
+    /**
+     * Productname
+     */
+    productName: string;
 };
 
 /**
@@ -1392,6 +2839,30 @@ export type ProblemDetails = {
      * Type
      */
     readonly type: string;
+};
+
+export type ProductKindName = 'credit_pack' | 'subscription';
+
+/**
+ * ProductLinkResponse
+ */
+export type ProductLinkResponse = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Version
+     */
+    version: number;
 };
 
 /**
@@ -1562,6 +3033,77 @@ export type ResetPasswordRequest = {
 };
 
 /**
+ * RevenueAnalyticsResponse
+ */
+export type RevenueAnalyticsResponse = {
+    /**
+     * Currency
+     */
+    currency: string;
+    /**
+     * Days
+     */
+    days: Array<RevenueDayResponse>;
+    /**
+     * Rangeend
+     */
+    rangeEnd: string;
+    /**
+     * Rangestart
+     */
+    rangeStart: string;
+    totals: RevenueDayTotalsResponse;
+};
+
+/**
+ * RevenueDayResponse
+ */
+export type RevenueDayResponse = {
+    /**
+     * Capturedpaise
+     */
+    capturedPaise: number;
+    /**
+     * Date
+     */
+    date: string;
+    /**
+     * Netpaise
+     */
+    netPaise: number;
+    /**
+     * Paymentcount
+     */
+    paymentCount: number;
+    /**
+     * Refundedpaise
+     */
+    refundedPaise: number;
+};
+
+/**
+ * RevenueDayTotalsResponse
+ */
+export type RevenueDayTotalsResponse = {
+    /**
+     * Capturedpaise
+     */
+    capturedPaise: number;
+    /**
+     * Netpaise
+     */
+    netPaise: number;
+    /**
+     * Paymentcount
+     */
+    paymentCount: number;
+    /**
+     * Refundedpaise
+     */
+    refundedPaise: number;
+};
+
+/**
  * RoleCreateRequest
  */
 export type RoleCreateRequest = {
@@ -1642,6 +3184,10 @@ export type RoleUpdateRequest = {
      */
     permissions?: Array<string> | null;
 };
+
+export type RunStatusName = 'running' | 'completed' | 'failed';
+
+export type RunTypeName = 'pending_orders' | 'subscriptions' | 'settlement';
 
 /**
  * SessionResponse
@@ -1778,6 +3324,30 @@ export type SubcategoryDetailResponse = {
     category: CatalogCategoryResponse;
     subcategory: CatalogCategoryResponse;
     topics: CursorPageCatalogTopicResponse;
+};
+
+/**
+ * SubscriptionAnalyticsResponse
+ */
+export type SubscriptionAnalyticsResponse = {
+    /**
+     * Byplan
+     */
+    byPlan: Array<PlanCountResponse>;
+    /**
+     * Bystatus
+     */
+    byStatus: {
+        [key: string]: number;
+    };
+    /**
+     * Totalactive
+     */
+    totalActive: number;
+    /**
+     * Totallive
+     */
+    totalLive: number;
 };
 
 /**
@@ -2082,6 +3652,50 @@ export type TopicWriteRequest = {
      * Title
      */
     title: string;
+};
+
+/**
+ * UpdateProductRequest
+ */
+export type UpdateProductRequest = {
+    /**
+     * Creditsgranted
+     */
+    creditsGranted?: number | null;
+    /**
+     * Currency
+     */
+    currency?: string | null;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Features
+     */
+    features?: Array<string> | null;
+    interval?: IntervalName | null;
+    kind?: ProductKindName | null;
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Plankey
+     */
+    planKey?: string | null;
+    /**
+     * Pricepaise
+     */
+    pricePaise?: number | null;
+    /**
+     * Sortorder
+     */
+    sortOrder?: number | null;
+    /**
+     * Version
+     */
+    version: number;
 };
 
 /**
@@ -2432,6 +4046,23 @@ export type WebhookReceiptResponse = {
 };
 
 export type WebhookReceiptStatus = 'received' | 'duplicate';
+
+/**
+ * WebhookReprocessResponse
+ */
+export type WebhookReprocessResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    previousStatus: WebhookStatusName;
+    /**
+     * Queued
+     */
+    queued: boolean;
+};
+
+export type WebhookStatusName = 'received' | 'processing' | 'processed' | 'failed' | 'ignored';
 
 /**
  * LoginRequest
@@ -2791,6 +4422,492 @@ export type AdminInsightsGetAuditEntryResponses = {
 
 export type AdminInsightsGetAuditEntryResponse = AdminInsightsGetAuditEntryResponses[keyof AdminInsightsGetAuditEntryResponses];
 
+export type AdminBillingGetCreditsAnalyticsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * From
+         */
+        from?: string | null;
+        /**
+         * To
+         */
+        to?: string | null;
+    };
+    url: '/v1/admin/billing/analytics/credits';
+};
+
+export type AdminBillingGetCreditsAnalyticsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingGetCreditsAnalyticsError = AdminBillingGetCreditsAnalyticsErrors[keyof AdminBillingGetCreditsAnalyticsErrors];
+
+export type AdminBillingGetCreditsAnalyticsResponses = {
+    /**
+     * Successful Response
+     */
+    200: CreditsAnalyticsResponse;
+};
+
+export type AdminBillingGetCreditsAnalyticsResponse = AdminBillingGetCreditsAnalyticsResponses[keyof AdminBillingGetCreditsAnalyticsResponses];
+
+export type AdminBillingGetRevenueAnalyticsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * From
+         */
+        from?: string | null;
+        /**
+         * To
+         */
+        to?: string | null;
+    };
+    url: '/v1/admin/billing/analytics/revenue';
+};
+
+export type AdminBillingGetRevenueAnalyticsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingGetRevenueAnalyticsError = AdminBillingGetRevenueAnalyticsErrors[keyof AdminBillingGetRevenueAnalyticsErrors];
+
+export type AdminBillingGetRevenueAnalyticsResponses = {
+    /**
+     * Successful Response
+     */
+    200: RevenueAnalyticsResponse;
+};
+
+export type AdminBillingGetRevenueAnalyticsResponse = AdminBillingGetRevenueAnalyticsResponses[keyof AdminBillingGetRevenueAnalyticsResponses];
+
+export type AdminBillingGetSubscriptionAnalyticsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/billing/analytics/subscriptions';
+};
+
+export type AdminBillingGetSubscriptionAnalyticsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingGetSubscriptionAnalyticsError = AdminBillingGetSubscriptionAnalyticsErrors[keyof AdminBillingGetSubscriptionAnalyticsErrors];
+
+export type AdminBillingGetSubscriptionAnalyticsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SubscriptionAnalyticsResponse;
+};
+
+export type AdminBillingGetSubscriptionAnalyticsResponse = AdminBillingGetSubscriptionAnalyticsResponses[keyof AdminBillingGetSubscriptionAnalyticsResponses];
+
+export type AdminBillingListOrdersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Status
+         */
+        status?: OrderStatusName | null;
+        /**
+         * Flagged
+         */
+        flagged?: boolean | null;
+        /**
+         * Userid
+         */
+        userId?: string | null;
+    };
+    url: '/v1/admin/billing/orders';
+};
+
+export type AdminBillingListOrdersErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingListOrdersError = AdminBillingListOrdersErrors[keyof AdminBillingListOrdersErrors];
+
+export type AdminBillingListOrdersResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminOrderPageResponse;
+};
+
+export type AdminBillingListOrdersResponse = AdminBillingListOrdersResponses[keyof AdminBillingListOrdersResponses];
+
+export type AdminBillingGetOrderData = {
+    body?: never;
+    path: {
+        /**
+         * Order Id
+         */
+        order_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/orders/{order_id}';
+};
+
+export type AdminBillingGetOrderErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingGetOrderError = AdminBillingGetOrderErrors[keyof AdminBillingGetOrderErrors];
+
+export type AdminBillingGetOrderResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminOrderDetailResponse;
+};
+
+export type AdminBillingGetOrderResponse = AdminBillingGetOrderResponses[keyof AdminBillingGetOrderResponses];
+
+export type AdminBillingListPaymentsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Status
+         */
+        status?: PaymentStatusName | null;
+        /**
+         * Userid
+         */
+        userId?: string | null;
+        /**
+         * Orderid
+         */
+        orderId?: string | null;
+        /**
+         * Createdfrom
+         */
+        createdFrom?: string | null;
+        /**
+         * Createdto
+         */
+        createdTo?: string | null;
+        /**
+         * Flagged
+         */
+        flagged?: boolean | null;
+    };
+    url: '/v1/admin/billing/payments';
+};
+
+export type AdminBillingListPaymentsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingListPaymentsError = AdminBillingListPaymentsErrors[keyof AdminBillingListPaymentsErrors];
+
+export type AdminBillingListPaymentsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminPaymentPageResponse;
+};
+
+export type AdminBillingListPaymentsResponse = AdminBillingListPaymentsResponses[keyof AdminBillingListPaymentsResponses];
+
+export type AdminBillingGetPaymentData = {
+    body?: never;
+    path: {
+        /**
+         * Payment Id
+         */
+        payment_id: string;
+    };
+    query?: {
+        /**
+         * Amountpaise
+         */
+        amountPaise?: number | null;
+    };
+    url: '/v1/admin/billing/payments/{payment_id}';
+};
+
+export type AdminBillingGetPaymentErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingGetPaymentError = AdminBillingGetPaymentErrors[keyof AdminBillingGetPaymentErrors];
+
+export type AdminBillingGetPaymentResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminPaymentDetailResponse;
+};
+
+export type AdminBillingGetPaymentResponse = AdminBillingGetPaymentResponses[keyof AdminBillingGetPaymentResponses];
+
 export type AdminBillingCreateRefundData = {
     body: CreateRefundRequest;
     path: {
@@ -2852,6 +4969,1474 @@ export type AdminBillingCreateRefundResponses = {
 };
 
 export type AdminBillingCreateRefundResponse = AdminBillingCreateRefundResponses[keyof AdminBillingCreateRefundResponses];
+
+export type AdminBillingListProductsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Kind
+         */
+        kind?: ProductKindName | null;
+        /**
+         * Isactive
+         */
+        isActive?: boolean | null;
+        /**
+         * Issample
+         */
+        isSample?: boolean | null;
+        /**
+         * Search
+         */
+        search?: string | null;
+    };
+    url: '/v1/admin/billing/products';
+};
+
+export type AdminBillingListProductsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingListProductsError = AdminBillingListProductsErrors[keyof AdminBillingListProductsErrors];
+
+export type AdminBillingListProductsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminProductPageResponse;
+};
+
+export type AdminBillingListProductsResponse = AdminBillingListProductsResponses[keyof AdminBillingListProductsResponses];
+
+export type AdminBillingCreateProductData = {
+    body: CreateProductRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/billing/products';
+};
+
+export type AdminBillingCreateProductErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingCreateProductError = AdminBillingCreateProductErrors[keyof AdminBillingCreateProductErrors];
+
+export type AdminBillingCreateProductResponses = {
+    /**
+     * Successful Response
+     */
+    201: AdminProductDetailResponse;
+};
+
+export type AdminBillingCreateProductResponse = AdminBillingCreateProductResponses[keyof AdminBillingCreateProductResponses];
+
+export type AdminBillingGetProductData = {
+    body?: never;
+    path: {
+        /**
+         * Product Id
+         */
+        product_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/products/{product_id}';
+};
+
+export type AdminBillingGetProductErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingGetProductError = AdminBillingGetProductErrors[keyof AdminBillingGetProductErrors];
+
+export type AdminBillingGetProductResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminProductDetailResponse;
+};
+
+export type AdminBillingGetProductResponse = AdminBillingGetProductResponses[keyof AdminBillingGetProductResponses];
+
+export type AdminBillingUpdateProductData = {
+    body: UpdateProductRequest;
+    path: {
+        /**
+         * Product Id
+         */
+        product_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/products/{product_id}';
+};
+
+export type AdminBillingUpdateProductErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingUpdateProductError = AdminBillingUpdateProductErrors[keyof AdminBillingUpdateProductErrors];
+
+export type AdminBillingUpdateProductResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminProductDetailResponse;
+};
+
+export type AdminBillingUpdateProductResponse = AdminBillingUpdateProductResponses[keyof AdminBillingUpdateProductResponses];
+
+export type AdminBillingActivateProductData = {
+    body?: never;
+    path: {
+        /**
+         * Product Id
+         */
+        product_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/products/{product_id}/activate';
+};
+
+export type AdminBillingActivateProductErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingActivateProductError = AdminBillingActivateProductErrors[keyof AdminBillingActivateProductErrors];
+
+export type AdminBillingActivateProductResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminProductDetailResponse;
+};
+
+export type AdminBillingActivateProductResponse = AdminBillingActivateProductResponses[keyof AdminBillingActivateProductResponses];
+
+export type AdminBillingDeactivateProductData = {
+    body?: never;
+    path: {
+        /**
+         * Product Id
+         */
+        product_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/products/{product_id}/deactivate';
+};
+
+export type AdminBillingDeactivateProductErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingDeactivateProductError = AdminBillingDeactivateProductErrors[keyof AdminBillingDeactivateProductErrors];
+
+export type AdminBillingDeactivateProductResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminProductDetailResponse;
+};
+
+export type AdminBillingDeactivateProductResponse = AdminBillingDeactivateProductResponses[keyof AdminBillingDeactivateProductResponses];
+
+export type AdminBillingDuplicateProductData = {
+    /**
+     * Body
+     */
+    body?: DuplicateProductRequest | null;
+    path: {
+        /**
+         * Product Id
+         */
+        product_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/products/{product_id}/duplicate';
+};
+
+export type AdminBillingDuplicateProductErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingDuplicateProductError = AdminBillingDuplicateProductErrors[keyof AdminBillingDuplicateProductErrors];
+
+export type AdminBillingDuplicateProductResponses = {
+    /**
+     * Successful Response
+     */
+    201: AdminProductDetailResponse;
+};
+
+export type AdminBillingDuplicateProductResponse = AdminBillingDuplicateProductResponses[keyof AdminBillingDuplicateProductResponses];
+
+export type AdminBillingSyncProductPlanData = {
+    body?: never;
+    path: {
+        /**
+         * Product Id
+         */
+        product_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/products/{product_id}/sync-plan';
+};
+
+export type AdminBillingSyncProductPlanErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingSyncProductPlanError = AdminBillingSyncProductPlanErrors[keyof AdminBillingSyncProductPlanErrors];
+
+export type AdminBillingSyncProductPlanResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminProductDetailResponse;
+};
+
+export type AdminBillingSyncProductPlanResponse = AdminBillingSyncProductPlanResponses[keyof AdminBillingSyncProductPlanResponses];
+
+export type AdminBillingListReconciliationRunsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Type
+         */
+        type?: RunTypeName | null;
+        /**
+         * Status
+         */
+        status?: RunStatusName | null;
+        /**
+         * Hasmismatches
+         */
+        hasMismatches?: boolean | null;
+    };
+    url: '/v1/admin/billing/reconciliation/runs';
+};
+
+export type AdminBillingListReconciliationRunsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingListReconciliationRunsError = AdminBillingListReconciliationRunsErrors[keyof AdminBillingListReconciliationRunsErrors];
+
+export type AdminBillingListReconciliationRunsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminRunPageResponse;
+};
+
+export type AdminBillingListReconciliationRunsResponse = AdminBillingListReconciliationRunsResponses[keyof AdminBillingListReconciliationRunsResponses];
+
+export type AdminBillingGetReconciliationRunData = {
+    body?: never;
+    path: {
+        /**
+         * Run Id
+         */
+        run_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/reconciliation/runs/{run_id}';
+};
+
+export type AdminBillingGetReconciliationRunErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingGetReconciliationRunError = AdminBillingGetReconciliationRunErrors[keyof AdminBillingGetReconciliationRunErrors];
+
+export type AdminBillingGetReconciliationRunResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminRunResponse;
+};
+
+export type AdminBillingGetReconciliationRunResponse = AdminBillingGetReconciliationRunResponses[keyof AdminBillingGetReconciliationRunResponses];
+
+export type AdminBillingDownloadReconciliationReportData = {
+    body?: never;
+    path: {
+        /**
+         * Run Id
+         */
+        run_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/reconciliation/runs/{run_id}/report';
+};
+
+export type AdminBillingDownloadReconciliationReportErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingDownloadReconciliationReportError = AdminBillingDownloadReconciliationReportErrors[keyof AdminBillingDownloadReconciliationReportErrors];
+
+export type AdminBillingDownloadReconciliationReportResponses = {
+    /**
+     * The stored JSON report as an attachment
+     */
+    200: Blob | File;
+};
+
+export type AdminBillingDownloadReconciliationReportResponse = AdminBillingDownloadReconciliationReportResponses[keyof AdminBillingDownloadReconciliationReportResponses];
+
+export type AdminBillingListRefundsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Status
+         */
+        status?: RefundStatusName | null;
+        /**
+         * Paymentid
+         */
+        paymentId?: string | null;
+    };
+    url: '/v1/admin/billing/refunds';
+};
+
+export type AdminBillingListRefundsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingListRefundsError = AdminBillingListRefundsErrors[keyof AdminBillingListRefundsErrors];
+
+export type AdminBillingListRefundsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminRefundPageResponse;
+};
+
+export type AdminBillingListRefundsResponse = AdminBillingListRefundsResponses[keyof AdminBillingListRefundsResponses];
+
+export type AdminBillingGetRefundData = {
+    body?: never;
+    path: {
+        /**
+         * Refund Id
+         */
+        refund_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/refunds/{refund_id}';
+};
+
+export type AdminBillingGetRefundErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingGetRefundError = AdminBillingGetRefundErrors[keyof AdminBillingGetRefundErrors];
+
+export type AdminBillingGetRefundResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminRefundResponse;
+};
+
+export type AdminBillingGetRefundResponse = AdminBillingGetRefundResponses[keyof AdminBillingGetRefundResponses];
+
+export type AdminBillingListSubscriptionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Status
+         */
+        status?: SubscriptionStatusName | null;
+        /**
+         * Productid
+         */
+        productId?: string | null;
+        /**
+         * Plankey
+         */
+        planKey?: string | null;
+        /**
+         * Userid
+         */
+        userId?: string | null;
+    };
+    url: '/v1/admin/billing/subscriptions';
+};
+
+export type AdminBillingListSubscriptionsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingListSubscriptionsError = AdminBillingListSubscriptionsErrors[keyof AdminBillingListSubscriptionsErrors];
+
+export type AdminBillingListSubscriptionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminSubscriptionPageResponse;
+};
+
+export type AdminBillingListSubscriptionsResponse = AdminBillingListSubscriptionsResponses[keyof AdminBillingListSubscriptionsResponses];
+
+export type AdminBillingGetSubscriptionData = {
+    body?: never;
+    path: {
+        /**
+         * Subscription Id
+         */
+        subscription_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/subscriptions/{subscription_id}';
+};
+
+export type AdminBillingGetSubscriptionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingGetSubscriptionError = AdminBillingGetSubscriptionErrors[keyof AdminBillingGetSubscriptionErrors];
+
+export type AdminBillingGetSubscriptionResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminSubscriptionDetailResponse;
+};
+
+export type AdminBillingGetSubscriptionResponse = AdminBillingGetSubscriptionResponses[keyof AdminBillingGetSubscriptionResponses];
+
+export type AdminBillingCancelSubscriptionData = {
+    body: AdminSubscriptionCancelRequest;
+    path: {
+        /**
+         * Subscription Id
+         */
+        subscription_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/subscriptions/{subscription_id}/cancel';
+};
+
+export type AdminBillingCancelSubscriptionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingCancelSubscriptionError = AdminBillingCancelSubscriptionErrors[keyof AdminBillingCancelSubscriptionErrors];
+
+export type AdminBillingCancelSubscriptionResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminSubscriptionDetailResponse;
+};
+
+export type AdminBillingCancelSubscriptionResponse = AdminBillingCancelSubscriptionResponses[keyof AdminBillingCancelSubscriptionResponses];
+
+export type AdminBillingGetUserCreditsData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/v1/admin/billing/users/{user_id}/credits';
+};
+
+export type AdminBillingGetUserCreditsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingGetUserCreditsError = AdminBillingGetUserCreditsErrors[keyof AdminBillingGetUserCreditsErrors];
+
+export type AdminBillingGetUserCreditsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminUserCreditsResponse;
+};
+
+export type AdminBillingGetUserCreditsResponse = AdminBillingGetUserCreditsResponses[keyof AdminBillingGetUserCreditsResponses];
+
+export type AdminBillingAdjustUserCreditsData = {
+    body: AdjustCreditsRequest;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/users/{user_id}/credits/adjust';
+};
+
+export type AdminBillingAdjustUserCreditsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingAdjustUserCreditsError = AdminBillingAdjustUserCreditsErrors[keyof AdminBillingAdjustUserCreditsErrors];
+
+export type AdminBillingAdjustUserCreditsResponses = {
+    /**
+     * Successful Response
+     */
+    201: AdjustCreditsResponse;
+};
+
+export type AdminBillingAdjustUserCreditsResponse = AdminBillingAdjustUserCreditsResponses[keyof AdminBillingAdjustUserCreditsResponses];
+
+export type AdminBillingListUserCreditLedgerData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/v1/admin/billing/users/{user_id}/credits/ledger';
+};
+
+export type AdminBillingListUserCreditLedgerErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingListUserCreditLedgerError = AdminBillingListUserCreditLedgerErrors[keyof AdminBillingListUserCreditLedgerErrors];
+
+export type AdminBillingListUserCreditLedgerResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminLedgerPageResponse;
+};
+
+export type AdminBillingListUserCreditLedgerResponse = AdminBillingListUserCreditLedgerResponses[keyof AdminBillingListUserCreditLedgerResponses];
+
+export type AdminBillingListWebhookEventsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Status
+         */
+        status?: WebhookStatusName | null;
+        /**
+         * Eventtype
+         */
+        eventType?: string | null;
+        /**
+         * Receivedfrom
+         */
+        receivedFrom?: string | null;
+        /**
+         * Receivedto
+         */
+        receivedTo?: string | null;
+    };
+    url: '/v1/admin/billing/webhooks';
+};
+
+export type AdminBillingListWebhookEventsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingListWebhookEventsError = AdminBillingListWebhookEventsErrors[keyof AdminBillingListWebhookEventsErrors];
+
+export type AdminBillingListWebhookEventsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminWebhookEventPageResponse;
+};
+
+export type AdminBillingListWebhookEventsResponse = AdminBillingListWebhookEventsResponses[keyof AdminBillingListWebhookEventsResponses];
+
+export type AdminBillingGetWebhookEventData = {
+    body?: never;
+    path: {
+        /**
+         * Event Row Id
+         */
+        event_row_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/webhooks/{event_row_id}';
+};
+
+export type AdminBillingGetWebhookEventErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingGetWebhookEventError = AdminBillingGetWebhookEventErrors[keyof AdminBillingGetWebhookEventErrors];
+
+export type AdminBillingGetWebhookEventResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminWebhookEventDetailResponse;
+};
+
+export type AdminBillingGetWebhookEventResponse = AdminBillingGetWebhookEventResponses[keyof AdminBillingGetWebhookEventResponses];
+
+export type AdminBillingReprocessWebhookEventData = {
+    body?: never;
+    path: {
+        /**
+         * Event Row Id
+         */
+        event_row_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/billing/webhooks/{event_row_id}/reprocess';
+};
+
+export type AdminBillingReprocessWebhookEventErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminBillingReprocessWebhookEventError = AdminBillingReprocessWebhookEventErrors[keyof AdminBillingReprocessWebhookEventErrors];
+
+export type AdminBillingReprocessWebhookEventResponses = {
+    /**
+     * Successful Response
+     */
+    202: WebhookReprocessResponse;
+};
+
+export type AdminBillingReprocessWebhookEventResponse = AdminBillingReprocessWebhookEventResponses[keyof AdminBillingReprocessWebhookEventResponses];
 
 export type AdminCatalogCreateCategoryData = {
     body: CategoryWriteRequest;

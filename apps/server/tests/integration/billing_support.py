@@ -65,10 +65,17 @@ class Recorded:
     receipts: list[PaymentReceipt] = field(default_factory=list[PaymentReceipt])
     notices: list[BillingNotice] = field(default_factory=list[BillingNotice])
     alerts: list[tuple[str, dict[str, Any]]] = field(default_factory=list[tuple[str, dict[str, Any]]])
+    revalidations: int = 0
 
     def dispatch(self, session: AsyncSession, event_row_id: UUID, force: bool) -> None:
         async def record() -> None:
             self.dispatched.append((event_row_id, force))
+
+        after_commit(session, record)
+
+    def revalidate(self, session: AsyncSession) -> None:
+        async def record() -> None:
+            self.revalidations += 1
 
         after_commit(session, record)
 

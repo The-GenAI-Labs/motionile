@@ -46,7 +46,11 @@ def defer_event_processing(session: AsyncSession, event_row_id: UUID, force: boo
 
 
 def worker_hooks() -> ServiceHooks:
-    return ServiceHooks(dispatch=defer_event_processing, process_task_name=f"{TASK_NAMESPACE}:{PROCESS_EVENT_TASK}")
+    return ServiceHooks(
+        dispatch=defer_event_processing,
+        process_task_name=f"{TASK_NAMESPACE}:{PROCESS_EVENT_TASK}",
+        revalidate=defer_product_revalidation,
+    )
 
 
 @asynccontextmanager

@@ -208,6 +208,7 @@ async def billing_api(resources: Resources, monkeypatch: pytest.MonkeyPatch) -> 
         ServiceHooks(
             dispatch=recorded.dispatch,
             process_task_name=PROCESS_TASK_NAME,
+            revalidate=recorded.revalidate,
             receipts=recorded.receipt,
             notices=recorded.notice,
             alert=recorded.alert,

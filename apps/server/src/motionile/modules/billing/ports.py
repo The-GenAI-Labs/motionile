@@ -13,6 +13,7 @@ type AuditRecorder = Callable[[AsyncSession, AuditEvent], Awaitable[UUID]]
 type Alert = Callable[..., None]
 type EventDispatcher = Callable[[AsyncSession, UUID, bool], None]
 type Savepoint = Callable[[AsyncSession], AbstractAsyncContextManager[object]]
+type Revalidation = Callable[[AsyncSession], None]
 
 
 def begin_savepoint(session: AsyncSession) -> AbstractAsyncContextManager[object]:

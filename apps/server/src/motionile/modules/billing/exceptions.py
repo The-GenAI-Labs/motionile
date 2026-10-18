@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from http import HTTPStatus
 
 from motionile.core.errors import (
@@ -153,9 +154,92 @@ class RefundRejectedError(ValidationAppError):
     title = "Payment provider rejected the refund"
 
 
+class RefundNotFoundError(NotFoundError):
+    default_code = "refund_not_found"
+    title = "Refund not found"
+
+
+class ReconciliationRunNotFoundError(NotFoundError):
+    default_code = "reconciliation_run_not_found"
+    title = "Reconciliation run not found"
+
+
+class ReconciliationReportNotFoundError(NotFoundError):
+    default_code = "reconciliation_report_not_found"
+    title = "Reconciliation report not found"
+
+
+class AdminUserNotFoundError(NotFoundError):
+    default_code = "user_not_found"
+    title = "User not found"
+
+
+class ProductImmutableError(ConflictError):
+    default_code = "product_immutable"
+    title = "Product is financially immutable"
+
+    def __init__(self, fields: Sequence[str]) -> None:
+        super().__init__(
+            f"{', '.join(fields)} cannot change because an order or subscription already uses this product. "
+            "Duplicate it as a new version, change the copy and deactivate this product instead.",
+            extensions={"fields": ",".join(fields)},
+        )
+
+
+class ProductVersionConflictError(ConflictError):
+    default_code = "product_version_conflict"
+    title = "Product was changed by someone else"
+
+
+class ProductCodeExistsError(ConflictError):
+    default_code = "product_code_exists"
+    title = "Product code already exists"
+
+
+class PlanNotSyncedError(ConflictError):
+    default_code = "plan_not_synced"
+    title = "Subscription plan is not synced"
+
+
+class ActivePlanExistsError(ConflictError):
+    default_code = "active_plan_exists"
+    title = "Another product is already active for this plan"
+
+    def __init__(self, active_code: str) -> None:
+        super().__init__(
+            f"Product {active_code} is already active for this plan and interval. Deactivate it first.",
+            extensions={"activeProductCode": active_code},
+        )
+
+
+class ProductNotSubscriptionError(ValidationAppError):
+    default_code = "product_not_subscription"
+    title = "Product is not a subscription"
+
+
+class InvalidProductShapeError(ValidationAppError):
+    default_code = "invalid_product_shape"
+    title = "Invalid product definition"
+
+
+class InvalidAnalyticsRangeError(ValidationAppError):
+    default_code = "invalid_analytics_range"
+    title = "Invalid analytics range"
+
+
+class SubscriptionNotCancellableError(ConflictError):
+    default_code = "subscription_not_cancellable"
+    title = "Subscription cannot be cancelled"
+
+
 class LiveSubscriptionConflictError(Exception):
     def __init__(self) -> None:
         super().__init__("the user already has a live subscription")
+
+
+class ActivePlanConflictError(Exception):
+    def __init__(self) -> None:
+        super().__init__("another product is already active for the plan key and interval")
 
 
 class SettlementCheckError(Exception):

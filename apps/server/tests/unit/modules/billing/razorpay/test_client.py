@@ -282,6 +282,40 @@ async def test_subscription_lifecycle_calls_and_timestamp_helpers() -> None:
     assert updated.change_scheduled_at_utc == datetime.fromtimestamp(CREATED_AT + 5, UTC)
 
 
+async def test_subscriptions_listing_sends_filters_window_and_paging() -> None:
+    client, script, _ = build(ok(collection(SUBSCRIPTION)), ok(collection()))
+
+    listed = await client.list_subscriptions(
+        plan_id="plan_Abc123",
+        from_ts=datetime(2026, 10, 1, tzinfo=UTC),
+        to_ts=datetime(2026, 10, 2, tzinfo=UTC),
+        count=20,
+        skip=40,
+    )
+    bare = await client.list_subscriptions()
+
+    assert script.requests[0].url.path == "/v1/subscriptions"
+    assert dict(script.requests[0].url.params) == {
+        "plan_id": "plan_Abc123",
+        "from": "1790812800",
+        "to": "1790899200",
+        "count": "20",
+        "skip": "40",
+    }
+    assert dict(script.requests[1].url.params) == {"count": "100", "skip": "0"}
+    assert [item.id for item in listed] == ["sub_Abc123"]
+    assert bare == []
+
+
+async def test_subscriptions_listing_validates_the_plan_identifier() -> None:
+    client, script, _ = build()
+
+    with pytest.raises(RazorpayInvalidIdentifierError):
+        await client.list_subscriptions(plan_id="plan/../x")
+
+    assert script.requests == []
+
+
 async def test_immediate_cancellation_and_plan_change_now() -> None:
     client, script, _ = build(ok(SUBSCRIPTION), ok(SUBSCRIPTION))
 

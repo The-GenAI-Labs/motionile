@@ -41,6 +41,7 @@ class FaultOperation(StrEnum):
     CREATE_PLAN = "create_plan"
     CREATE_SUBSCRIPTION = "create_subscription"
     FETCH_SUBSCRIPTION = "fetch_subscription"
+    LIST_SUBSCRIPTIONS = "list_subscriptions"
     CANCEL_SUBSCRIPTION = "cancel_subscription"
     UPDATE_SUBSCRIPTION = "update_subscription"
     CREATE_REFUND = "create_refund"

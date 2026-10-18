@@ -73,6 +73,16 @@ class RazorpayApi(Protocol):
 
     async def fetch_subscription(self, subscription_id: str) -> RazorpaySubscription: ...
 
+    async def list_subscriptions(
+        self,
+        *,
+        plan_id: str | None = None,
+        from_ts: datetime | None = None,
+        to_ts: datetime | None = None,
+        count: int = MAX_LIST_COUNT,
+        skip: int = 0,
+    ) -> list[RazorpaySubscription]: ...
+
     async def cancel_subscription(self, subscription_id: str, *, at_cycle_end: bool) -> RazorpaySubscription: ...
 
     async def update_subscription(

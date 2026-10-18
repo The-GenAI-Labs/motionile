@@ -190,8 +190,39 @@ class FakeRazorpay:
             subscription_id, self.clock.now(), SubscriptionSpec(plan_id, total_count, customer_notify, notes)
         )
         await self.store.put(EntityKind.SUBSCRIPTION, subscription_id, entity)
+        await self.store.append("subscriptions", "all", subscription_id)
         self._finish(fault)
         return RazorpaySubscription.model_validate(entity)
+
+    async def list_subscriptions(
+        self,
+        *,
+        plan_id: str | None = None,
+        from_ts: datetime | None = None,
+        to_ts: datetime | None = None,
+        count: int = MAX_LIST_COUNT,
+        skip: int = 0,
+    ) -> list[RazorpaySubscription]:
+        fault = await self._begin(FaultOperation.LIST_SUBSCRIPTIONS)
+        if not 1 <= count <= MAX_LIST_COUNT:
+            raise bad_request("count must be between 1 and 100", "count")
+        if skip < 0:
+            raise bad_request("skip must not be negative", "skip")
+        entities = [
+            await self.store.get(EntityKind.SUBSCRIPTION, subscription_id)
+            for subscription_id in await self.store.members("subscriptions", "all")
+        ]
+        window = [
+            entity
+            for entity in entities
+            if entity is not None
+            and (plan_id is None or entity["plan_id"] == plan_id)
+            and (from_ts is None or entity["created_at"] >= epoch(from_ts))
+            and (to_ts is None or entity["created_at"] <= epoch(to_ts))
+        ]
+        newest_first = sorted(window, key=lambda entity: entity["created_at"], reverse=True)
+        self._finish(fault)
+        return [RazorpaySubscription.model_validate(entity) for entity in newest_first[skip : skip + count]]
 
     async def fetch_subscription(self, subscription_id: str) -> RazorpaySubscription:
         fault = await self._begin(FaultOperation.FETCH_SUBSCRIPTION)

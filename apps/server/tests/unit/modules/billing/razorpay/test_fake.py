@@ -285,9 +285,9 @@ async def test_pending_halted_and_recovery(world: World) -> None:
     assert (recovered.status, recovered.paid_count) == ("active", 2)
     assert halted.subscription["status"] == "halted"
     with pytest.raises(FakeRazorpayStateError):
-        await world.simulator.transition_subscription(active.id, SubscriptionEvent.CHARGED)
-    with pytest.raises(FakeRazorpayStateError):
         await world.simulator.transition_subscription(active.id, SubscriptionEvent.PAUSED)
+    revived = await world.charge(active.id)
+    assert (revived.status, revived.paid_count) == ("active", 3)
 
 
 async def test_pause_and_resume(world: World) -> None:
@@ -476,6 +476,43 @@ async def test_payment_listing_filters_by_window_orders_newest_first_and_pages(w
     for count, skip in ((0, 0), (101, 0), (10, -1)):
         with pytest.raises(RazorpayBadRequestError):
             await world.fake.list_payments(from_ts=START, to_ts=START, count=count, skip=skip)
+
+
+async def test_subscription_listing_filters_by_plan_and_window_and_finds_a_timed_out_creation(world: World) -> None:
+    first_plan = await world.fake.create_plan(PLAN)
+    second_plan = await world.fake.create_plan(PLAN)
+    ids: list[str] = []
+    for plan in (first_plan, second_plan, first_plan):
+        created = await world.fake.create_subscription(
+            plan_id=plan.id, total_count=3, notes={"subscriptionId": f"local-{len(ids)}"}
+        )
+        ids.append(created.id)
+        world.clock.advance(timedelta(hours=1))
+
+    on_first_plan = await world.fake.list_subscriptions(plan_id=first_plan.id)
+    in_window = await world.fake.list_subscriptions(
+        from_ts=START + timedelta(hours=1), to_ts=START + timedelta(hours=1)
+    )
+    paged = await world.fake.list_subscriptions(count=1, skip=1)
+
+    assert [item.id for item in on_first_plan] == [ids[2], ids[0]]
+    assert [item.id for item in in_window] == [ids[1]]
+    assert [item.id for item in paged] == [ids[1]]
+    assert on_first_plan[0].notes == {"subscriptionId": "local-2"}
+    for count, skip in ((0, 0), (101, 0), (10, -1)):
+        with pytest.raises(RazorpayBadRequestError):
+            await world.fake.list_subscriptions(count=count, skip=skip)
+
+
+async def test_a_subscription_created_just_before_a_timeout_is_listed(world: World) -> None:
+    plan = await world.fake.create_plan(PLAN)
+    await world.store.add_fault(FaultOperation.CREATE_SUBSCRIPTION, FaultKind.TIMEOUT_AFTER_CREATE, 1)
+
+    with pytest.raises(RazorpayTimeoutError):
+        await world.fake.create_subscription(plan_id=plan.id, total_count=3, notes={"subscriptionId": "lost"})
+
+    [found] = await world.fake.list_subscriptions(plan_id=plan.id)
+    assert found.notes["subscriptionId"] == "lost"
 
 
 async def test_timeout_after_create_leaves_the_object_behind(world: World) -> None:

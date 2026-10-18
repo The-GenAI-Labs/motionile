@@ -75,7 +75,14 @@ PAYMENT_STATUS_BY_OUTCOME = {
     PaymentOutcome.AUTHORIZED: PaymentStatus.AUTHORIZED,
 }
 TERMINAL_STATUSES = frozenset({SubscriptionStatus.CANCELLED, SubscriptionStatus.COMPLETED, SubscriptionStatus.EXPIRED})
-CHARGEABLE = frozenset({SubscriptionStatus.AUTHENTICATED, SubscriptionStatus.ACTIVE, SubscriptionStatus.PENDING})
+CHARGEABLE = frozenset(
+    {
+        SubscriptionStatus.AUTHENTICATED,
+        SubscriptionStatus.ACTIVE,
+        SubscriptionStatus.PENDING,
+        SubscriptionStatus.HALTED,
+    }
+)
 
 
 class FakeRazorpaySimulator:

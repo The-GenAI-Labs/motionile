@@ -307,6 +307,25 @@ class RazorpayClient:
         payload = await self._request("GET", f"/v1/subscriptions/{identifier(subscription_id)}")
         return self._parse(RazorpaySubscription, payload)
 
+    async def list_subscriptions(
+        self,
+        *,
+        plan_id: str | None = None,
+        from_ts: datetime | None = None,
+        to_ts: datetime | None = None,
+        count: int = 100,
+        skip: int = 0,
+    ) -> list[RazorpaySubscription]:
+        query: dict[str, str | int] = {"count": count, "skip": skip}
+        if plan_id is not None:
+            query["plan_id"] = identifier(plan_id)
+        if from_ts is not None:
+            query["from"] = int(from_ts.timestamp())
+        if to_ts is not None:
+            query["to"] = int(to_ts.timestamp())
+        payload = await self._request("GET", "/v1/subscriptions", query=query)
+        return self._parse_items(RazorpaySubscription, payload)
+
     async def cancel_subscription(self, subscription_id: str, *, at_cycle_end: bool) -> RazorpaySubscription:
         payload = await self._request(
             "POST",

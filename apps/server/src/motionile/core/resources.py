@@ -1,5 +1,7 @@
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import timedelta
+from typing import cast
 from urllib.parse import urlsplit
 
 from redis.asyncio import Redis
@@ -20,6 +22,7 @@ from motionile.core.storage.base import Storage
 from motionile.core.storage.s3 import S3Storage
 
 TURNSTILE_HOSTS = ("challenges.cloudflare.com",)
+RAZORPAY_HOSTS = ("api.razorpay.com",)
 
 
 @dataclass
@@ -38,6 +41,12 @@ class Resources:
     turnstile: TurnstileVerifier
     events: EventBus
     provider_clients: dict[str, SafeHttpClient] = field(default_factory=dict[str, SafeHttpClient])
+    shared: dict[str, object] = field(default_factory=dict[str, object])
+
+    def shared_instance[InstanceT](self, name: str, build: Callable[[], InstanceT]) -> InstanceT:
+        if name not in self.shared:
+            self.shared[name] = build()
+        return cast("InstanceT", self.shared[name])
 
     async def aclose(self) -> None:
         for client in self.provider_clients.values():
@@ -104,6 +113,7 @@ def build_resources(settings: Settings, *, application_name: str, clock: Clock |
             ),
             "github": SafeHttpClient(settings.outbound_http, allowed_hosts=("github.com", "api.github.com")),
             "microsoft": SafeHttpClient(settings.outbound_http, allowed_hosts=("login.microsoftonline.com",)),
+            "razorpay": SafeHttpClient(settings.outbound_http, allowed_hosts=RAZORPAY_HOSTS),
             "catalog_revalidation": SafeHttpClient(
                 settings.outbound_http,
                 allowed_hosts=(web_host,),

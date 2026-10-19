@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { serverEnv } from "@/config/server-env";
+import { isRevalidatableTag } from "@/lib/revalidation/tags";
 
 const requestSchema = z.object({
   tags: z.array(z.string().trim().min(1).max(200)).min(1).max(50),
@@ -28,8 +29,12 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
-  for (const tag of new Set(parsed.data.tags)) {
+  const tags = [...new Set(parsed.data.tags)];
+  if (!tags.every(isRevalidatableTag)) {
+    return NextResponse.json({ error: "Unsupported tag" }, { status: 400 });
+  }
+  for (const tag of tags) {
     revalidateTag(tag, "max");
   }
-  return NextResponse.json({ revalidated: [...new Set(parsed.data.tags)] });
+  return NextResponse.json({ revalidated: tags });
 }

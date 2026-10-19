@@ -12,8 +12,7 @@ SUCCESS_STATUS_MINIMUM = 200
 SUCCESS_STATUS_MAXIMUM = 300
 
 
-@task(name="catalog.revalidate", queue=Queue.DEFAULT)
-async def revalidate_catalog(tags: list[str]) -> None:
+async def push_revalidation(tags: list[str]) -> None:
     settings = get_settings()
     secret = settings.catalog.revalidation_secret
     if secret is None:
@@ -32,6 +31,11 @@ async def revalidate_catalog(tags: list[str]) -> None:
             raise RuntimeError("catalog revalidation failed")
     finally:
         await resources.aclose()
+
+
+@task(name="catalog.revalidate", queue=Queue.DEFAULT)
+async def revalidate_catalog(tags: list[str]) -> None:
+    await push_revalidation(tags)
 
 
 def defer_revalidation(session: AsyncSession, tags: list[str]) -> None:

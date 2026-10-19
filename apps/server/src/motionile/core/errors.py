@@ -16,6 +16,8 @@ PROBLEM_MEDIA_TYPE = "application/problem+json"
 PROBLEM_TYPE_PREFIX = "urn:motionile:problem:"
 REQUEST_LOCATIONS = frozenset({"body", "query", "path", "header", "cookie"})
 
+type ExtensionValue = str | int | bool
+
 logger = structlog.get_logger(__name__)
 
 
@@ -56,12 +58,14 @@ class AppError(Exception):
         code: str | None = None,
         headers: Mapping[str, str] | None = None,
         errors: Sequence[FieldError] = (),
+        extensions: Mapping[str, ExtensionValue] | None = None,
     ) -> None:
         super().__init__(detail or self.title)
         self.detail = detail
         self.code = code or self.default_code
         self.headers = dict(headers or {})
         self.errors = list(errors)
+        self.extensions = dict(extensions or {})
 
 
 class BadRequestError(AppError):
@@ -129,9 +133,14 @@ def request_id_of(request: Request) -> str | None:
     return value if isinstance(value, str) else None
 
 
-def problem_response(problem: ProblemDetails, *, headers: Mapping[str, str] | None = None) -> JSONResponse:
+def problem_response(
+    problem: ProblemDetails,
+    *,
+    headers: Mapping[str, str] | None = None,
+    extensions: Mapping[str, ExtensionValue] | None = None,
+) -> JSONResponse:
     return JSONResponse(
-        problem.model_dump(mode="json", exclude_none=True),
+        {**(extensions or {}), **problem.model_dump(mode="json", exclude_none=True)},
         status_code=problem.status,
         media_type=PROBLEM_MEDIA_TYPE,
         headers=dict(headers or {}),
@@ -160,7 +169,7 @@ def app_error_response(request: Request, error: AppError) -> JSONResponse:
         request_id=request_id_of(request),
         errors=error.errors or None,
     )
-    return problem_response(problem, headers=error.headers)
+    return problem_response(problem, headers=error.headers, extensions=error.extensions)
 
 
 def internal_error_response(request: Request) -> JSONResponse:

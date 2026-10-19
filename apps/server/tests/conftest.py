@@ -3,8 +3,12 @@ from pathlib import Path
 
 import pytest
 import structlog
+from hypothesis import settings as hypothesis_settings
 
 from motionile.core.config import get_settings
+
+hypothesis_settings.register_profile("motionile", deadline=None, derandomize=True, database=None, print_blob=True)
+hypothesis_settings.load_profile("motionile")
 
 TESTS_ROOT = Path(__file__).parent
 MARKER_BY_DIRECTORY = {"unit": pytest.mark.unit, "integration": pytest.mark.integration}

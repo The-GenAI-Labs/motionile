@@ -17,27 +17,28 @@ Read [`conventions.md`](conventions.md) first; this file assumes it. Diagrams li
 
 ## Shared database objects
 
-| Object                          | Kind      | Phase | Purpose                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------- | --------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vector`, `citext`, `pgcrypto`  | extension | 1     | Embeddings, case-insensitive text, `digest()` for backfills                                                                                                                                                                                                                                                                                    |
-| procrastinate schema            | tables    | 1     | Background jobs, in `public` (procrastinate's default)                                                                                                                                                                                                                                                                                         |
-| `forbid_append_only_mutation()` | function  | 2     | Trigger function attached to every append-only table. Raises on `UPDATE` and `DELETE` issued directly by application code. Allows changes made by a referential action (`pg_trigger_depth() > 1`, for `ON DELETE SET NULL` or `CASCADE`) and deletes made by the retention job, which sets `motionile.allow_purge = 'on'` for its transaction. |
-| `langgraph`                     | schema    | 9     | LangGraph Postgres checkpointer tables, owned and migrated by the library's `setup()` and called from an Alembic migration                                                                                                                                                                                                                     |
+| Object                                   | Kind      | Phase | Purpose                                                                                                                                                                                                                                                                                                                                        |
+| ---------------------------------------- | --------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vector`, `citext`, `pgcrypto`           | extension | 1     | Embeddings, case-insensitive text, `digest()` for backfills                                                                                                                                                                                                                                                                                    |
+| procrastinate schema                     | tables    | 1     | Background jobs, in `public` (procrastinate's default)                                                                                                                                                                                                                                                                                         |
+| `forbid_append_only_mutation()`          | function  | 2     | Trigger function attached to every append-only table. Raises on `UPDATE` and `DELETE` issued directly by application code. Allows changes made by a referential action (`pg_trigger_depth() > 1`, for `ON DELETE SET NULL` or `CASCADE`) and deletes made by the retention job, which sets `motionile.allow_purge = 'on'` for its transaction. |
+| `forbid_used_product_financial_change()` | function  | 7     | Trigger function on `products`. Raises when a financial column changes while an order or subscription references the product.                                                                                                                                                                                                                  |
+| `langgraph`                              | schema    | 9     | LangGraph Postgres checkpointer tables, owned and migrated by the library's `setup()` and called from an Alembic migration                                                                                                                                                                                                                     |
 
 ## Domains and phases
 
-| Domain                   | Tables                                                                                                                                                  | Phase |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| Platform (core)          | `audit_log`, `idempotency_records`                                                                                                                      | 2     |
-| Identity                 | `users`, `user_contacts`, `credentials`, `oauth_identities`, `sessions`, `roles`, `user_roles`                                                          | 4     |
-| Platform (configuration) | `permissions`, `role_permissions`, `user_preferences`, `system_settings`, `feature_flags`                                                               | 6     |
-| Catalog                  | `categories`, `topics`, `catalog_slug_history`                                                                                                          | 6     |
-| Billing                  | `products`, `billing_customers`, `orders`, `payments`, `subscriptions`, `credit_wallets`, `credit_ledger`, `usage_records`, `refunds`, `webhook_events` | 7     |
-| Media and voices         | `assets`, `voices`, `voice_consents`                                                                                                                    | 8     |
-| Generation               | `jobs`, `storyboards`, `scenes`, `job_events`, `renditions`, `share_links`, `prompt_templates`, `prompt_versions`                                       | 9     |
-| Skills, memory and RAG   | `skills`, `skill_versions`, `skill_files`, `skill_embeddings`, `job_skills`, `memories`, `rag_sources`, `rag_chunks`                                    | 10    |
-| Publishing               | `platform_specs`, `connected_accounts`, `account_credentials`, `publications`, `publication_targets`                                                    | 11    |
-| Integrations             | `api_keys`, `mcp_clients`, `mcp_grants`                                                                                                                 | 12    |
+| Domain                   | Tables                                                                                                                                                                                                                       | Phase |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| Platform (core)          | `audit_log`, `idempotency_records`                                                                                                                                                                                           | 2     |
+| Identity                 | `users`, `user_contacts`, `credentials`, `oauth_identities`, `sessions`, `roles`, `user_roles`                                                                                                                               | 4     |
+| Platform (configuration) | `permissions`, `role_permissions`, `user_preferences`, `system_settings`, `feature_flags`                                                                                                                                    | 6     |
+| Catalog                  | `categories`, `topics`, `catalog_slug_history`                                                                                                                                                                               | 6     |
+| Billing and credits      | `products`, `billing_customers`, `orders`, `payments`, `subscriptions`, `refunds`, `webhook_events`, `billing_reconciliation_runs`, `credit_wallets`, `credit_lots`, `credit_reservations`, `credit_ledger`, `usage_records` | 7     |
+| Media and voices         | `assets`, `voices`, `voice_consents`                                                                                                                                                                                         | 8     |
+| Generation               | `jobs`, `storyboards`, `scenes`, `job_events`, `renditions`, `share_links`, `prompt_templates`, `prompt_versions`                                                                                                            | 9     |
+| Skills, memory and RAG   | `skills`, `skill_versions`, `skill_files`, `skill_embeddings`, `job_skills`, `memories`, `rag_sources`, `rag_chunks`                                                                                                         | 10    |
+| Publishing               | `platform_specs`, `connected_accounts`, `account_credentials`, `publications`, `publication_targets`                                                                                                                         | 11    |
+| Integrations             | `api_keys`, `mcp_clients`, `mcp_grants`                                                                                                                                                                                      | 12    |
 
 `renditions` and `share_links` move from the media phase to Phase 9 because they reference `jobs`; `job_skills` is an addition explained under its table.
 
@@ -535,55 +536,80 @@ The catalog has exactly three public levels: category → subcategory → topic.
 
 ---
 
-## Billing
+## Billing and credits
 
-Billing tables reference `users` with `ON DELETE RESTRICT`: financial records must outlive the account (see `retention.md`). A user with financial history is anonymized, never hard-deleted.
+Billing tables reference `users` with `ON DELETE RESTRICT`: financial records must outlive the account (see `retention.md`). A user with financial history is anonymized, never hard-deleted. The `billing` module owns `products`, `billing_customers`, `orders`, `payments`, `subscriptions`, `refunds`, `webhook_events` and `billing_reconciliation_runs`. The `credits` module owns `credit_wallets`, `credit_lots`, `credit_reservations`, `credit_ledger` and `usage_records`. `billing` reaches credits only through `motionile.modules.credits`.
+
+### Credit invariants
+
+For every user, at every committed point in time:
+
+1. `credit_wallets.balance` equals the sum of `credit_ledger.delta` and the sum of `credit_lots.remaining`.
+2. `credit_wallets.reserved` equals the sum of `credit_ledger.reserved_delta` and the sum of `credit_reservations.amount` where `status = 'active'`.
+3. The newest ledger row's `balance_after` and `reserved_after` equal the wallet's `balance` and `reserved`.
+4. `0 <= reserved <= balance`, and no lot has a negative `remaining`.
+
+Every operation locks the wallet row first, then the lots it touches ordered by `expires_at NULLS LAST, created_at, id`, then writes lots, reservation, wallet and exactly one ledger row in one transaction. The nightly integrity task verifies all four invariants for every wallet.
 
 ### `products`
 
-Module `billing` · Phase 7 · Mutable · Prices change by creating a new version
+Module `billing` · Phase 7 · Mutable until used · **Financially immutable once any order or subscription references it**
 
-| Column             | Type          | Null | Default | Notes                                      |
-| ------------------ | ------------- | ---- | ------- | ------------------------------------------ |
-| `id`               | `uuid`        | no   | -       | UUIDv7                                     |
-| `code`             | `text`        | no   | -       | Stable code such as `pack_100`             |
-| `kind`             | `text`        | no   | -       | `subscription`, `credit_pack`              |
-| `name`             | `text`        | no   | -       | At most 80 characters                      |
-| `description`      | `text`        | yes  | -       | At most 500 characters                     |
-| `price_paise`      | `bigint`      | no   | -       | Price including tax                        |
-| `currency`         | `char(3)`     | no   | `'INR'` | ISO 4217                                   |
-| `interval`         | `text`        | yes  | -       | `month`, `year`; subscriptions only        |
-| `credits_granted`  | `bigint`      | no   | -       | Per purchase or per billing period         |
-| `razorpay_plan_id` | `text`        | yes  | -       | Subscriptions only                         |
-| `is_active`        | `boolean`     | no   | `true`  | Inactive products cannot be bought         |
-| `sort_order`       | `integer`     | no   | `0`     |                                            |
-| `features`         | `jsonb`       | no   | `'[]'`  | Marketing bullet list for the pricing page |
-| `version`          | `integer`     | no   | `1`     | Incremented on any price or credit change  |
-| `created_at`       | `timestamptz` | no   | `now()` |                                            |
-| `updated_at`       | `timestamptz` | no   | `now()` |                                            |
+| Column                  | Type          | Null | Default | Notes                                                                                            |
+| ----------------------- | ------------- | ---- | ------- | ------------------------------------------------------------------------------------------------ |
+| `id`                    | `uuid`        | no   | -       | UUIDv7                                                                                           |
+| `code`                  | `text`        | no   | -       | Stable code such as `pack_starter` or `pro_monthly_v2`; the client sends only this               |
+| `kind`                  | `text`        | no   | -       | `subscription`, `credit_pack`                                                                    |
+| `plan_key`              | `text`        | yes  | -       | Subscriptions only; groups the monthly and yearly products of one plan, such as `pro`            |
+| `name`                  | `text`        | no   | -       | At most 80 characters                                                                            |
+| `description`           | `text`        | yes  | -       | At most 500 characters                                                                           |
+| `price_paise`           | `bigint`      | no   | -       | Price including GST                                                                              |
+| `currency`              | `char(3)`     | no   | `'INR'` | ISO 4217                                                                                         |
+| `interval`              | `text`        | yes  | -       | `month`, `year`; subscriptions only                                                              |
+| `credits_granted`       | `bigint`      | no   | -       | Per purchase or per billing period                                                               |
+| `razorpay_plan_id`      | `text`        | yes  | -       | Subscriptions only; set by the plan sync, required before activation                             |
+| `is_active`             | `boolean`     | no   | `true`  | Inactive products cannot be bought                                                               |
+| `is_sample`             | `boolean`     | no   | `false` | Seeded sample products; the seed script refuses to run in production                             |
+| `supersedes_product_id` | `uuid`        | yes  | -       | The product this one was duplicated from as a new version                                        |
+| `sort_order`            | `integer`     | no   | `0`     |                                                                                                  |
+| `features`              | `jsonb`       | no   | `'[]'`  | Marketing bullet list for the pricing page                                                       |
+| `version`               | `integer`     | no   | `1`     | Incremented by each edit of an unused product; a duplicate starts at the source version plus one |
+| `created_at`            | `timestamptz` | no   | `now()` |                                                                                                  |
+| `updated_at`            | `timestamptz` | no   | `now()` |                                                                                                  |
 
 - `pk_products` primary key (`id`).
+- `fk_products_supersedes_product_id_products` → `products.id` **ON DELETE RESTRICT**.
 - `uq_products_code` unique (`code`); `uq_products_razorpay_plan_id` unique (`razorpay_plan_id`) (nulls distinct).
 - `ck_products_kind`: `kind IN ('subscription', 'credit_pack')`.
 - `ck_products_price_paise_positive`: `price_paise > 0`.
 - `ck_products_credits_granted_positive`: `credits_granted > 0`.
 - `ck_products_currency_format`: `currency ~ '^[A-Z]{3}$'`.
 - `ck_products_interval`: `interval IS NULL OR interval IN ('month', 'year')`.
-- `ck_products_subscription_shape`: `(kind = 'subscription' AND interval IS NOT NULL AND razorpay_plan_id IS NOT NULL) OR (kind = 'credit_pack' AND interval IS NULL AND razorpay_plan_id IS NULL)`.
-- `ck_products_code_format`: `code ~ '^[a-z0-9]+(_[a-z0-9]+)*$'`.
+- `ck_products_shape`: `(kind = 'subscription' AND interval IS NOT NULL AND plan_key IS NOT NULL) OR (kind = 'credit_pack' AND interval IS NULL AND plan_key IS NULL AND razorpay_plan_id IS NULL)`.
+- `ck_products_active_subscription_has_plan`: `kind <> 'subscription' OR NOT is_active OR razorpay_plan_id IS NOT NULL`.
+- `ck_products_code_format`: `code ~ '^[a-z0-9]+(_[a-z0-9]+)*$' AND char_length(code) <= 60`.
+- `ck_products_plan_key_format`: `plan_key IS NULL OR plan_key ~ '^[a-z0-9]+(_[a-z0-9]+)*$'`.
+- `ck_products_name_length`, `ck_products_description_length`: the limits above.
 - `ck_products_features_array`: `jsonb_typeof(features) = 'array'`.
+- `ck_products_version_positive`: `version >= 1`.
+- `ck_products_not_own_predecessor`: `supersedes_product_id IS NULL OR supersedes_product_id <> id`.
+- Trigger `trg_products_financial_immutable` `BEFORE UPDATE` → `forbid_used_product_financial_change()`: raises when `kind`, `price_paise`, `currency`, `interval`, `credits_granted` or a non-null `razorpay_plan_id` changes while an `orders` or `subscriptions` row references the product. The service checks the same rule first and reports `product_immutable`; the trigger is the backstop.
 - `ix_products_kind_sort_order` (`kind`, `sort_order`) `WHERE is_active`: pricing page.
+- `ix_products_plan_key_interval_active` unique (`plan_key`, `interval`) `WHERE is_active AND kind = 'subscription'`: exactly one active product per plan and interval.
+- `ix_products_supersedes_product_id` (`supersedes_product_id`): supports the foreign key.
+
+Changing a price, credits, currency or interval means duplicating the product as a new version (`<base>_v<version>`, a new Razorpay plan) and deactivating the old one. Existing subscribers stay on their plan until they change it. See [ADR 0019](../adr/0019-product-immutability-and-versioning.md).
 
 ### `billing_customers`
 
 Module `billing` · Phase 7 · Mutable
 
-| Column                 | Type          | Null | Default | Notes       |
-| ---------------------- | ------------- | ---- | ------- | ----------- |
-| `user_id`              | `uuid`        | no   | -       | Primary key |
-| `razorpay_customer_id` | `text`        | no   | -       |             |
-| `created_at`           | `timestamptz` | no   | `now()` |             |
-| `updated_at`           | `timestamptz` | no   | `now()` |             |
+| Column                 | Type          | Null | Default | Notes                                |
+| ---------------------- | ------------- | ---- | ------- | ------------------------------------ |
+| `user_id`              | `uuid`        | no   | -       | Primary key                          |
+| `razorpay_customer_id` | `text`        | no   | -       | Created lazily on the first purchase |
+| `created_at`           | `timestamptz` | no   | `now()` |                                      |
+| `updated_at`           | `timestamptz` | no   | `now()` |                                      |
 
 - `pk_billing_customers` primary key (`user_id`).
 - `fk_billing_customers_user_id_users` → `users.id` **ON DELETE RESTRICT**.
@@ -593,26 +619,28 @@ Module `billing` · Phase 7 · Mutable
 
 Module `billing` · Phase 7 · Mutable
 
-| Column              | Type          | Null | Default     | Notes                                                                            |
-| ------------------- | ------------- | ---- | ----------- | -------------------------------------------------------------------------------- |
-| `id`                | `uuid`        | no   | -           | UUIDv7                                                                           |
-| `user_id`           | `uuid`        | no   | -           |                                                                                  |
-| `product_id`        | `uuid`        | no   | -           |                                                                                  |
-| `product_version`   | `integer`     | no   | -           | Snapshot of `products.version`; added so later price edits never change an order |
-| `kind`              | `text`        | no   | -           | `credit_pack`, `subscription` (first charge)                                     |
-| `amount_paise`      | `bigint`      | no   | -           | Snapshot of the product price                                                    |
-| `currency`          | `char(3)`     | no   | `'INR'`     |                                                                                  |
-| `credits_granted`   | `bigint`      | no   | -           | Snapshot; added for the same reason as `product_version`                         |
-| `status`            | `text`        | no   | `'created'` | See `state-machines.md`                                                          |
-| `razorpay_order_id` | `text`        | yes  | -           | Set after the Razorpay order is created                                          |
-| `subscription_id`   | `uuid`        | yes  | -           | Subscription this order starts                                                   |
-| `receipt`           | `text`        | no   | -           | Sent to Razorpay; equals the order ID text (Razorpay limit 40 characters)        |
-| `idempotency_key`   | `text`        | no   | -           | Client key from the `Idempotency-Key` header                                     |
-| `failure_reason`    | `text`        | yes  | -           | Added to explain `failed` and `cancelled` orders to support                      |
-| `expires_at`        | `timestamptz` | no   | -           | Creation plus 30 minutes; reconciliation expires pending orders after it         |
-| `paid_at`           | `timestamptz` | yes  | -           |                                                                                  |
-| `created_at`        | `timestamptz` | no   | `now()`     |                                                                                  |
-| `updated_at`        | `timestamptz` | no   | `now()`     |                                                                                  |
+| Column              | Type          | Null | Default     | Notes                                                                                   |
+| ------------------- | ------------- | ---- | ----------- | --------------------------------------------------------------------------------------- |
+| `id`                | `uuid`        | no   | -           | UUIDv7                                                                                  |
+| `user_id`           | `uuid`        | no   | -           |                                                                                         |
+| `product_id`        | `uuid`        | no   | -           |                                                                                         |
+| `product_version`   | `integer`     | no   | -           | Snapshot of `products.version`                                                          |
+| `kind`              | `text`        | no   | -           | `credit_pack`, `subscription` (the first charge of a subscription)                      |
+| `amount_paise`      | `bigint`      | no   | -           | Snapshot of the product price                                                           |
+| `currency`          | `char(3)`     | no   | `'INR'`     |                                                                                         |
+| `credits_granted`   | `bigint`      | no   | -           | Snapshot of the product credits                                                         |
+| `status`            | `text`        | no   | `'created'` | See `state-machines.md`                                                                 |
+| `razorpay_order_id` | `text`        | yes  | -           | Set after the Razorpay order is created; null for subscription orders                   |
+| `subscription_id`   | `uuid`        | yes  | -           | Subscription this order starts                                                          |
+| `receipt`           | `text`        | no   | -           | Sent to Razorpay; equals the order ID text (Razorpay limit 40 characters)               |
+| `idempotency_key`   | `text`        | no   | -           | Client key from the `Idempotency-Key` header                                            |
+| `failure_reason`    | `text`        | yes  | -           | Explains `failed` and `cancelled` orders to support                                     |
+| `flagged_at`        | `timestamptz` | yes  | -           | Set when a captured payment did not match the order; the order is held for admin review |
+| `flag_reason`       | `text`        | yes  | -           | `amount_mismatch`, `currency_mismatch`, `duplicate_payment`                             |
+| `expires_at`        | `timestamptz` | no   | -           | Creation plus the order expiry setting (2 hours by default)                             |
+| `paid_at`           | `timestamptz` | yes  | -           |                                                                                         |
+| `created_at`        | `timestamptz` | no   | `now()`     |                                                                                         |
+| `updated_at`        | `timestamptz` | no   | `now()`     |                                                                                         |
 
 - `pk_orders` primary key (`id`).
 - `fk_orders_user_id_users` → `users.id` **ON DELETE RESTRICT**.
@@ -623,37 +651,42 @@ Module `billing` · Phase 7 · Mutable
 - `uq_orders_user_id_idempotency_key` unique (`user_id`, `idempotency_key`).
 - `ck_orders_status`: `status IN ('created', 'pending', 'paid', 'failed', 'expired', 'cancelled')`.
 - `ck_orders_kind`: `kind IN ('credit_pack', 'subscription')`.
+- `ck_orders_subscription_consistent`: `(kind = 'subscription') = (subscription_id IS NOT NULL)`.
 - `ck_orders_amount_paise_positive`: `amount_paise > 0`; `ck_orders_credits_granted_positive`: `credits_granted > 0`.
 - `ck_orders_currency_format`: `currency ~ '^[A-Z]{3}$'`.
 - `ck_orders_paid_consistent`: `(status = 'paid') = (paid_at IS NOT NULL)`.
+- `ck_orders_flag_consistent`: `(flagged_at IS NULL) = (flag_reason IS NULL)`.
+- `ck_orders_flag_reason`: `flag_reason IS NULL OR flag_reason IN ('amount_mismatch', 'currency_mismatch', 'duplicate_payment')`.
 - `ck_orders_receipt_length`: `char_length(receipt) <= 40`.
 - `ix_orders_user_id_created_at` (`user_id`, `created_at`): billing history; supports the user foreign key.
-- `ix_orders_product_id` (`product_id`), `ix_orders_subscription_id` (`subscription_id`): support foreign keys.
-- `ix_orders_status_expires_at` (`status`, `expires_at`) `WHERE status IN ('created', 'pending')`: reconciliation every 15 minutes.
+- `ix_orders_product_id` (`product_id`), `ix_orders_subscription_id` (`subscription_id`): support foreign keys and the product immutability check.
+- `ix_orders_status_created_at` (`status`, `created_at`) `WHERE status IN ('created', 'pending') AND flagged_at IS NULL`: reconciliation every 15 minutes.
+- `ix_orders_flagged_at` (`flagged_at`) `WHERE flagged_at IS NOT NULL`: admin review queue.
 
 ### `payments`
 
 Module `billing` · Phase 7 · Mutable
 
-| Column                | Type          | Null | Default | Notes                                      |
-| --------------------- | ------------- | ---- | ------- | ------------------------------------------ |
-| `id`                  | `uuid`        | no   | -       | UUIDv7                                     |
-| `order_id`            | `uuid`        | yes  | -       | Credit pack or first subscription charge   |
-| `subscription_id`     | `uuid`        | yes  | -       | Renewal charges                            |
-| `user_id`             | `uuid`        | no   | -       |                                            |
-| `razorpay_payment_id` | `text`        | no   | -       |                                            |
-| `amount_paise`        | `bigint`      | no   | -       |                                            |
-| `currency`            | `char(3)`     | no   | `'INR'` |                                            |
-| `status`              | `text`        | no   | -       | See `state-machines.md`                    |
-| `method`              | `text`        | yes  | -       | `card`, `upi`, `netbanking`, `wallet`, ... |
-| `fee_paise`           | `bigint`      | yes  | -       | Razorpay fee, from settlement              |
-| `tax_paise`           | `bigint`      | yes  | -       | GST on the fee                             |
-| `refunded_paise`      | `bigint`      | no   | `0`     | Sum of processed refunds                   |
-| `error_code`          | `text`        | yes  | -       |                                            |
-| `error_description`   | `text`        | yes  | -       |                                            |
-| `captured_at`         | `timestamptz` | yes  | -       |                                            |
-| `created_at`          | `timestamptz` | no   | `now()` |                                            |
-| `updated_at`          | `timestamptz` | no   | `now()` |                                            |
+| Column                | Type          | Null | Default | Notes                                                            |
+| --------------------- | ------------- | ---- | ------- | ---------------------------------------------------------------- |
+| `id`                  | `uuid`        | no   | -       | UUIDv7                                                           |
+| `order_id`            | `uuid`        | yes  | -       | Credit pack or first subscription charge                         |
+| `subscription_id`     | `uuid`        | yes  | -       | Subscription charges, including the first                        |
+| `user_id`             | `uuid`        | no   | -       |                                                                  |
+| `razorpay_payment_id` | `text`        | no   | -       |                                                                  |
+| `amount_paise`        | `bigint`      | no   | -       | What Razorpay captured, never the order amount                   |
+| `currency`            | `char(3)`     | no   | `'INR'` |                                                                  |
+| `status`              | `text`        | no   | -       | See `state-machines.md`                                          |
+| `method`              | `text`        | yes  | -       | `card`, `upi`, `netbanking`, `wallet`, ...                       |
+| `fee_paise`           | `bigint`      | yes  | -       | Razorpay fee, from settlement                                    |
+| `tax_paise`           | `bigint`      | yes  | -       | GST on the fee                                                   |
+| `credits_granted`     | `bigint`      | no   | `0`     | Credits this payment created as a lot; basis of refund clawbacks |
+| `refunded_paise`      | `bigint`      | no   | `0`     | Sum of processed refunds                                         |
+| `error_code`          | `text`        | yes  | -       |                                                                  |
+| `error_description`   | `text`        | yes  | -       |                                                                  |
+| `captured_at`         | `timestamptz` | yes  | -       |                                                                  |
+| `created_at`          | `timestamptz` | no   | `now()` |                                                                  |
+| `updated_at`          | `timestamptz` | no   | `now()` |                                                                  |
 
 - `pk_payments` primary key (`id`).
 - `fk_payments_order_id_orders` → `orders.id` **ON DELETE RESTRICT**.
@@ -663,48 +696,58 @@ Module `billing` · Phase 7 · Mutable
 - `ck_payments_status`: `status IN ('authorized', 'captured', 'failed', 'refunded', 'partially_refunded')`.
 - `ck_payments_has_parent`: `num_nonnulls(order_id, subscription_id) >= 1`.
 - `ck_payments_amount_paise_positive`: `amount_paise > 0`.
+- `ck_payments_credits_granted_non_negative`: `credits_granted >= 0`.
 - `ck_payments_refunded_paise_range`: `refunded_paise BETWEEN 0 AND amount_paise`.
 - `ck_payments_fee_paise_non_negative`: `fee_paise IS NULL OR fee_paise >= 0`; `ck_payments_tax_paise_non_negative` likewise.
 - `ck_payments_currency_format`: `currency ~ '^[A-Z]{3}$'`.
 - `ix_payments_order_id` (`order_id`), `ix_payments_subscription_id` (`subscription_id`): support foreign keys and settlement lookups.
 - `ix_payments_user_id_created_at` (`user_id`, `created_at`): billing history; supports the foreign key.
-- `ix_payments_created_at` (`created_at`): daily settlement report.
+- `ix_payments_created_at` (`created_at`): daily settlement report and revenue per day.
 
 ### `subscriptions`
 
 Module `billing` · Phase 7 · Mutable
 
-| Column                     | Type          | Null | Default     | Notes                                                                    |
-| -------------------------- | ------------- | ---- | ----------- | ------------------------------------------------------------------------ |
-| `id`                       | `uuid`        | no   | -           | UUIDv7                                                                   |
-| `user_id`                  | `uuid`        | no   | -           |                                                                          |
-| `product_id`               | `uuid`        | no   | -           |                                                                          |
-| `razorpay_subscription_id` | `text`        | no   | -           |                                                                          |
-| `status`                   | `text`        | no   | `'created'` | See `state-machines.md`                                                  |
-| `current_period_start`     | `timestamptz` | yes  | -           |                                                                          |
-| `current_period_end`       | `timestamptz` | yes  | -           |                                                                          |
-| `cancel_at_period_end`     | `boolean`     | no   | `false`     |                                                                          |
-| `cancelled_at`             | `timestamptz` | yes  | -           | When cancellation was requested                                          |
-| `ended_at`                 | `timestamptz` | yes  | -           | When access stopped                                                      |
-| `last_event_at`            | `timestamptz` | yes  | -           | `created_at` of the newest applied webhook; added to ignore stale events |
-| `created_at`               | `timestamptz` | no   | `now()`     |                                                                          |
-| `updated_at`               | `timestamptz` | no   | `now()`     |                                                                          |
+| Column                     | Type          | Null | Default     | Notes                                                                                  |
+| -------------------------- | ------------- | ---- | ----------- | -------------------------------------------------------------------------------------- |
+| `id`                       | `uuid`        | no   | -           | UUIDv7                                                                                 |
+| `user_id`                  | `uuid`        | no   | -           |                                                                                        |
+| `product_id`               | `uuid`        | no   | -           | The plan currently charged                                                             |
+| `pending_product_id`       | `uuid`        | yes  | -           | The plan that takes over from the next cycle after a plan change                       |
+| `razorpay_subscription_id` | `text`        | yes  | -           | Null only while `created`: the local row exists before the Razorpay subscription       |
+| `status`                   | `text`        | no   | `'created'` | See `state-machines.md`                                                                |
+| `total_count`              | `integer`     | no   | -           | Billing cycles requested at creation, from settings                                    |
+| `paid_count`               | `integer`     | no   | `0`         | Cycles paid, from Razorpay                                                             |
+| `current_period_start`     | `timestamptz` | yes  | -           |                                                                                        |
+| `current_period_end`       | `timestamptz` | yes  | -           |                                                                                        |
+| `next_charge_at`           | `timestamptz` | yes  | -           | Razorpay `charge_at`; shown as the next charge                                         |
+| `cancel_at_period_end`     | `boolean`     | no   | `false`     |                                                                                        |
+| `cancelled_at`             | `timestamptz` | yes  | -           | When cancellation was requested                                                        |
+| `ended_at`                 | `timestamptz` | yes  | -           | When access stopped                                                                    |
+| `last_event_at`            | `timestamptz` | yes  | -           | `created_at` of the newest applied webhook; stale events never change status or period |
+| `created_at`               | `timestamptz` | no   | `now()`     |                                                                                        |
+| `updated_at`               | `timestamptz` | no   | `now()`     |                                                                                        |
 
 - `pk_subscriptions` primary key (`id`).
 - `fk_subscriptions_user_id_users` → `users.id` **ON DELETE RESTRICT**.
 - `fk_subscriptions_product_id_products` → `products.id` **ON DELETE RESTRICT**.
+- `fk_subscriptions_pending_product_id_products` → `products.id` **ON DELETE RESTRICT**.
 - `uq_subscriptions_razorpay_subscription_id` unique (`razorpay_subscription_id`): webhook lookup.
+- `ck_subscriptions_live_has_razorpay_id`: `status = 'created' OR razorpay_subscription_id IS NOT NULL`.
 - `ck_subscriptions_status`: `status IN ('created', 'authenticated', 'active', 'pending', 'halted', 'paused', 'cancelled', 'completed', 'expired')`.
 - `ck_subscriptions_period_order`: `current_period_end IS NULL OR current_period_start IS NULL OR current_period_end > current_period_start`.
+- `ck_subscriptions_total_count_positive`: `total_count > 0`; `ck_subscriptions_paid_count_non_negative`: `paid_count >= 0`.
+- `ck_subscriptions_ended_consistent`: `(status IN ('cancelled', 'completed', 'expired')) = (ended_at IS NOT NULL)`.
 - `ix_subscriptions_user_id_live` unique (`user_id`) `WHERE status IN ('authenticated', 'active', 'pending', 'halted', 'paused')`: at most one live subscription per user. `created` is excluded so abandoned checkouts never block a retry.
 - `ix_subscriptions_user_id_created_at` (`user_id`, `created_at`): history; supports the foreign key.
-- `ix_subscriptions_product_id` (`product_id`): supports the foreign key.
+- `ix_subscriptions_product_id` (`product_id`), `ix_subscriptions_pending_product_id` (`pending_product_id`): support the foreign keys and the product immutability check.
+- `ix_subscriptions_status_current_period_end` (`status`, `current_period_end`) `WHERE status IN ('authenticated', 'active', 'pending', 'halted', 'paused')`: finalizing cancellations at period end and the daily sync.
 
 ### `credit_wallets`
 
-Module `credits` · Phase 7 · Mutable · One row per user
+Module `credits` · Phase 7 · Mutable · One row per user, created on first use
 
-`balance` is every credit the user owns; `reserved` is the part held by running jobs; available credits are `balance - reserved`.
+`balance` is every credit the user owns; `reserved` is the part held by active reservations; available credits are `balance - reserved`. The wallet row is the lock every credit operation takes first.
 
 | Column       | Type          | Null | Default | Notes                             |
 | ------------ | ------------- | ---- | ------- | --------------------------------- |
@@ -720,69 +763,154 @@ Module `credits` · Phase 7 · Mutable · One row per user
 - `ck_credit_wallets_balance_non_negative`: `balance >= 0`.
 - `ck_credit_wallets_reserved_range`: `reserved >= 0 AND reserved <= balance`.
 
+### `credit_lots`
+
+Module `credits` · Phase 7 · Mutable
+
+A lot is a batch of credits with one source and one expiry. Credits are consumed from lots in order of soonest expiry, non-expiring lots last. A refund claws back only from the lot its payment created, and only what remains unused.
+
+| Column                    | Type          | Null | Default | Notes                                                                                |
+| ------------------------- | ------------- | ---- | ------- | ------------------------------------------------------------------------------------ |
+| `id`                      | `uuid`        | no   | -       | UUIDv7                                                                               |
+| `user_id`                 | `uuid`        | no   | -       |                                                                                      |
+| `source`                  | `text`        | no   | -       | `purchase`, `subscription`, `admin`, `promo`                                         |
+| `amount`                  | `bigint`      | no   | -       | Credits granted                                                                      |
+| `remaining`               | `bigint`      | no   | -       | Credits not yet consumed, clawed back or expired                                     |
+| `expires_at`              | `timestamptz` | yes  | -       | Null for lots that never expire                                                      |
+| `ref_type`                | `text`        | yes  | -       | `payment` for purchases and subscription periods, `admin` for admin actions, `promo` |
+| `ref_id`                  | `uuid`        | yes  | -       | The payment, admin action or promotion that created the lot                          |
+| `expiry_reminder_sent_at` | `timestamptz` | yes  | -       | Set once when the "credits expiring soon" notification is queued                     |
+| `expired_at`              | `timestamptz` | yes  | -       | Set when the last remaining credits expired                                          |
+| `created_at`              | `timestamptz` | no   | `now()` |                                                                                      |
+| `updated_at`              | `timestamptz` | no   | `now()` |                                                                                      |
+
+- `pk_credit_lots` primary key (`id`).
+- `fk_credit_lots_user_id_users` → `users.id` **ON DELETE RESTRICT**.
+- `ck_credit_lots_source`: `source IN ('purchase', 'subscription', 'admin', 'promo')`.
+- `ck_credit_lots_amount_positive`: `amount > 0`.
+- `ck_credit_lots_remaining_range`: `remaining BETWEEN 0 AND amount`.
+- `ck_credit_lots_ref_type`: `ref_type IS NULL OR ref_type IN ('payment', 'admin', 'promo')`.
+- `ck_credit_lots_ref_consistent`: `(ref_type IS NULL) = (ref_id IS NULL)`.
+- `ck_credit_lots_expired_consistent`: `expired_at IS NULL OR remaining = 0`.
+- `uq_credit_lots_source_ref` unique (`source`, `ref_type`, `ref_id`) `WHERE ref_id IS NOT NULL`: one lot per payment or admin action.
+- `ix_credit_lots_user_id_consumption` (`user_id`, `expires_at`, `created_at`, `id`) `WHERE remaining > 0`: consumption order; supports the foreign key.
+- `ix_credit_lots_expires_at` (`expires_at`) `WHERE remaining > 0 AND expires_at IS NOT NULL`: expiry and reminder sweeps.
+
+Credits held by an active reservation are never expired: an expiry sweep expires at most `balance - reserved`, and the rest waits for the next sweep.
+
+### `credit_reservations`
+
+Module `credits` · Phase 7 · Mutable
+
+One mechanism for jobs, publishing and MCP submissions. A reservation holds credits against the wallet without touching lots; `commit` consumes the actual amount from lots and releases the rest.
+
+| Column             | Type          | Null | Default    | Notes                                                                      |
+| ------------------ | ------------- | ---- | ---------- | -------------------------------------------------------------------------- |
+| `id`               | `uuid`        | no   | -          | UUIDv7                                                                     |
+| `user_id`          | `uuid`        | no   | -          |                                                                            |
+| `amount`           | `bigint`      | no   | -          | Credits held                                                               |
+| `status`           | `text`        | no   | `'active'` | `active`, `committed`, `released`, `expired`                               |
+| `ref_type`         | `text`        | no   | -          | What the credits are for, such as `job`, `publication` or `mcp_submission` |
+| `ref_id`           | `uuid`        | no   | -          |                                                                            |
+| `committed_amount` | `bigint`      | yes  | -          | Set when committed                                                         |
+| `idempotency_key`  | `text`        | no   | -          | The reserve call's key                                                     |
+| `expires_at`       | `timestamptz` | no   | -          | Creation plus the TTL; the sweeper releases active reservations past it    |
+| `settled_at`       | `timestamptz` | yes  | -          | When the reservation left `active`                                         |
+| `created_at`       | `timestamptz` | no   | `now()`    |                                                                            |
+| `updated_at`       | `timestamptz` | no   | `now()`    |                                                                            |
+
+- `pk_credit_reservations` primary key (`id`).
+- `fk_credit_reservations_user_id_users` → `users.id` **ON DELETE RESTRICT**.
+- `uq_credit_reservations_idempotency_key` unique (`idempotency_key`).
+- `uq_credit_reservations_active_ref` unique (`ref_type`, `ref_id`) `WHERE status = 'active'`: at most one active reservation per job, publication or submission.
+- `ck_credit_reservations_status`: `status IN ('active', 'committed', 'released', 'expired')`.
+- `ck_credit_reservations_amount_positive`: `amount > 0`.
+- `ck_credit_reservations_committed_range`: `committed_amount IS NULL OR committed_amount BETWEEN 0 AND amount`.
+- `ck_credit_reservations_committed_consistent`: `(status = 'committed') = (committed_amount IS NOT NULL)`.
+- `ck_credit_reservations_settled_consistent`: `(status = 'active') = (settled_at IS NULL)`.
+- `ck_credit_reservations_ref_type_format`: `ref_type ~ '^[a-z][a-z0-9_]{1,39}$'`.
+- `ix_credit_reservations_user_id_created_at` (`user_id`, `created_at`): a user's reservations; supports the foreign key.
+- `ix_credit_reservations_expires_at` (`expires_at`) `WHERE status = 'active'`: stale reservation sweep.
+
 ### `credit_ledger`
 
 Module `credits` · Phase 7 · **Append-only** · Will be partitioned monthly
 
-| Column            | Type          | Null | Default | Notes                                                                                      |
-| ----------------- | ------------- | ---- | ------- | ------------------------------------------------------------------------------------------ |
-| `id`              | `uuid`        | no   | -       | UUIDv7                                                                                     |
-| `user_id`         | `uuid`        | no   | -       |                                                                                            |
-| `delta`           | `bigint`      | no   | -       | Change to `balance`                                                                        |
-| `reserved_delta`  | `bigint`      | no   | `0`     | Change to `reserved`; added because reservations move credits without changing the balance |
-| `balance_after`   | `bigint`      | no   | -       |                                                                                            |
-| `reserved_after`  | `bigint`      | no   | -       |                                                                                            |
-| `reason`          | `text`        | no   | -       | See check                                                                                  |
-| `ref_type`        | `text`        | yes  | -       | `order`, `payment`, `subscription`, `job`, `refund`, `admin`                               |
-| `ref_id`          | `uuid`        | yes  | -       |                                                                                            |
-| `idempotency_key` | `text`        | no   | -       | Such as `order:<id>`, `job-commit:<id>`                                                    |
-| `metadata`        | `jsonb`       | no   | `'{}'`  |                                                                                            |
-| `created_at`      | `timestamptz` | no   | `now()` |                                                                                            |
+| Column            | Type          | Null | Default | Notes                                                                        |
+| ----------------- | ------------- | ---- | ------- | ---------------------------------------------------------------------------- |
+| `id`              | `uuid`        | no   | -       | UUIDv7                                                                       |
+| `user_id`         | `uuid`        | no   | -       |                                                                              |
+| `delta`           | `bigint`      | no   | -       | Change to `balance`                                                          |
+| `reserved_delta`  | `bigint`      | no   | `0`     | Change to `reserved`; reservations move credits without changing the balance |
+| `balance_after`   | `bigint`      | no   | -       |                                                                              |
+| `reserved_after`  | `bigint`      | no   | -       |                                                                              |
+| `reason`          | `text`        | no   | -       | See check                                                                    |
+| `ref_type`        | `text`        | yes  | -       | `payment`, `refund`, `reservation`, `lot`, `admin`, `promo`                  |
+| `ref_id`          | `uuid`        | yes  | -       |                                                                              |
+| `idempotency_key` | `text`        | no   | -       | Such as `payment:<id>`, `reservation:<id>:commit`                            |
+| `metadata`        | `jsonb`       | no   | `'{}'`  | Lot allocations, reason text, actor                                          |
+| `created_at`      | `timestamptz` | no   | `now()` |                                                                              |
 
-Entries by reason: `purchase`, `subscription_grant` and `admin_adjust` change `delta`; `job_reserve` sets `reserved_delta = +n`; `job_commit` sets `delta = -charged` and `reserved_delta = -reserved`; `job_release` sets `reserved_delta = -n`; `refund_clawback` and `expiry` set a negative `delta`.
+Entries by reason:
+
+| Reason               | `delta` | `reserved_delta` | Reference                                  |
+| -------------------- | ------- | ---------------- | ------------------------------------------ |
+| `purchase`           | `> 0`   | `0`              | `payment`                                  |
+| `subscription_grant` | `> 0`   | `0`              | `payment`                                  |
+| `promo_grant`        | `> 0`   | `0`              | `promo`                                    |
+| `admin_adjust`       | `<> 0`  | `0`              | `admin`                                    |
+| `reserve`            | `0`     | `> 0`            | `reservation`                              |
+| `commit`             | `<= 0`  | `< 0`            | `reservation`; `delta` is the charged part |
+| `release`            | `0`     | `< 0`            | `reservation`; includes TTL expiry         |
+| `refund_clawback`    | `< 0`   | `0`              | `refund`                                   |
+| `expiry`             | `< 0`   | `0`              | `lot`                                      |
 
 - `pk_credit_ledger` primary key (`id`).
 - `fk_credit_ledger_user_id_users` → `users.id` **ON DELETE RESTRICT**.
 - `uq_credit_ledger_idempotency_key` unique (`idempotency_key`): every credit change happens once.
-- `ck_credit_ledger_reason`: `reason IN ('purchase', 'subscription_grant', 'job_reserve', 'job_commit', 'job_release', 'refund_clawback', 'admin_adjust', 'expiry')`.
+- `ck_credit_ledger_reason`: `reason IN ('purchase', 'subscription_grant', 'promo_grant', 'admin_adjust', 'reserve', 'commit', 'release', 'refund_clawback', 'expiry')`.
 - `ck_credit_ledger_moves_credits`: `delta <> 0 OR reserved_delta <> 0`.
+- `ck_credit_ledger_reason_deltas`: the sign rules of the table above, for example `reason <> 'reserve' OR (delta = 0 AND reserved_delta > 0)`.
 - `ck_credit_ledger_after_range`: `balance_after >= 0 AND reserved_after >= 0 AND reserved_after <= balance_after`.
-- `ck_credit_ledger_ref_type`: `ref_type IS NULL OR ref_type IN ('order', 'payment', 'subscription', 'job', 'refund', 'admin')`.
+- `ck_credit_ledger_ref_type`: `ref_type IS NULL OR ref_type IN ('payment', 'refund', 'reservation', 'lot', 'admin', 'promo')`.
 - `ck_credit_ledger_ref_consistent`: `(ref_type IS NULL) = (ref_id IS NULL)`.
 - `ck_credit_ledger_metadata_object`: `jsonb_typeof(metadata) = 'object'`.
 - Trigger `trg_credit_ledger_append_only` → `forbid_append_only_mutation()`.
-- `ix_credit_ledger_user_id_created_at_id` (`user_id`, `created_at`, `id`): credit history; supports the foreign key.
-- `ix_credit_ledger_ref_type_ref_id` (`ref_type`, `ref_id`): entries for one order, job or refund.
+- `ix_credit_ledger_user_id_created_at_id` (`user_id`, `created_at`, `id`): credit history and the nightly integrity sums; supports the foreign key.
+- `ix_credit_ledger_ref_type_ref_id` (`ref_type`, `ref_id`): entries for one payment, refund or reservation.
 
 ### `usage_records`
 
 Module `credits` · Phase 7 · **Append-only** · Will be partitioned monthly
 
-| Column             | Type          | Null | Default | Notes                                                |
-| ------------------ | ------------- | ---- | ------- | ---------------------------------------------------- |
-| `id`               | `uuid`        | no   | -       | UUIDv7                                               |
-| `user_id`          | `uuid`        | no   | -       |                                                      |
-| `job_id`           | `uuid`        | yes  | -       |                                                      |
-| `publication_id`   | `uuid`        | yes  | -       |                                                      |
-| `stage`            | `text`        | no   | -       | Pipeline stage such as `storyboard`, `tts`, `render` |
-| `provider`         | `text`        | no   | -       | `anthropic`, `openai`, `elevenlabs`, `internal`, ... |
-| `model`            | `text`        | yes  | -       |                                                      |
-| `input_tokens`     | `integer`     | no   | `0`     |                                                      |
-| `output_tokens`    | `integer`     | no   | `0`     |                                                      |
-| `audio_characters` | `integer`     | no   | `0`     |                                                      |
-| `render_ms`        | `integer`     | no   | `0`     |                                                      |
-| `cost_micros_usd`  | `bigint`      | no   | `0`     | Provider cost in millionths of a US dollar           |
-| `credits`          | `bigint`      | no   | `0`     | Credits attributed to this record                    |
-| `created_at`       | `timestamptz` | no   | `now()` |                                                      |
+| Column             | Type          | Null | Default | Notes                                                     |
+| ------------------ | ------------- | ---- | ------- | --------------------------------------------------------- |
+| `id`               | `uuid`        | no   | -       | UUIDv7                                                    |
+| `user_id`          | `uuid`        | no   | -       |                                                           |
+| `job_id`           | `uuid`        | yes  | -       |                                                           |
+| `publication_id`   | `uuid`        | yes  | -       |                                                           |
+| `stage`            | `text`        | no   | -       | Pipeline stage such as `storyboard`, `tts`, `render`      |
+| `provider`         | `text`        | no   | -       | `anthropic`, `openai`, `elevenlabs`, `internal`, ...      |
+| `model`            | `text`        | yes  | -       |                                                           |
+| `input_tokens`     | `integer`     | no   | `0`     |                                                           |
+| `output_tokens`    | `integer`     | no   | `0`     |                                                           |
+| `audio_characters` | `integer`     | no   | `0`     |                                                           |
+| `render_ms`        | `integer`     | no   | `0`     |                                                           |
+| `cost_micros_usd`  | `bigint`      | no   | `0`     | Provider cost in millionths of a US dollar                |
+| `credits`          | `bigint`      | no   | `0`     | Credits attributed to this record                         |
+| `idempotency_key`  | `text`        | no   | -       | Caller-supplied so a retried stage records its usage once |
+| `created_at`       | `timestamptz` | no   | `now()` |                                                           |
 
 - `pk_usage_records` primary key (`id`).
 - `fk_usage_records_user_id_users` → `users.id` **ON DELETE RESTRICT**.
 - `fk_usage_records_job_id_jobs` → `jobs.id` **ON DELETE SET NULL**, added by Phase 9.
 - `fk_usage_records_publication_id_publications` → `publications.id` **ON DELETE SET NULL**, added by Phase 11.
+- `uq_usage_records_idempotency_key` unique (`idempotency_key`).
 - `ck_usage_records_counters_non_negative`: `input_tokens >= 0 AND output_tokens >= 0 AND audio_characters >= 0 AND render_ms >= 0 AND cost_micros_usd >= 0 AND credits >= 0`.
 - `ck_usage_records_stage_format`, `ck_usage_records_provider_format`: `~ '^[a-z][a-z0-9_]{1,39}$'`.
+- `ck_usage_records_model_length`: `model IS NULL OR char_length(model) <= 100`.
 - Trigger `trg_usage_records_append_only` → `forbid_append_only_mutation()`.
-- `ix_usage_records_user_id_created_at` (`user_id`, `created_at`): user usage history; supports the foreign key.
+- `ix_usage_records_user_id_created_at` (`user_id`, `created_at`): user usage history and daily aggregation; supports the foreign key.
 - `ix_usage_records_job_id` (`job_id`), `ix_usage_records_publication_id` (`publication_id`): per-job cost; support foreign keys.
 - `ix_usage_records_provider_created_at` (`provider`, `created_at`): provider cost reports.
 
@@ -790,29 +918,33 @@ Module `credits` · Phase 7 · **Append-only** · Will be partitioned monthly
 
 Module `billing` · Phase 7 · Mutable
 
-| Column                | Type          | Null | Default     | Notes                                 |
-| --------------------- | ------------- | ---- | ----------- | ------------------------------------- |
-| `id`                  | `uuid`        | no   | -           | UUIDv7                                |
-| `payment_id`          | `uuid`        | no   | -           |                                       |
-| `razorpay_refund_id`  | `text`        | yes  | -           | Set when Razorpay accepts the refund  |
-| `amount_paise`        | `bigint`      | no   | -           |                                       |
-| `status`              | `text`        | no   | `'pending'` | See `state-machines.md`               |
-| `reason`              | `text`        | no   | -           | Admin-entered, at most 500 characters |
-| `initiated_by`        | `uuid`        | yes  | -           | Admin who started it                  |
-| `credits_clawed_back` | `bigint`      | no   | `0`         |                                       |
-| `failure_reason`      | `text`        | yes  | -           | Added to explain `failed` refunds     |
-| `processed_at`        | `timestamptz` | yes  | -           |                                       |
-| `created_at`          | `timestamptz` | no   | `now()`     |                                       |
-| `updated_at`          | `timestamptz` | no   | `now()`     |                                       |
+| Column                | Type          | Null | Default     | Notes                                                                                                     |
+| --------------------- | ------------- | ---- | ----------- | --------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`        | no   | -           | UUIDv7; sent to Razorpay in the refund notes                                                              |
+| `payment_id`          | `uuid`        | no   | -           |                                                                                                           |
+| `razorpay_refund_id`  | `text`        | yes  | -           | Set when Razorpay accepts the refund                                                                      |
+| `amount_paise`        | `bigint`      | no   | -           |                                                                                                           |
+| `status`              | `text`        | no   | `'pending'` | See `state-machines.md`                                                                                   |
+| `reason`              | `text`        | no   | -           | Admin-entered, at most 500 characters                                                                     |
+| `idempotency_key`     | `text`        | no   | -           | Hash of admin, payment and request key; `external:<Razorpay refund id>` for refunds made in the dashboard |
+| `initiated_by`        | `uuid`        | yes  | -           | Admin who started it                                                                                      |
+| `credits_clawed_back` | `bigint`      | no   | `0`         |                                                                                                           |
+| `failure_reason`      | `text`        | yes  | -           | Explains `failed` refunds                                                                                 |
+| `processed_at`        | `timestamptz` | yes  | -           |                                                                                                           |
+| `created_at`          | `timestamptz` | no   | `now()`     |                                                                                                           |
+| `updated_at`          | `timestamptz` | no   | `now()`     |                                                                                                           |
 
 - `pk_refunds` primary key (`id`).
 - `fk_refunds_payment_id_payments` → `payments.id` **ON DELETE RESTRICT**.
 - `fk_refunds_initiated_by_users` → `users.id` **ON DELETE SET NULL**.
 - `uq_refunds_razorpay_refund_id` unique (`razorpay_refund_id`): webhook lookup.
+- `uq_refunds_idempotency_key` unique (`idempotency_key`): a retried request resumes its refund instead of creating a second one.
+- `ck_refunds_idempotency_key_length`: `char_length(idempotency_key) BETWEEN 1 AND 200`.
 - `ck_refunds_status`: `status IN ('pending', 'processed', 'failed')`.
 - `ck_refunds_amount_paise_positive`: `amount_paise > 0`.
 - `ck_refunds_credits_clawed_back_non_negative`: `credits_clawed_back >= 0`.
 - `ck_refunds_processed_consistent`: `(status = 'processed') = (processed_at IS NOT NULL)`.
+- `ck_refunds_reason_length`: `char_length(reason) BETWEEN 1 AND 500`.
 - `ix_refunds_payment_id` (`payment_id`): refundable amount check; supports the foreign key.
 - `ix_refunds_initiated_by` (`initiated_by`): supports the foreign key.
 
@@ -822,31 +954,69 @@ The sum of non-failed refunds for a payment never exceeds its amount; the servic
 
 Module `billing` · Phase 7 · Mutable · Shared by every provider that sends webhooks
 
-| Column         | Type          | Null | Default      | Notes                                  |
-| -------------- | ------------- | ---- | ------------ | -------------------------------------- |
-| `id`           | `uuid`        | no   | -            | UUIDv7                                 |
-| `provider`     | `text`        | no   | -            | `razorpay`, later publishing platforms |
-| `event_id`     | `text`        | no   | -            | Provider's event ID                    |
-| `event_type`   | `text`        | no   | -            | Such as `payment.captured`             |
-| `payload`      | `jsonb`       | no   | -            | Verified raw body, parsed              |
-| `status`       | `text`        | no   | `'received'` | See `state-machines.md`                |
-| `attempts`     | `integer`     | no   | `0`          |                                        |
-| `last_error`   | `text`        | yes  | -            | At most 2000 characters                |
-| `received_at`  | `timestamptz` | no   | `now()`      |                                        |
-| `processed_at` | `timestamptz` | yes  | -            |                                        |
-| `created_at`   | `timestamptz` | no   | `now()`      |                                        |
-| `updated_at`   | `timestamptz` | no   | `now()`      |                                        |
+| Column             | Type          | Null | Default      | Notes                                                                |
+| ------------------ | ------------- | ---- | ------------ | -------------------------------------------------------------------- |
+| `id`               | `uuid`        | no   | -            | UUIDv7                                                               |
+| `provider`         | `text`        | no   | -            | `razorpay`, later publishing platforms                               |
+| `event_id`         | `text`        | no   | -            | Provider's event ID (`X-Razorpay-Event-Id`)                          |
+| `event_type`       | `text`        | no   | -            | Such as `payment.captured`                                           |
+| `event_created_at` | `timestamptz` | yes  | -            | The provider's event timestamp; orders subscription events           |
+| `payload`          | `jsonb`       | no   | -            | Verified raw body, parsed                                            |
+| `status`           | `text`        | no   | `'received'` | See `state-machines.md`                                              |
+| `attempts`         | `integer`     | no   | `0`          |                                                                      |
+| `last_error`       | `text`        | yes  | -            | At most 2000 characters                                              |
+| `ignored_reason`   | `text`        | yes  | -            | `stale`, `unhandled_event`, `unknown_entity`; at most 200 characters |
+| `received_at`      | `timestamptz` | no   | `now()`      |                                                                      |
+| `processed_at`     | `timestamptz` | yes  | -            |                                                                      |
+| `created_at`       | `timestamptz` | no   | `now()`      |                                                                      |
+| `updated_at`       | `timestamptz` | no   | `now()`      |                                                                      |
 
 - `pk_webhook_events` primary key (`id`).
 - `uq_webhook_events_provider_event_id` unique (`provider`, `event_id`): deduplication.
 - `ck_webhook_events_status`: `status IN ('received', 'processing', 'processed', 'failed', 'ignored')`.
 - `ck_webhook_events_attempts_non_negative`: `attempts >= 0`.
 - `ck_webhook_events_provider_format`: `provider ~ '^[a-z][a-z0-9_]{1,39}$'`.
+- `ck_webhook_events_last_error_length`: `last_error IS NULL OR char_length(last_error) <= 2000`; `ck_webhook_events_ignored_reason_length` likewise at 200.
 - `ix_webhook_events_status_received_at` (`status`, `received_at`) `WHERE status IN ('received', 'failed')`: retry sweeper.
 - `ix_webhook_events_provider_event_type_received_at` (`provider`, `event_type`, `received_at`): admin webhook view.
 - `ix_webhook_events_received_at` (`received_at`): retention purge of payloads.
 
----
+### `billing_reconciliation_runs`
+
+Module `billing` · Phase 7 · Mutable
+
+One row per reconciliation pass. The daily settlement check writes a JSON report to storage and records its key here.
+
+| Column               | Type          | Null | Default     | Notes                                              |
+| -------------------- | ------------- | ---- | ----------- | -------------------------------------------------- |
+| `id`                 | `uuid`        | no   | -           | UUIDv7                                             |
+| `type`               | `text`        | no   | -           | `pending_orders`, `subscriptions`, `settlement`    |
+| `period_start`       | `timestamptz` | yes  | -           | Start of the compared window; set for `settlement` |
+| `period_end`         | `timestamptz` | yes  | -           | End of the compared window                         |
+| `status`             | `text`        | no   | `'running'` | `running`, `completed`, `failed`                   |
+| `checked_count`      | `integer`     | no   | `0`         | Records examined                                   |
+| `repaired_count`     | `integer`     | no   | `0`         | Orders settled or expired, subscriptions corrected |
+| `mismatch_count`     | `integer`     | no   | `0`         | Missing, extra or mismatched records               |
+| `summary`            | `jsonb`       | no   | `'{}'`      | Counts by mismatch kind                            |
+| `report_storage_key` | `text`        | yes  | -           | Object key of the JSON report                      |
+| `error`              | `text`        | yes  | -           | At most 2000 characters; set when `failed`         |
+| `started_at`         | `timestamptz` | no   | `now()`     |                                                    |
+| `finished_at`        | `timestamptz` | yes  | -           |                                                    |
+| `created_at`         | `timestamptz` | no   | `now()`     |                                                    |
+| `updated_at`         | `timestamptz` | no   | `now()`     |                                                    |
+
+- `pk_billing_reconciliation_runs` primary key (`id`).
+- `uq_billing_reconciliation_runs_settlement_period` unique (`period_start`) `WHERE type = 'settlement'`: one settlement run per day.
+- `ck_billing_reconciliation_runs_type`: `type IN ('pending_orders', 'subscriptions', 'settlement')`.
+- `ck_billing_reconciliation_runs_status`: `status IN ('running', 'completed', 'failed')`.
+- `ck_billing_reconciliation_runs_period`: `(period_start IS NULL) = (period_end IS NULL) AND (period_start IS NULL OR period_end > period_start)`.
+- `ck_billing_reconciliation_runs_counts_non_negative`: `checked_count >= 0 AND repaired_count >= 0 AND mismatch_count >= 0`.
+- `ck_billing_reconciliation_runs_finished_consistent`: `(status = 'running') = (finished_at IS NULL)`.
+- `ck_billing_reconciliation_runs_summary_object`: `jsonb_typeof(summary) = 'object'`.
+- `ck_billing_reconciliation_runs_report_storage_key_length`: `report_storage_key IS NULL OR char_length(report_storage_key) <= 512`.
+- `ck_billing_reconciliation_runs_error_length`: `error IS NULL OR char_length(error) <= 2000`.
+- `ix_billing_reconciliation_runs_type_created_at` (`type`, `created_at`): admin runs list.
+- `ix_billing_reconciliation_runs_mismatches` (`created_at`) `WHERE mismatch_count > 0`: runs that need attention.
 
 ## Media and voices
 

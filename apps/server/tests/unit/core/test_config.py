@@ -10,6 +10,7 @@ from motionile.core.config import (
     AppEnv,
     AppSettings,
     AuthSettings,
+    BillingSettings,
     CatalogSettings,
     CorsSettings,
     DatabaseSettings,
@@ -167,6 +168,9 @@ def test_deployed_environments_reject_unsafe_defaults(env: AppEnv) -> None:
         "TURNSTILE_SECRET_KEY must be set",
         "CATALOG_REVALIDATION_SECRET must be set",
         "STORAGE_BUCKET must be set",
+        "BILLING_RAZORPAY_KEY_ID must be set",
+        "BILLING_RAZORPAY_KEY_SECRET must be set",
+        "BILLING_RAZORPAY_WEBHOOK_SECRET must be set",
     ):
         assert problem in message
 
@@ -204,6 +208,9 @@ def test_blank_secrets_from_env_files_are_treated_as_unset(monkeypatch: pytest.M
         "STORAGE_ACCESS_KEY_ID",
         "STORAGE_ENDPOINT_URL",
         "CATALOG_REVALIDATION_SECRET",
+        "BILLING_RAZORPAY_KEY_ID",
+        "BILLING_RAZORPAY_KEY_SECRET",
+        "BILLING_RAZORPAY_WEBHOOK_SECRET",
     ):
         monkeypatch.setenv(name, "  ")
 
@@ -214,6 +221,9 @@ def test_blank_secrets_from_env_files_are_treated_as_unset(monkeypatch: pytest.M
     assert settings.storage.access_key_id is None
     assert settings.storage.endpoint_url is None
     assert settings.catalog.revalidation_secret is None
+    assert settings.billing.razorpay_key_id is None
+    assert settings.billing.razorpay_key_secret is None
+    assert settings.billing.razorpay_webhook_secret is None
 
 
 def test_asyncpg_urls_translate_libpq_parameters() -> None:
@@ -248,3 +258,103 @@ def test_auth_origins_cannot_inject_redirect_components(origin: str) -> None:
 def test_auth_signing_key_must_be_selected() -> None:
     with pytest.raises(ValidationError, match="CURRENT_KID"):
         AuthSettings(jwt_keys={"new": ENCRYPTION_KEY}, jwt_current_kid="missing")
+
+
+def test_billing_defaults_are_safe_for_local_development() -> None:
+    billing = BillingSettings()
+
+    assert billing.razorpay_key_id is None
+    assert billing.razorpay_key_secret is None
+    assert billing.razorpay_webhook_secret is None
+    assert billing.razorpay_api_base_url == "https://api.razorpay.com"
+    assert billing.order_expiry_seconds == 7_200
+    assert billing.subscription_total_count == 120
+    assert billing.expiry_reminder_lead_days == 7
+    assert billing.reservation_ttl_seconds == 3_600
+    assert billing.webhook_max_attempts == 10
+    assert billing.reconciliation_pending_after_seconds == 1_800
+    assert billing.report_storage_prefix == "billing/reconciliation"
+
+
+def test_billing_reads_values_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BILLING_RAZORPAY_KEY_ID", "rzp_test_abc")
+    monkeypatch.setenv("BILLING_RAZORPAY_KEY_SECRET", "key-secret")
+    monkeypatch.setenv("BILLING_RAZORPAY_WEBHOOK_SECRET", "webhook-secret")
+    monkeypatch.setenv("BILLING_RAZORPAY_API_BASE_URL", "https://api.razorpay.com/")
+    monkeypatch.setenv("BILLING_ORDER_EXPIRY_SECONDS", "3600")
+    monkeypatch.setenv("BILLING_REPORT_STORAGE_PREFIX", "billing/reports")
+
+    billing = Settings().billing
+
+    assert billing.razorpay_key_id == "rzp_test_abc"
+    assert billing.razorpay_key_secret == SecretStr("key-secret")
+    assert billing.razorpay_webhook_secret == SecretStr("webhook-secret")
+    assert billing.razorpay_api_base_url == "https://api.razorpay.com"
+    assert billing.order_expiry_seconds == 3_600
+    assert billing.report_storage_prefix == "billing/reports"
+
+
+def test_billing_secrets_are_not_rendered() -> None:
+    billing = BillingSettings(razorpay_key_secret=SecretStr("very-secret-value"))
+
+    assert "very-secret-value" not in repr(billing)
+    assert "very-secret-value" not in str(billing.model_dump())
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("order_expiry_seconds", 899),
+        ("order_expiry_seconds", 86_401),
+        ("subscription_total_count", 0),
+        ("subscription_total_count", 1_001),
+        ("expiry_reminder_lead_days", 0),
+        ("expiry_reminder_lead_days", 61),
+        ("reservation_ttl_seconds", 59),
+        ("reservation_ttl_seconds", 86_401),
+        ("webhook_max_attempts", 0),
+        ("webhook_max_attempts", 51),
+        ("reconciliation_pending_after_seconds", 59),
+        ("reconciliation_pending_after_seconds", 86_401),
+    ],
+)
+def test_billing_numeric_settings_are_bounded(field: str, value: int) -> None:
+    with pytest.raises(ValidationError):
+        BillingSettings.model_validate({field: value})
+
+
+@pytest.mark.parametrize(
+    "prefix", ["", "/billing", "billing/", "Billing", "billing//reports", "billing/../x", "a" * 101]
+)
+def test_billing_report_prefix_must_be_a_relative_key_prefix(prefix: str) -> None:
+    with pytest.raises(ValidationError):
+        BillingSettings(report_storage_prefix=prefix)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://api.razorpay.com",
+        "https://user:pass@api.razorpay.com",
+        "https://api.razorpay.com/v1",
+        "https://api.razorpay.com?x=1",
+        "api.razorpay.com",
+    ],
+)
+def test_razorpay_base_url_must_be_a_plain_https_origin(url: str) -> None:
+    with pytest.raises(ValidationError):
+        BillingSettings(razorpay_api_base_url=url)
+
+
+@pytest.mark.parametrize("missing", ["razorpay_key_id", "razorpay_key_secret", "razorpay_webhook_secret"])
+def test_deployed_environments_require_each_razorpay_credential(missing: str) -> None:
+    complete = deployed()
+    settings = complete.model_copy(update={"billing": complete.billing.model_copy(update={missing: None})})
+
+    problems = settings.billing_deployment_problems()
+
+    assert problems == [f"BILLING_{missing.upper()} must be set"]
+
+
+def test_deployed_environments_accept_complete_billing_configuration() -> None:
+    assert deployed().billing_deployment_problems() == []

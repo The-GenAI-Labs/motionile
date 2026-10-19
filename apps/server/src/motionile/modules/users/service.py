@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterable
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
@@ -34,6 +35,13 @@ if TYPE_CHECKING:
     from motionile.modules.auth import OtpService
 
 
+@dataclass(frozen=True)
+class PrimaryContacts:
+    name: str | None
+    email: str | None
+    phone: str | None
+
+
 class UsersService:
     def __init__(
         self,
@@ -63,6 +71,13 @@ class UsersService:
 
     async def contacts(self, user_id: UUID) -> list[UserContact]:
         return await self.repository.contacts(user_id)
+
+    async def primary_verified_email(self, user_id: UUID) -> str | None:
+        return await self.repository.primary_verified_email(user_id)
+
+    async def primary_verified_contacts(self, user_id: UUID) -> PrimaryContacts | None:
+        found = await self.repository.primary_verified_contacts(user_id)
+        return PrimaryContacts(*found) if found is not None else None
 
     async def activate(self, user_id: UUID, identifier: Identifier, now: datetime) -> User:
         user = await self.get(user_id, lock=True)

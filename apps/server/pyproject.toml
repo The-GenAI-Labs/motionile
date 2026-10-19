@@ -37,6 +37,7 @@ render = [
 ]
 dev = [
     "fakeredis>=2.40.0",
+    "hypothesis>=6.170.1",
     "import-linter>=2.15",
     "pyright>=1.1.414",
     "pytest>=9.1.1",
@@ -141,3 +142,11 @@ id = "engine-is-independent-of-modules"
 name = "engine imports nothing from modules"
 type = "layers"
 layers = ["(motionile.modules)", "(motionile.engine)"]
+
+[[tool.importlinter.contracts]]
+id = "credits-is-independent-of-billing"
+name = "credits imports nothing from billing"
+type = "forbidden"
+source_modules = ["motionile.modules.credits"]
+forbidden_modules = ["motionile.modules.billing"]
+allow_indirect_imports = false

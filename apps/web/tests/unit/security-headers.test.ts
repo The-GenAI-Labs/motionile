@@ -57,6 +57,43 @@ describe("content security policy", () => {
     expect(directives["upgrade-insecure-requests"]).toEqual([]);
   });
 
+  it("allows exactly the Razorpay Checkout origins and no wildcards", () => {
+    const directives = buildCspDirectives(production);
+
+    expect(directives["script-src"]).toContain("https://checkout.razorpay.com");
+    expect(directives["frame-src"]).toEqual(
+      expect.arrayContaining(["https://api.razorpay.com", "https://checkout.razorpay.com"]),
+    );
+    expect(directives["connect-src"]).toContain("https://api.razorpay.com");
+    expect(
+      Object.entries(directives)
+        .filter(([name]) => name !== "default-src")
+        .flatMap(([, sources]) => sources)
+        .filter((source) => source.includes("razorpay")),
+    ).toEqual([
+      "https://checkout.razorpay.com",
+      "https://api.razorpay.com",
+      "https://api.razorpay.com",
+      "https://checkout.razorpay.com",
+    ]);
+    expect(buildContentSecurityPolicy(production)).not.toContain("*");
+  });
+
+  it("does not allow Razorpay as a media, image, font or object source", () => {
+    const directives = buildCspDirectives(production);
+
+    for (const name of [
+      "img-src",
+      "media-src",
+      "font-src",
+      "object-src",
+      "style-src",
+      "default-src",
+    ]) {
+      expect(directives[name]?.some((source) => source.includes("razorpay"))).toBe(false);
+    }
+  });
+
   it("never allows unsafe-eval in production", () => {
     expect(buildContentSecurityPolicy(production)).not.toContain("unsafe-eval");
   });

@@ -4,6 +4,7 @@ import {
   adminNavigation,
   appNavigation,
   authPaths,
+  billingNavigation,
   crawlerDisallowedPaths,
   footerNavigation,
   isActivePath,
@@ -23,6 +24,7 @@ describe("navigation config", () => {
       ...publicPages.map((page) => page.path),
       ...userNavigation.items.map((item) => item.href),
       ...adminNavigation.items.map((item) => item.href),
+      ...billingNavigation.map((item) => item.href),
       ...authPaths,
     ];
 
@@ -63,6 +65,17 @@ describe("navigation config", () => {
     for (const item of adminNavigation.items) {
       expect(item.href.startsWith("/admin")).toBe(true);
     }
+  });
+
+  it("keeps the billing sub-navigation inside the billing area and the user area", () => {
+    expect(billingNavigation.map((item) => item.href)).toEqual([
+      "/billing",
+      "/billing/plans",
+      "/billing/credits",
+      "/billing/history",
+    ]);
+    expect(userNavigation.items.map((item) => item.href)).toContain("/billing");
+    expect(crawlerDisallowedPaths).toContain("/billing");
   });
 
   it("disallows the admin console, the user area and auth pages for crawlers", () => {

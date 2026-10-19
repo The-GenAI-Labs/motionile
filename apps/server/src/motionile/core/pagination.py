@@ -75,14 +75,14 @@ class CursorCodec:
         return Cursor(created_at=parsed.t, id=parsed.i)
 
 
-def keyset_page[RowT](
-    statement: Select[RowT],
+def keyset_page[*RowT](
+    statement: Select[*RowT],
     *,
     created_at: ColumnElement[datetime] | InstrumentedAttribute[datetime],
     id_: ColumnElement[UUID] | InstrumentedAttribute[UUID],
     cursor: Cursor | None,
     limit: int,
-) -> Select[RowT]:
+) -> Select[*RowT]:
     if cursor is not None:
         statement = statement.where(tuple_(created_at, id_) < tuple_(cursor.created_at, cursor.id))
     return statement.order_by(created_at.desc(), id_.desc()).limit(limit + 1)

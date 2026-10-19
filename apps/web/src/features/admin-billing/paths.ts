@@ -1,0 +1,20 @@
+export const adminBillingPaths = {
+  root: "/admin/billing",
+  products: "/admin/billing/products",
+  newProduct: "/admin/billing/products/new",
+  product: (productId: string) => `/admin/billing/products/${productId}` as const,
+  payments: "/admin/billing/payments",
+  payment: (paymentId: string) => `/admin/billing/payments/${paymentId}` as const,
+  orders: "/admin/billing/orders",
+  order: (orderId: string) => `/admin/billing/orders/${orderId}` as const,
+  refunds: "/admin/billing/refunds",
+  refund: (refundId: string) => `/admin/billing/refunds/${refundId}` as const,
+  subscriptions: "/admin/billing/subscriptions",
+  subscription: (subscriptionId: string) =>
+    `/admin/billing/subscriptions/${subscriptionId}` as const,
+  webhooks: "/admin/billing/webhooks",
+  webhook: (eventId: string) => `/admin/billing/webhooks/${eventId}` as const,
+  reconciliation: "/admin/billing/reconciliation",
+  run: (runId: string) => `/admin/billing/reconciliation/${runId}` as const,
+  user: (userId: string) => `/admin/users/${userId}` as const,
+} as const;

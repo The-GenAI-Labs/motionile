@@ -20,6 +20,8 @@ DEVELOPMENT_ENCRYPTION_KEY = base64.b64encode(b"motionile-dev-encryption-key-32b
 AES_256_KEY_BYTES = 32
 MINIMUM_SECRET_LENGTH = 32
 MAX_KEY_ID_LENGTH = 64
+RAZORPAY_API_BASE_URL = "https://api.razorpay.com"
+REPORT_PREFIX_PATTERN = r"^[a-z0-9][a-z0-9_-]*(/[a-z0-9][a-z0-9_-]*)*$"
 
 
 class AppEnv(StrEnum):
@@ -373,6 +375,38 @@ class AuthSettings(GroupSettings):
         return self.test_access_seconds or 900
 
 
+class BillingSettings(GroupSettings):
+    model_config = SettingsConfigDict(env_prefix="BILLING_")
+
+    razorpay_key_id: OptionalText = None
+    razorpay_key_secret: OptionalSecret = None
+    razorpay_webhook_secret: OptionalSecret = None
+    razorpay_api_base_url: str = RAZORPAY_API_BASE_URL
+    order_expiry_seconds: int = Field(default=7_200, ge=900, le=86_400)
+    subscription_total_count: int = Field(default=120, ge=1, le=1_000)
+    expiry_reminder_lead_days: int = Field(default=7, ge=1, le=60)
+    reservation_ttl_seconds: int = Field(default=3_600, ge=60, le=86_400)
+    webhook_max_attempts: int = Field(default=10, ge=1, le=50)
+    reconciliation_pending_after_seconds: int = Field(default=1_800, ge=60, le=86_400)
+    report_storage_prefix: str = Field(default="billing/reconciliation", max_length=100, pattern=REPORT_PREFIX_PATTERN)
+
+    @field_validator("razorpay_api_base_url")
+    @classmethod
+    def require_https_origin(cls, value: str) -> str:
+        parts = urlsplit(value)
+        if (
+            parts.scheme != "https"
+            or not parts.hostname
+            or parts.username
+            or parts.password
+            or parts.query
+            or parts.fragment
+            or parts.path not in {"", "/"}
+        ):
+            raise ValueError("must be an HTTPS origin without credentials, path, query or fragment")
+        return value.rstrip("/")
+
+
 class NotificationSettings(GroupSettings):
     model_config = SettingsConfigDict(env_prefix="NOTIFICATIONS_")
 
@@ -410,6 +444,7 @@ class Settings(BaseModel):
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     outbound_http: OutboundHttpSettings = Field(default_factory=OutboundHttpSettings)
     catalog: CatalogSettings = Field(default_factory=CatalogSettings)
+    billing: BillingSettings = Field(default_factory=BillingSettings)
 
     @model_validator(mode="after")
     def require_safe_values_when_deployed(self) -> Self:
@@ -448,7 +483,16 @@ class Settings(BaseModel):
         if "bucket" not in self.storage.model_fields_set:
             problems.append("STORAGE_BUCKET must be set")
         problems.extend(self.auth_deployment_problems())
+        problems.extend(self.billing_deployment_problems())
         return problems
+
+    def billing_deployment_problems(self) -> list[str]:
+        required = {
+            "BILLING_RAZORPAY_KEY_ID": self.billing.razorpay_key_id,
+            "BILLING_RAZORPAY_KEY_SECRET": self.billing.razorpay_key_secret,
+            "BILLING_RAZORPAY_WEBHOOK_SECRET": self.billing.razorpay_webhook_secret,
+        }
+        return [f"{name} must be set" for name, value in required.items() if not value]
 
     def auth_deployment_problems(self) -> list[str]:
         required = {

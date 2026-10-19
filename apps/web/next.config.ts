@@ -18,8 +18,14 @@ const createSecurityHeaders = (phase: string) => {
   });
 };
 
+const createInlinedEnv = (phase: string): Record<string, string> =>
+  PHASES_REQUIRING_ENV.has(phase)
+    ? { NEXT_PUBLIC_PROVIDERS_MODE: readPublicEnv().NEXT_PUBLIC_PROVIDERS_MODE }
+    : {};
+
 const buildNextConfig = (phase: string): NextConfig => ({
   output: "standalone",
+  env: createInlinedEnv(phase),
   reactCompiler: true,
   poweredByHeader: false,
   reactStrictMode: true,

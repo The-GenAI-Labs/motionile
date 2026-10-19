@@ -30,6 +30,17 @@ SENSITIVE_KEYS = frozenset(
         "idempotency_key",
         "signature",
         "x_razorpay_signature",
+        "email",
+        "contact",
+        "phone",
+        "vpa",
+        "upi",
+        "card",
+        "bank",
+        "wallet",
+        "account_number",
+        "ifsc",
+        "acquirer_data",
     }
 )
 SENSITIVE_SUFFIXES = ("_token", "_secret", "_password", "_key_id", "_api_key", "_signature")

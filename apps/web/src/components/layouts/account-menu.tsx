@@ -1,6 +1,6 @@
 "use client";
 
-import { CreditCard, Home, LayoutDashboard, Settings, Shield } from "lucide-react";
+import { Coins, CreditCard, Home, LayoutDashboard, Settings, Shield } from "lucide-react";
 import Link from "next/link";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -56,6 +56,12 @@ export function AccountMenu({ area }: AccountMenuProps) {
           <Link href={{ pathname: "/billing" }}>
             <CreditCard aria-hidden="true" />
             Billing
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={{ pathname: "/billing/credits" }}>
+            <Coins aria-hidden="true" />
+            Buy credits
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

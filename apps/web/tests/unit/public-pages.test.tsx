@@ -11,16 +11,22 @@ import * as refundPolicy from "@/app/(public)/legal/refund-policy/page";
 import * as terms from "@/app/(public)/legal/terms/page";
 import * as home from "@/app/(public)/page";
 import * as pricing from "@/app/(public)/pricing/page";
+import { PricingContent } from "@/features/billing/components/pricing-content";
 
 interface PageModule {
   default: ComponentType;
   metadata: Metadata;
 }
 
+const pricingPage: PageModule = {
+  default: () => <PricingContent products={null} />,
+  metadata: pricing.metadata,
+};
+
 const pages: [string, string, PageModule][] = [
   ["/", "Motionile", home],
   ["/about", "About Motionile", about],
-  ["/pricing", "Simple, credit-based pricing", pricing],
+  ["/pricing", "Simple, credit-based pricing", pricingPage],
   ["/contact", "Get in touch", contact],
   ["/legal/terms", "Terms of Service", terms],
   ["/legal/privacy", "Privacy Policy", privacy],
@@ -143,11 +149,14 @@ describe("public pages", () => {
     }
   });
 
-  it("does not invent prices on the pricing page", () => {
-    const { container } = render(<pricing.default />);
+  it("does not invent prices on the pricing page when the products are unavailable", () => {
+    const { container } = render(<PricingContent products={null} />);
 
     expect(container.textContent).not.toMatch(/₹\s?\d|Rs\.?\s?\d|INR\s?\d/);
-    expect(screen.getByText(/Indian Rupees \(INR\) at checkout/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Pricing is temporarily unavailable" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "How credits work" })).toBeInTheDocument();
   });
 
   it("lists contact emails as mail links", () => {

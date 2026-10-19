@@ -8,7 +8,7 @@ reports_dir="${K6_REPORTS_DIR:-$load_dir/../../k6-report}"
 if [[ $# -gt 0 ]]; then
   scenarios=("$@")
 else
-  scenarios=(smoke public explore)
+  scenarios=(smoke public explore billing-webhooks)
 fi
 
 mkdir -p "$reports_dir"
@@ -22,5 +22,6 @@ for scenario in "${scenarios[@]}"; do
     --env "WEB_BASE_URL=${WEB_BASE_URL:-http://localhost:3000}" \
     --env "LOAD_PROFILE=${LOAD_PROFILE:-smoke}" \
     --env AUTH_LOAD_ACCOUNTS \
+    --env RAZORPAY_WEBHOOK_SECRET \
     "$image" run --summary-export "/reports/${scenario}.json" "/load/scenarios/${scenario}.js"
 done

@@ -52,6 +52,38 @@ class UsersRepository:
             )
         )
 
+    async def primary_verified_email(self, user_id: UUID) -> str | None:
+        value = await self.session.scalar(
+            select(UserContact.value)
+            .join(User, User.id == UserContact.user_id)
+            .where(
+                UserContact.user_id == user_id,
+                UserContact.kind == "email",
+                UserContact.is_primary.is_(True),
+                UserContact.verified_at.is_not(None),
+                User.deleted_at.is_(None),
+            )
+        )
+        return str(value) if value is not None else None
+
+    async def primary_verified_contacts(self, user_id: UUID) -> tuple[str | None, str | None, str | None] | None:
+        user = (
+            await self.session.execute(select(User.name).where(User.id == user_id, User.deleted_at.is_(None)))
+        ).one_or_none()
+        if user is None:
+            return None
+        values = {
+            kind: str(value)
+            for kind, value in await self.session.execute(
+                select(UserContact.kind, UserContact.value).where(
+                    UserContact.user_id == user_id,
+                    UserContact.is_primary.is_(True),
+                    UserContact.verified_at.is_not(None),
+                )
+            )
+        }
+        return user[0], values.get("email"), values.get("phone")
+
     async def contact(self, user_id: UUID, contact_id: UUID, *, lock: bool = False) -> UserContact | None:
         query = select(UserContact).where(UserContact.user_id == user_id, UserContact.id == contact_id)
         if lock:

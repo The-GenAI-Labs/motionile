@@ -117,7 +117,8 @@ Work on `phase-<n>/<slug>` or `feat/<slug>` branches cut from `develop`. Commits
 - [`docs/adr/`](docs/adr/): architecture decision records
 - [`docs/db/conventions.md`](docs/db/conventions.md): database conventions
 - [`docs/infrastructure.md`](docs/infrastructure.md): AWS, Vercel and Neon topology and the deployment flow
-- [`docs/runbooks/`](docs/runbooks/): step-by-step setup, deployment, operations, backups, secret rotation and platform applications
+- [`docs/billing.md`](docs/billing.md): credits, products, Razorpay flows, failure handling, alerts and scheduled tasks
+- [`docs/runbooks/`](docs/runbooks/): step-by-step setup, deployment, operations, backups, secret rotation, platform applications, [Razorpay setup and go-live](docs/runbooks/razorpay-setup.md) and [billing operations](docs/runbooks/billing-operations.md)
 - [`AGENTS.md`](AGENTS.md): rules for coding agents and contributors
 
 ### Auth frontend development

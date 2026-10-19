@@ -171,6 +171,10 @@ describe("user shell", () => {
       "href",
       "/billing",
     );
+    expect(within(menu).getByRole("menuitem", { name: "Buy credits" })).toHaveAttribute(
+      "href",
+      "/billing/credits",
+    );
     expect(within(menu).getByRole("menuitem", { name: "Settings" })).toHaveAttribute(
       "href",
       "/settings/security",

@@ -319,16 +319,16 @@ Razorpay's pages disagree on which policy pages are mandatory at onboarding (one
 5. Website details: `https://<PRODUCTION_DOMAIN>` and the links in 7.1.
 6. Test mode works immediately: Account & Settings › API keys › Generate test key. Staging always uses test keys.
 7. After activation, switch to Live mode and generate live keys. Production only uses live keys.
-8. Subscriptions: open Subscriptions in the dashboard; if live mode shows it as not enabled, raise a request from the dashboard support widget asking to enable Subscriptions for recurring card and UPI Autopay mandates. Plans are created later from `products.razorpay_plan_id` in Phase 7.
+8. Subscriptions: open Subscriptions in the dashboard; if live mode shows it as not enabled, raise a request from the dashboard support widget asking to enable Subscriptions for recurring card and UPI Autopay mandates. Plans are not created by hand: the admin console creates and links them (**Sync plan** on each subscription product, see [razorpay-setup.md](razorpay-setup.md#25-products-and-plans)).
 9. Webhooks (Account & Settings › Webhooks), one per mode:
    - Test mode: `https://api.<STAGING_DOMAIN>/v1/webhooks/razorpay`.
    - Live mode: `https://api.<PRODUCTION_DOMAIN>/v1/webhooks/razorpay`.
    - Secret: `openssl rand -hex 32`, different per mode; save it.
    - Alert email: `billing@motionile.com`.
-   - Events: `payment.captured`, `payment.failed`, `order.paid`, `subscription.activated`, `subscription.charged`, `subscription.pending`, `subscription.halted`, `subscription.cancelled`, `subscription.completed`, `subscription.paused`, `subscription.resumed`, `subscription.updated`, `refund.processed`, `refund.failed`.
-   - Create the webhooks when Phase 7 deploys the endpoint; Razorpay disables a webhook that keeps failing.
+   - Events: `payment.captured`, `payment.failed`, `order.paid`, `subscription.authenticated`, `subscription.activated`, `subscription.charged`, `subscription.pending`, `subscription.halted`, `subscription.cancelled`, `subscription.completed`, `subscription.paused`, `subscription.resumed`, `subscription.updated`, `refund.created`, `refund.processed`, `refund.failed`.
+   - Create each webhook after the API with the endpoint is deployed in that environment; Razorpay disables a webhook that keeps failing. Step by step, with the SSM upload and the verification, in [razorpay-setup.md](razorpay-setup.md).
 
-Webhooks live under `/v1/webhooks/`, the prefix the API's Origin guard exempts (`CORS_ORIGIN_GUARD_EXEMPT_PREFIXES`), so the Razorpay endpoint is `/v1/webhooks/razorpay`; Phase 7 implements it at this path. The URL can be edited in the dashboard at any time.
+Webhooks live under `/v1/webhooks/`, the prefix the API's Origin guard exempts (`CORS_ORIGIN_GUARD_EXEMPT_PREFIXES`), so the Razorpay endpoint is `/v1/webhooks/razorpay`. The URL can be edited in the dashboard at any time. The three values this section produces (key ID, key secret, webhook secret) go to SSM as `BILLING_RAZORPAY_KEY_ID`, `BILLING_RAZORPAY_KEY_SECRET` and `BILLING_RAZORPAY_WEBHOOK_SECRET`; rotate them with [secrets-rotation.md](secrets-rotation.md#9-razorpay-key-and-webhook-secret).
 
 Timeline: KYC review typically takes 3–7 working days after complete documents; website review issues restart the clock.
 
@@ -541,14 +541,14 @@ Sign-in demos depend on Phase 4 (auth backend) and Phase 5 (auth frontend); publ
 
 ## 11. Where credentials go
 
-| Credential                                                  | Until its phase lands | Destination once the code reads it                                                |
-| ----------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------- |
-| Turnstile secret key                                        | Now                   | SSM `/motionile/<env>/TURNSTILE_SECRET_KEY` via `infra/scripts/put-parameters.sh` |
-| Turnstile site key                                          | Password manager      | Vercel `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (Phase 5)                                 |
-| Google, GitHub, Microsoft client IDs and secrets            | Password manager      | SSM SecureString parameters added to `deploy/parameters.csv` in Phase 4           |
-| WhatsApp token, phone number ID, business account ID        | Password manager      | SSM parameters added in Phase 4                                                   |
-| Razorpay key ID, key secret, webhook secret (test and live) | Password manager      | SSM parameters added in Phase 7; test keys for staging, live keys for production  |
-| Publishing client IDs and secrets (all platforms)           | Password manager      | SSM parameters added in Phase 11                                                  |
+| Credential                                                  | Until its phase lands | Destination once the code reads it                                                                                                                                                                         |
+| ----------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Turnstile secret key                                        | Now                   | SSM `/motionile/<env>/TURNSTILE_SECRET_KEY` via `infra/scripts/put-parameters.sh`                                                                                                                          |
+| Turnstile site key                                          | Password manager      | Vercel `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (Phase 5)                                                                                                                                                          |
+| Google, GitHub, Microsoft client IDs and secrets            | Password manager      | SSM SecureString parameters added to `deploy/parameters.csv` in Phase 4                                                                                                                                    |
+| WhatsApp token, phone number ID, business account ID        | Password manager      | SSM parameters added in Phase 4                                                                                                                                                                            |
+| Razorpay key ID, key secret, webhook secret (test and live) | Password manager      | SSM `/motionile/<env>/BILLING_RAZORPAY_KEY_ID`, `BILLING_RAZORPAY_KEY_SECRET` and `BILLING_RAZORPAY_WEBHOOK_SECRET` via `infra/scripts/put-parameters.sh`; test keys for staging, live keys for production |
+| Publishing client IDs and secrets (all platforms)           | Password manager      | SSM parameters added in Phase 11                                                                                                                                                                           |
 
 Every new owner parameter must be added to `deploy/parameters.csv` and to `Settings.deployment_problems()` in the phase that introduces it.
 
@@ -577,7 +577,7 @@ Fill in one row per environment where the item is per environment. Status values
 | WhatsApp `motionile_otp` template                | Both        | Create AUTHENTICATION template                                     | 4               |              | Not started |             |
 | Razorpay account and KYC                         | Production  | Sign up, upload KYC, bank account, website details                 | 7               |              | Not started |             |
 | Razorpay Subscriptions enablement                | Production  | Request enablement in live mode                                    | 7               |              | Not started |             |
-| Razorpay webhooks                                | Both        | Create test and live webhooks when the endpoint ships              | 7               |              | Not started |             |
+| Razorpay webhooks                                | Both        | Create test and live webhooks with the 16 events (razorpay-setup)  | 7               |              | Not started |             |
 | YouTube projects and clients                     | Both        | Create projects, enable API, create clients                        | 11              |              | Not started |             |
 | YouTube brand verification                       | Production  | Submit branding                                                    | 11              |              | Not started |             |
 | YouTube sensitive scope verification             | Production  | Submit with demo video                                             | 11              |              | Not started |             |

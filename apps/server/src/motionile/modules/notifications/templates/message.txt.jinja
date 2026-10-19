@@ -1,6 +1,11 @@
 {{ subject }}
 
 {{ message }}
+{% if details %}
+{% for label, value in details %}
+{{ label }}: {{ value }}
+{% endfor %}
+{% endif %}
 {% if code %}
 {{ code }}
 
@@ -9,6 +14,8 @@ This code expires in 5 minutes. Never share it with anyone.
 {% if link %}
 {{ link }}
 {% endif %}
+{% if security_notice %}
 If you did not request this, secure your account or contact support.
 
+{% endif %}
 Motionile

@@ -45,6 +45,19 @@ def test_contracts_fail_on_violating_fixture(tmp_path: Path, fixture: str, broke
     assert broken_contract in result.stdout
 
 
+def test_contracts_fail_when_credits_import_billing(tmp_path: Path) -> None:
+    source_root = tmp_path / "tree"
+    shutil.copytree(FIXTURES / "passing", source_root)
+    (source_root / "motionile" / "modules" / "credits" / "service.py").write_text(
+        "from motionile.modules.billing.service import PRICE\n\nBALANCE = PRICE\n", encoding="utf-8"
+    )
+
+    result = lint_imports(source_root, tmp_path / "cache")
+
+    assert result.returncode == 1
+    assert "credits imports nothing from billing BROKEN" in result.stdout
+
+
 def test_contracts_pass_on_real_code(tmp_path: Path) -> None:
     result = lint_imports(SERVER_ROOT / "src", tmp_path)
 

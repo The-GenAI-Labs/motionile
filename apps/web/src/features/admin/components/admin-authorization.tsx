@@ -12,6 +12,9 @@ const ADMIN_PERMISSIONS = [
   "settings.read",
   "flags.manage",
   "catalog.manage",
+  "billing.read",
+  "billing.products.manage",
+  "billing.webhooks.manage",
 ] as const;
 
 export function AdminAuthorization({ children }: { children: ReactNode }) {

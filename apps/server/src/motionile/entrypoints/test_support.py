@@ -13,6 +13,7 @@ from motionile.core.ratelimit.limiter import rate_limit
 from motionile.core.schemas import ResponseModel, StrictModel
 from motionile.modules.audit import ActorType, AuditEvent, context_from_request, record
 from motionile.modules.auth import FakeGrant, FakeOAuthProvider, ProviderIdentity, ProviderName
+from motionile.modules.billing.razorpay.fake_routes import fake_razorpay_router
 from motionile.modules.notifications import FakeDelivery, Notification
 
 TEST_IDEMPOTENCY_SCOPE = "test.idempotent"
@@ -20,6 +21,7 @@ TEST_IDEMPOTENCY_SCOPE = "test.idempotent"
 test_support_router = APIRouter(
     prefix="/_test", tags=["test_support"], dependencies=[Depends(rate_limit("api.default"))]
 )
+test_support_router.include_router(fake_razorpay_router)
 
 
 class EchoRequest(StrictModel):

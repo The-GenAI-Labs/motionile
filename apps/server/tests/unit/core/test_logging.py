@@ -118,3 +118,45 @@ def test_exception_logs_never_capture_frame_locals(capfd: pytest.CaptureFixture[
     output = capfd.readouterr().out
     assert confidential not in output
     assert "safe failure" in output
+
+
+def test_payment_payloads_mask_customer_contact_and_instrument_details() -> None:
+    payload = {
+        "event": "payment.captured",
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "pay_1",
+                    "amount": 100,
+                    "email": "asha@example.com",
+                    "contact": "+919876543210",
+                    "vpa": "asha@upi",
+                    "card": {"last4": "1111", "network": "Visa"},
+                    "bank": "HDFC",
+                    "wallet": "paytm",
+                    "acquirer_data": {"rrn": "123"},
+                }
+            }
+        },
+    }
+
+    redacted = redact(payload)
+
+    assert redacted == {
+        "event": "payment.captured",
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "pay_1",
+                    "amount": 100,
+                    "email": REDACTED,
+                    "contact": REDACTED,
+                    "vpa": REDACTED,
+                    "card": REDACTED,
+                    "bank": REDACTED,
+                    "wallet": REDACTED,
+                    "acquirer_data": REDACTED,
+                }
+            }
+        },
+    }

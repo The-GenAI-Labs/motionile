@@ -1,10 +1,11 @@
 import base64
+from collections.abc import Mapping
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.resources import Resources
 from motionile.core.tasks.registry import defer_after_commit
-from motionile.modules.notifications.schemas import Notification
+from motionile.modules.notifications.schemas import BillingTemplateName, Notification
 from motionile.modules.notifications.tasks import deliver_notification
 
 NOTIFICATION_AAD = b"motionile.notification.v1"
@@ -19,4 +20,19 @@ def enqueue_notification(resources: Resources, session: AsyncSession, message: N
         ciphertext=base64.b64encode(encrypted.ciphertext).decode(),
         nonce=base64.b64encode(encrypted.nonce).decode(),
         key_version=encrypted.key_version,
+    )
+
+
+def enqueue_billing_email(
+    resources: Resources,
+    session: AsyncSession,
+    *,
+    email: str,
+    template: BillingTemplateName,
+    context: Mapping[str, str] | None = None,
+) -> None:
+    enqueue_notification(
+        resources,
+        session,
+        Notification(destination=email, channel="email", template=template, context=dict(context) if context else None),
     )

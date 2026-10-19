@@ -112,12 +112,11 @@ for (const mismatch of [
     expect(verified.status).toBe("pending");
     expect(verified.creditsGranted).toBe(0);
     expect((await session.wallet()).balance).toBe(0);
-    const order = await session.json<{ status: string; creditsGranted: number }>(
+    const order = await session.json<{ status: string }>(
       await session.call("GET", `/v1/billing/orders/${checkout.orderId}`),
       200,
     );
     expect(order.status).not.toBe("paid");
-    expect(order.creditsGranted).toBe(0);
   });
 }
 

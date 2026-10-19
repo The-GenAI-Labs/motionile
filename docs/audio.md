@@ -11,13 +11,14 @@ Decisions: [ADR 0022](adr/0022-tts-cache-by-content-hash.md) (TTS cache), [0023]
 ```python
 class TTSProvider(Protocol):
     name: str
+    model: str
     returns_native_timestamps: bool
 
     async def synthesize(self, text: str, voice: VoiceRef, options: SynthesisOptions) -> SynthesisResult: ...
 ```
 
 - `VoiceRef` is the provider and the provider voice ID. `SynthesisOptions` carries language, speed, stability and output format. `SynthesisResult` is the audio bytes with their content type, the duration in milliseconds, the word timings (`text`, `start_ms`, `end_ms` per word, relative to the audio start), the billed characters, the cost in micro-dollars and the model.
-- The duration is measured from the decoded audio with ffprobe, never taken from the provider. Word timings are clamped to it and made monotonic.
+- `model` is part of the cache key, so a provider exposes the model it is configured with. The duration is measured by decoding the audio with ffmpeg, never taken from the provider (ffprobe cannot read the duration of an MP3, WAV or Opus stream piped to it). Word timings are clamped to it and made monotonic (each word starts at or after the previous word ends).
 
 | Provider     | Timestamps                                                                                                                  | Notes                                                                                                                                                                      |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -29,7 +30,7 @@ All outbound calls go through `SafeHttpClient`. API keys are `SecretStr` setting
 
 ### 1.1 Alignment
 
-`Aligner.align(audio, text, language)` runs a `Transcriber` (word-level transcription) and maps the source words onto the transcribed words with a sequence match. Source words with no counterpart (numbers, punctuation, abbreviations that the transcript spells differently) get timings interpolated between their matched neighbors. The result always has exactly one timing per source word.
+`Aligner.align(audio, text, language, *, filename, duration_ms)` runs a `Transcriber` (word-level transcription) and maps the source words onto the transcribed words with a sequence match. Source words with no counterpart (numbers, punctuation, abbreviations that the transcript spells differently) get timings interpolated between their matched neighbors. Words with no transcribed counterpart in the gap use the span of the transcribed words that sit there, or the silence between their matched neighbors. The result always has exactly one timing per source word, in order, inside the audio duration.
 
 Transcribers: ElevenLabs speech-to-text (`scribe_v1`), OpenAI `whisper-1` with word timestamp granularity, and a fake that derives words from the audio length. `AUDIO_TRANSCRIBER` selects one. The same interface transcribes the consent recording of a voice clone.
 
@@ -76,14 +77,14 @@ Music is validated at upload (ffprobe: real audio, one audio stream, duration li
 
 - At most 2 lines of 42 characters per cue; lines are balanced.
 - A cue lasts at least 1.0 second (extended into the gap before the next cue, never past it) and at most 6.0 seconds.
-- Breaks happen at sentence punctuation (`. ! ? ।`), at clause punctuation (`, ; : —`) and at pauses of 350 ms or more between words; a break is forced before a cue would exceed 2 lines or the maximum duration.
+- Breaks happen at sentence punctuation (`. ! ? ।`), at clause punctuation (`, ; : —`) once the cue already holds 14 characters, and at pauses of 350 ms or more between words; scene boundaries are forced breaks, and a break is forced before a cue would exceed 2 lines or the maximum duration. A single token longer than a line is split across the two lines and truncated with an ellipsis beyond that.
 - A cue starts at its first word's start and ends 120 ms after its last word's end, trimmed to the next cue's start.
 
 **Formats**
 
 - **WebVTT** (`subtitles.vtt`) for the player's captions track, with `HH:MM:SS.mmm` timestamps.
 - **SRT** (`subtitles.srt`) for platforms and downloads, with `HH:MM:SS,mmm` timestamps.
-- **ASS** for optional burn-in. One file per aspect at that aspect's resolution, styled with the brand fonts (Geist, Noto Sans Devanagari for Hindi), white text on a translucent dark box, placed in the caption band below the safe area. The burn-in uses ffmpeg's `ass` filter with the runtime font directory.
+- **ASS** for optional burn-in. One file per aspect at that aspect's resolution, styled with the brand fonts (Geist, Noto Sans Devanagari for Hindi), white text on a translucent dark box, placed in the caption band below the safe area (font size 48 px at 16:9 and 36 px at 9:16 and 1:1, bottom margin 12, 220 and 50 px, so the box stays inside the 160, 420 and 200 px bands). The burn-in uses ffmpeg's `ass` filter with the runtime font directory.
 
 Subtitles are generated from the same word timings as the animation, so they align with the audio by construction; the integration suite checks the cue times against the word timings.
 
@@ -96,7 +97,7 @@ The `voices` module owns `voices` and `voice_consents`; the audio engine only kn
 **Cloning.** [ADR 0027](adr/0027-voice-consent-verification.md):
 
 1. The user accepts the consent statement (text and version from runtime settings `voices.consent_statement` and `voices.consent_statement_version`) and the API opens an attempt in Redis for one hour with a random consent sentence.
-2. The browser records the sentence, plus samples (recorded or uploaded) of 30 seconds to 5 minutes in total. Each file is validated with ffprobe (a real audio container, an audio stream, no video stream, size and duration limits) and transcoded to mono WAV; only the transcoded file is stored, under `voice/u/<userId>/<voiceId>/`.
+2. The browser records the sentence, plus samples (recorded or uploaded) of 30 seconds to 5 minutes in total. Each file is validated (leading bytes of a known audio container, ffprobe with a demuxer allowlist, exactly one audio stream and no video or other stream, a full decode that must succeed, size and duration limits measured on the decoded audio) and transcoded to a mono 44.1 kHz WAV through pipes; only the transcoded file is stored, under `voice/u/<userId>/<voiceId>/`.
 3. On submit the attempt becomes a `pending` voice and the `voices.clone` task runs: transcribe the consent recording, require a normalized word similarity of at least 85% with the sentence, create the voice at the provider, generate a preview, write the `voice_consents` row and mark the voice `ready`. A mismatch fails the voice with `consent_mismatch` and deletes its files.
 4. The number of cloned voices per user is the runtime setting `voices.max_cloned_per_user` (default 3). Cloning can cost credits through the Phase 7 reservation flow: `voices.clone_credit_cost` (default 0) is reserved at submit, committed on `ready` and released on failure.
 

@@ -255,3 +255,8 @@ class SweepFailedError(RuntimeError):
     def __init__(self, task_name: str, failures: int) -> None:
         super().__init__(f"{task_name} failed for {failures} item(s)")
         self.failures = failures
+
+
+class SubscriptionPeriodUnknownError(Exception):
+    def __init__(self) -> None:
+        super().__init__("the billing period of the subscription is unknown, so the credits cannot be given an expiry")

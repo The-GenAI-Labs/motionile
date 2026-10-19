@@ -155,6 +155,7 @@ class GrantCommand:
     key: str
     expires_at: datetime | None = None
     ref: CreditRef | None = None
+    metadata: JsonObject | None = None
 
 
 @dataclass(frozen=True)

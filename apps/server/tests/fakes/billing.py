@@ -142,6 +142,16 @@ class FakeBillingStore:
     async def product_by_id(self, product_id: UUID) -> ProductRecord | None:
         return self.products.get(product_id)
 
+    async def share_product_by_code(self, code: str) -> ProductRecord | None:
+        return await self.product_by_code(code)
+
+    async def share_product_by_id(self, product_id: UUID) -> ProductRecord | None:
+        return await self.product_by_id(product_id)
+
+    async def lock_creation(self, key: UUID) -> bool:
+        del key
+        return True
+
     async def save_sample_product(self, spec: SampleProductSpec) -> ProductRecord | None:
         existing = await self.product_by_code(spec.code)
         if existing is not None:
@@ -292,7 +302,7 @@ class FakeBillingStore:
             fee_paise=payment.fee_paise,
             tax_paise=payment.tax_paise,
             credits_granted=0,
-            refunded_paise=0,
+            refunded_paise=payment.refunded_paise,
             error_code=payment.error_code,
             error_description=payment.error_description,
             captured_at=payment.captured_at,
@@ -565,14 +575,22 @@ class FakeBillingStore:
             if refund.payment_id == payment_id and refund.status is RefundStatus.PROCESSED
         )
 
+    async def processed_refund_total(self, payment_id: UUID) -> int:
+        return sum(
+            refund.amount_paise
+            for refund in self.refunds.values()
+            if refund.payment_id == payment_id and refund.status is RefundStatus.PROCESSED
+        )
+
     async def insert_refund(self, refund: NewRefund) -> RefundRecord:
         record = RefundRecord(
             id=refund.id,
             payment_id=refund.payment_id,
-            razorpay_refund_id=None,
+            razorpay_refund_id=refund.razorpay_refund_id,
             amount_paise=refund.amount_paise,
             status=RefundStatus.PENDING,
             reason=refund.reason,
+            idempotency_key=refund.idempotency_key,
             initiated_by=refund.initiated_by,
             credits_clawed_back=0,
             failure_reason=None,
@@ -584,6 +602,23 @@ class FakeBillingStore:
 
     async def refund_by_id(self, refund_id: UUID) -> RefundRecord | None:
         return self.refunds.get(refund_id)
+
+    async def refund_by_idempotency_key(self, idempotency_key: str) -> RefundRecord | None:
+        return next((refund for refund in self.refunds.values() if refund.idempotency_key == idempotency_key), None)
+
+    async def stale_unlinked_refunds(self, before: datetime, after: UUID | None, limit: int) -> list[RefundRecord]:
+        matches = sorted(
+            (
+                refund
+                for refund in self.refunds.values()
+                if refund.status is RefundStatus.PENDING
+                and refund.razorpay_refund_id is None
+                and refund.created_at < before
+                and (after is None or refund.id > after)
+            ),
+            key=lambda refund: refund.id,
+        )
+        return matches[:limit]
 
     async def refund_by_razorpay_id(self, razorpay_refund_id: str) -> RefundRecord | None:
         return next(

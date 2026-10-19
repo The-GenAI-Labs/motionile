@@ -10,7 +10,7 @@ from motionile.modules.billing.ports import Alert, AuditRecorder, StoreFactory
 from motionile.modules.billing.records import PaymentRecord, RefundRecord
 from motionile.modules.billing.repository import BillingStore
 from motionile.modules.billing.services.notices import NoticeSender, RefundSummary, refund_notice
-from motionile.modules.billing.services.refund_rules import clawback_amount, refund_payment_status
+from motionile.modules.billing.services.refund_rules import EXTERNAL_KEY_PREFIX, clawback_amount, refund_payment_status
 from motionile.modules.billing.states import PAYMENT_MACHINE, RefundStatus
 from motionile.modules.billing.transitions import transition_payment, transition_refund
 from motionile.modules.credits import ClawbackCommand, CreditRef, CreditsService, LotRecord, lot_for_reference
@@ -29,6 +29,18 @@ class RefundPorts:
     alert: Alert
     notices: NoticeSender
     lot_lookup: LotLookup = lot_for_reference
+
+
+@dataclass(frozen=True)
+class ClawbackCase:
+    payment: PaymentRecord
+    refund: RefundRecord
+    effective_paise: int
+    baseline_paise: int
+
+
+def is_external(refund: RefundRecord) -> bool:
+    return refund.idempotency_key.startswith(EXTERNAL_KEY_PREFIX)
 
 
 class RefundSettlement:
@@ -52,7 +64,10 @@ class RefundSettlement:
             return None
         if refund.status is not RefundStatus.PENDING:
             return refund
-        clawed_back = await self._claw_back(session, store, payment, refund)
+        baseline = payment.refunded_paise - await store.processed_refund_total(payment.id)
+        absorbed = min(max(baseline, 0), refund.amount_paise) if is_external(refund) else 0
+        effective = refund.amount_paise - absorbed
+        clawed_back = await self._claw_back(session, store, ClawbackCase(payment, refund, effective, baseline))
         await transition_refund(
             store,
             refund.id,
@@ -60,7 +75,7 @@ class RefundSettlement:
             RefundStatus.PROCESSED,
             {"processed_at": self._clock.now(), "credits_clawed_back": clawed_back},
         )
-        await self._record_refunded(store, payment, refund)
+        await self._record_refunded(store, payment, refund, effective)
         await self._announce_processed(session, payment, refund, clawed_back)
         return await store.refund_by_id(refund.id)
 
@@ -91,18 +106,17 @@ class RefundSettlement:
         await self._record(session, "billing.refund.failed", refund, {"reason": failure[:200]})
         return await store.refund_by_id(refund.id)
 
-    async def _claw_back(
-        self, session: AsyncSession, store: BillingStore, payment: PaymentRecord, refund: RefundRecord
-    ) -> int:
-        if payment.credits_granted <= 0:
+    async def _claw_back(self, session: AsyncSession, store: BillingStore, case: ClawbackCase) -> int:
+        payment, refund = case.payment, case.refund
+        if payment.credits_granted <= 0 or case.effective_paise <= 0:
             return 0
         lot = await self._lot_lookup(session, CreditRef("payment", payment.id))
         if lot is None:
             return 0
         requested = clawback_amount(
             credits_granted=payment.credits_granted,
-            payment_amount_paise=payment.amount_paise,
-            refund_amount_paise=refund.amount_paise,
+            payment_amount_paise=payment.amount_paise - max(case.baseline_paise, 0),
+            refund_amount_paise=case.effective_paise,
             already_clawed_back=await store.clawed_back_total(payment.id),
             lot_remaining=lot.remaining,
         )
@@ -120,8 +134,12 @@ class RefundSettlement:
         )
         return result.clawed_back
 
-    async def _record_refunded(self, store: BillingStore, payment: PaymentRecord, refund: RefundRecord) -> None:
-        refunded = min(payment.refunded_paise + refund.amount_paise, payment.amount_paise)
+    async def _record_refunded(
+        self, store: BillingStore, payment: PaymentRecord, refund: RefundRecord, effective_paise: int
+    ) -> None:
+        if effective_paise <= 0:
+            return
+        refunded = min(payment.refunded_paise + effective_paise, payment.amount_paise)
         target = refund_payment_status(amount_paise=payment.amount_paise, refunded_paise=refunded)
         if PAYMENT_MACHINE.allows(payment.status, target):
             await transition_payment(store, payment.id, payment.status, target, {"refunded_paise": refunded})

@@ -378,6 +378,7 @@ def create_refunds() -> None:
         sa.Column("amount_paise", sa.BigInteger(), nullable=False),
         sa.Column("status", sa.Text(), server_default=sa.text("'pending'"), nullable=False),
         sa.Column("reason", sa.Text(), nullable=False),
+        sa.Column("idempotency_key", sa.Text(), nullable=False),
         sa.Column("initiated_by", sa.Uuid(), nullable=True),
         sa.Column("credits_clawed_back", sa.BigInteger(), server_default="0", nullable=False),
         sa.Column("failure_reason", sa.Text(), nullable=True),
@@ -390,6 +391,9 @@ def create_refunds() -> None:
             "(status = 'processed') = (processed_at IS NOT NULL)", name=op.f("ck_refunds_processed_consistent")
         ),
         sa.CheckConstraint("char_length(reason) BETWEEN 1 AND 500", name=op.f("ck_refunds_reason_length")),
+        sa.CheckConstraint(
+            "char_length(idempotency_key) BETWEEN 1 AND 200", name=op.f("ck_refunds_idempotency_key_length")
+        ),
         sa.ForeignKeyConstraint(
             ["payment_id"], ["payments.id"], name=op.f("fk_refunds_payment_id_payments"), ondelete="RESTRICT"
         ),
@@ -398,6 +402,7 @@ def create_refunds() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_refunds")),
         sa.UniqueConstraint("razorpay_refund_id", name=op.f("uq_refunds_razorpay_refund_id")),
+        sa.UniqueConstraint("idempotency_key", name=op.f("uq_refunds_idempotency_key")),
     )
     op.create_index(op.f("ix_refunds_payment_id"), "refunds", ["payment_id"])
     op.create_index(op.f("ix_refunds_initiated_by"), "refunds", ["initiated_by"])

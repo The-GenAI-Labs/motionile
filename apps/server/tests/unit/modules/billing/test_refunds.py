@@ -1,10 +1,12 @@
 from dataclasses import replace
+from datetime import timedelta
 from uuid import UUID
 
 import pytest
 from tests.unit.modules.billing.conftest import PACK_CREDITS, PACK_PRICE, BillingHarness
 from tests.unit.modules.billing.subscription_support import PLAN_CREDITS, PLAN_PRICE, SubscriptionHarness
 
+from motionile.core.idempotency import IdempotencyKeyReusedError
 from motionile.core.ids import new_id
 from motionile.modules.billing.exceptions import (
     PaymentNotFoundError,
@@ -277,7 +279,7 @@ async def test_a_timeout_after_the_remote_refund_is_recovered_without_a_second_r
     assert len(harness.base.billing.refunds) == 1
 
 
-async def test_a_timeout_before_the_remote_refund_never_resends_and_leaves_the_refund_pending(
+async def test_a_timeout_before_the_remote_refund_is_resumed_by_the_same_request_after_a_negative_lookup(
     subscription_harness: SubscriptionHarness,
 ) -> None:
     harness = subscription_harness
@@ -285,7 +287,7 @@ async def test_a_timeout_before_the_remote_refund_never_resends_and_leaves_the_r
     await harness.base.razorpay_store.add_fault(FaultOperation.CREATE_REFUND, FaultKind.TIMEOUT_BEFORE_CREATE, 1)
 
     with pytest.raises(PaymentProviderUnavailableError):
-        await harness.refunds.create(command(payment.id, 10_000))
+        await harness.refunds.create(command(payment.id, 10_000, key="retry-me"))
 
     [pending] = harness.base.billing.refunds.values()
     assert (pending.status, pending.razorpay_refund_id) == (RefundStatus.PENDING, None)
@@ -294,6 +296,149 @@ async def test_a_timeout_before_the_remote_refund_never_resends_and_leaves_the_r
     with pytest.raises(RefundExceedsRefundableError) as raised:
         await harness.refunds.create(command(payment.id, PACK_PRICE))
     assert raised.value.extensions == {"refundablePaise": PACK_PRICE - 10_000}
+
+    resumed = await harness.refunds.create(command(payment.id, 10_000, key="retry-me"))
+
+    assert resumed.id == pending.id
+    assert resumed.razorpay_refund_id is not None
+    assert len(harness.base.billing.refunds) == 1
+    assert len(await harness.base.razorpay.list_payment_refunds(payment.razorpay_payment_id)) == 1
+
+
+async def test_a_retry_finds_the_refund_the_provider_created_before_the_timeout_and_never_sends_again(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    payment = await captured_pack_payment(harness)
+    await harness.base.razorpay_store.add_fault(FaultOperation.CREATE_REFUND, FaultKind.TIMEOUT_AFTER_CREATE, 1)
+    await harness.base.razorpay_store.add_fault(FaultOperation.LIST_PAYMENT_REFUNDS, FaultKind.SERVER_ERROR, 1)
+    with pytest.raises(PaymentProviderUnavailableError):
+        await harness.refunds.create(command(payment.id, 10_000, key="retry-me"))
+
+    resumed = await harness.refunds.create(command(payment.id, 10_000, key="retry-me"))
+
+    [remote] = await harness.base.razorpay.list_payment_refunds(payment.razorpay_payment_id)
+    assert resumed.razorpay_refund_id == remote.id
+    assert len(harness.base.billing.refunds) == 1
+
+
+async def test_a_retry_of_a_linked_refund_returns_it_without_calling_the_provider(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    payment = await captured_pack_payment(harness)
+    first = await harness.refunds.create(command(payment.id, 10_000, key="same"))
+    await harness.base.razorpay_store.add_fault(FaultOperation.CREATE_REFUND, FaultKind.SERVER_ERROR, 5)
+
+    again = await harness.refunds.create(command(payment.id, 10_000, key="same"))
+
+    assert again.id == first.id
+    assert len(harness.base.billing.refunds) == 1
+
+
+async def test_a_retry_with_another_amount_or_after_a_rejection_is_refused(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    payment = await captured_pack_payment(harness)
+    await harness.refunds.create(command(payment.id, 10_000, key="same"))
+
+    with pytest.raises(IdempotencyKeyReusedError):
+        await harness.refunds.create(command(payment.id, 11_000, key="same"))
+
+    other = await captured_pack_payment(harness)
+    entity = await harness.stored(EntityKind.PAYMENT, other.razorpay_payment_id)
+    entity["status"] = "created"
+    await harness.base.razorpay_store.put(EntityKind.PAYMENT, other.razorpay_payment_id, entity)
+    with pytest.raises(RefundRejectedError):
+        await harness.refunds.create(command(other.id, 5_000, key="rejected"))
+    with pytest.raises(RefundRejectedError):
+        await harness.refunds.create(command(other.id, 5_000, key="rejected"))
+    assert len(harness.base.billing.refunds) == 2
+
+
+async def test_the_same_request_key_for_two_payments_creates_two_refunds(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    first = await captured_pack_payment(harness)
+    second = await captured_pack_payment(harness)
+
+    one = await harness.refunds.create(command(first.id, 1_000, key="shared"))
+    two = await harness.refunds.create(command(second.id, 1_000, key="shared"))
+
+    assert one.id != two.id
+    assert one.idempotency_key != two.idempotency_key
+
+
+async def stale_unlinked_refund(
+    harness: SubscriptionHarness, payment: PaymentRecord, amount: int = 10_000
+) -> RefundRecord:
+    await harness.base.razorpay_store.add_fault(FaultOperation.CREATE_REFUND, FaultKind.TIMEOUT_BEFORE_CREATE, 1)
+    with pytest.raises(PaymentProviderUnavailableError):
+        await harness.refunds.create(command(payment.id, amount))
+    [refund] = [item for item in harness.base.billing.refunds.values() if item.razorpay_refund_id is None]
+    harness.base.world.alerts.clear()
+    return refund
+
+
+async def test_reconciliation_marks_a_refund_the_provider_never_saw_as_failed_after_a_negative_lookup(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    payment = await captured_pack_payment(harness)
+    refund = await stale_unlinked_refund(harness, payment)
+    harness.base.clock.advance(timedelta(minutes=14))
+    untouched = await harness.refunds.reconcile_stale()
+    harness.base.clock.advance(timedelta(minutes=2))
+
+    counts = await harness.refunds.reconcile_stale()
+
+    assert (untouched.failed, untouched.linked) == (0, 0)
+    assert (counts.failed, counts.linked, counts.errors) == (1, 0, 0)
+    failed = harness.base.billing.refunds[refund.id]
+    assert (failed.status, failed.failure_reason) == (RefundStatus.FAILED, "not_found_at_provider")
+    assert [code for code, _ in harness.base.world.alerts] == ["billing.refund_not_found_at_provider"]
+    assert "billing.refund.rejected" in harness.base.audit_actions()
+    retry = await harness.refunds.create(command(payment.id, PACK_PRICE))
+    assert retry.amount_paise == PACK_PRICE
+
+
+async def test_reconciliation_links_and_settles_a_refund_the_provider_did_create(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    payment = await captured_pack_payment(harness)
+    refund = await stale_unlinked_refund(harness, payment)
+    remote = await harness.base.razorpay.create_refund(
+        payment.razorpay_payment_id, amount=refund.amount_paise, notes={"refundId": str(refund.id)}
+    )
+    await harness.settle_refund(remote.id, RefundOutcome.PROCESSED)
+    harness.base.clock.advance(timedelta(minutes=16))
+
+    counts = await harness.refunds.reconcile_stale()
+
+    assert (counts.linked, counts.failed) == (1, 0)
+    linked = harness.base.billing.refunds[refund.id]
+    assert linked.razorpay_refund_id == remote.id
+    assert linked.status is RefundStatus.PROCESSED
+    assert [code for code, _ in harness.base.world.alerts] == ["billing.refund_resolved"]
+    assert harness.base.billing.payments[payment.id].refunded_paise == refund.amount_paise
+
+
+async def test_reconciliation_leaves_a_refund_pending_when_the_lookup_fails(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    payment = await captured_pack_payment(harness)
+    refund = await stale_unlinked_refund(harness, payment)
+    harness.base.clock.advance(timedelta(minutes=16))
+    await harness.base.razorpay_store.add_fault(FaultOperation.LIST_PAYMENT_REFUNDS, FaultKind.SERVER_ERROR, 1)
+
+    counts = await harness.refunds.reconcile_stale()
+
+    assert (counts.failed, counts.linked, counts.errors) == (0, 0, 1)
+    assert harness.base.billing.refunds[refund.id].status is RefundStatus.PENDING
 
 
 async def test_a_failed_lookup_after_an_ambiguous_error_is_reported_and_leaves_the_refund_pending(
@@ -382,15 +527,18 @@ async def test_a_refund_event_found_only_through_the_notes_links_the_provider_id
     assert settled.status is RefundStatus.PROCESSED
 
 
-async def test_a_refund_nobody_here_asked_for_is_ignored_and_alerted(subscription_harness: SubscriptionHarness) -> None:
+async def test_a_refund_on_a_payment_nobody_here_knows_is_ignored_and_alerted(
+    subscription_harness: SubscriptionHarness,
+) -> None:
     harness = subscription_harness
     payment = await captured_pack_payment(harness)
     outside = await harness.base.razorpay.create_refund(payment.razorpay_payment_id, amount=5_000)
+    del harness.base.billing.payments[payment.id]
 
     delivered = await harness.emit_refund(WebhookEventName.REFUND_PROCESSED, outside.id)
 
     assert delivered.ignored_reason == "unknown_entity"
-    assert harness.base.billing.payments[payment.id].refunded_paise == 0
+    assert not harness.base.billing.refunds
     assert "billing.unknown_refund" in [code for code, _ in harness.base.world.alerts]
 
 

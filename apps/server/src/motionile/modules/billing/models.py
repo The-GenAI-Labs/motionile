@@ -217,11 +217,13 @@ class Refund(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "refunds"
     __table_args__ = (
         UniqueConstraint("razorpay_refund_id", name="uq_refunds_razorpay_refund_id"),
+        UniqueConstraint("idempotency_key", name="uq_refunds_idempotency_key"),
         CheckConstraint("status IN ('pending', 'processed', 'failed')", name="status"),
         CheckConstraint("amount_paise > 0", name="amount_paise_positive"),
         CheckConstraint("credits_clawed_back >= 0", name="credits_clawed_back_non_negative"),
         CheckConstraint("(status = 'processed') = (processed_at IS NOT NULL)", name="processed_consistent"),
         CheckConstraint("char_length(reason) BETWEEN 1 AND 500", name="reason_length"),
+        CheckConstraint("char_length(idempotency_key) BETWEEN 1 AND 200", name="idempotency_key_length"),
         Index("ix_refunds_payment_id", "payment_id"),
         Index("ix_refunds_initiated_by", "initiated_by"),
     )
@@ -231,6 +233,7 @@ class Refund(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     amount_paise: Mapped[int] = mapped_column(BigInteger)
     status: Mapped[str] = mapped_column(server_default=text("'pending'"))
     reason: Mapped[str]
+    idempotency_key: Mapped[str]
     initiated_by: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     credits_clawed_back: Mapped[int] = mapped_column(BigInteger, server_default="0")
     failure_reason: Mapped[str | None]

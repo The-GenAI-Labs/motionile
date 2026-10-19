@@ -29,6 +29,16 @@ async def paid_pack(api: BillingApi) -> UUID:
     return payment.id
 
 
+async def paid_pack_again(api: BillingApi) -> UUID:
+    known = {payment.id for payment in await api.payment_rows()}
+    checkout = await api.checkout()
+    paid = await api.pay(checkout["razorpayOrderId"])
+    response = await api.verify(paid)
+    assert response.status_code == 200, response.text
+    [created] = [payment for payment in await api.payment_rows() if payment.id not in known]
+    return created.id
+
+
 async def make_admin(api: BillingApi, role: str = "super_admin") -> None:
     await api.grant_role(api.other_id, role)
 
@@ -325,6 +335,38 @@ async def test_a_provider_timeout_before_the_refund_is_never_resent(billing_api:
     assert again.json()["amountPaise"] == PACK_PRICE - 5_000
 
 
+async def test_retrying_with_the_same_key_after_an_outage_resumes_the_same_refund(billing_api: BillingApi) -> None:
+    payment_id = await paid_pack(billing_api)
+    await make_admin(billing_api)
+    body = {"amountPaise": 5_000, "reason": "Outage"}
+    key = billing_api.keys()
+    await billing_api.arm_fault("create_refund", "timeout_before_create")
+    failed = await billing_api.create_refund(payment_id, body, key=key)
+
+    retried = await billing_api.create_refund(payment_id, body, key=key)
+
+    assert failed.status_code == 503
+    assert retried.status_code == 201, retried.text
+    [row] = await billing_api.refund_rows()
+    assert retried.json()["id"] == str(row.id)
+    assert row.razorpay_refund_id == retried.json()["razorpayRefundId"]
+    assert await remote_refund_count(billing_api, payment_id) == 1
+
+
+async def test_the_same_key_for_another_payment_is_rejected_as_reused(billing_api: BillingApi) -> None:
+    first = await paid_pack(billing_api)
+    second = await paid_pack_again(billing_api)
+    await make_admin(billing_api)
+    key = billing_api.keys()
+
+    one = await billing_api.create_refund(first, {"amountPaise": 1_000, "reason": "One"}, key=key)
+    two = await billing_api.create_refund(second, {"amountPaise": 1_000, "reason": "Two"}, key=key)
+
+    assert (one.status_code, two.status_code) == (201, 409)
+    assert two.json()["code"] == "idempotency_key_reused"
+    assert len(await billing_api.refund_rows()) == 1
+
+
 async def test_a_provider_that_already_processed_the_refund_settles_it_in_the_same_request(
     billing_api: BillingApi,
 ) -> None:
@@ -418,7 +460,7 @@ async def test_refunding_a_subscription_payment_keeps_the_subscription(billing_a
     assert (await billing_api.get_subscription())["subscription"]["status"] == "active"
 
 
-async def test_a_refund_the_provider_reports_without_our_knowledge_is_ignored_and_alerted(
+async def test_a_refund_made_outside_the_app_on_a_known_payment_is_adopted(
     billing_api: BillingApi,
 ) -> None:
     payment_id = await paid_pack(billing_api)
@@ -429,6 +471,8 @@ async def test_a_refund_the_provider_reports_without_our_knowledge_is_ignored_an
     await billing_api.process_dispatched()
 
     [event] = await billing_api.event_rows()
-    assert (event.status, event.ignored_reason) == ("ignored", "unknown_entity")
-    assert "billing.unknown_refund" in billing_api.recorded.alert_codes()
+    [refund] = await billing_api.refund_rows()
+    assert event.status == "processed"
+    assert (refund.status, refund.payment_id, refund.initiated_by) == ("processed", payment_id, None)
+    assert refund.razorpay_refund_id == outside.id
     assert payment.id == payment_id

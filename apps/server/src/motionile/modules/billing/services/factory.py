@@ -158,7 +158,7 @@ def build_services(resources: Resources, hooks: ServiceHooks) -> BillingServices
         credit_service,
         RefundPorts(store_factory=SqlBillingRepository, audit=hooks.audit, alert=hooks.alert, notices=notices),
     )
-    RefundEventHandlers(refund_settlement, SqlBillingRepository, hooks.alert).register(registry)
+    RefundEventHandlers(refund_settlement, SqlBillingRepository, hooks.alert, hooks.audit).register(registry)
     customers = CustomerService(transaction, razorpay)
     maintenance = MaintenanceDependencies(
         transaction=transaction,

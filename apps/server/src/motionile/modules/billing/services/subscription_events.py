@@ -154,6 +154,7 @@ class SubscriptionEventHandlers:
         self._notices = ports.notices
 
     def register(self, registry: HandlerRegistry) -> None:
+        registry.register_handler("subscription.authenticated", self.authenticated)
         registry.register_handler("subscription.activated", self.activated)
         registry.register_handler("subscription.charged", self.charged)
         registry.register_handler("subscription.pending", self.pending)
@@ -163,6 +164,14 @@ class SubscriptionEventHandlers:
         registry.register_handler("subscription.paused", self.paused)
         registry.register_handler("subscription.resumed", self.resumed)
         registry.register_handler("subscription.updated", self.updated)
+
+    async def authenticated(self, session: AsyncSession, event: WebhookEventRecord) -> Outcome:
+        delivery = await self._open(session, event)
+        if delivery is None:
+            return ignored(UNKNOWN_ENTITY)
+        if delivery.subscription.status is not SubscriptionStatus.CREATED:
+            return PROCESSED
+        return OUTCOME_BY_RESULT[await self._status_event(delivery, SubscriptionStatus.AUTHENTICATED, "authenticated")]
 
     async def activated(self, session: AsyncSession, event: WebhookEventRecord) -> Outcome:
         delivery = await self._open(session, event)

@@ -86,6 +86,7 @@ CAPTURED_FAMILY_VALUES = (
     PaymentRecordStatus.REFUNDED.value,
 )
 SETTLEMENT_RUN_TYPE = "settlement"
+ADVISORY_KEY_MASK = (1 << 63) - 1
 PAYMENT_TITLE_PREFIX = "Payment for "
 REFUND_TITLE_PREFIX = "Refund for "
 FALLBACK_SUBJECT = "your order"
@@ -114,6 +115,9 @@ class BillingStore(Protocol):
     async def active_products(self) -> list[ProductRecord]: ...
     async def product_by_code(self, code: str) -> ProductRecord | None: ...
     async def product_by_id(self, product_id: UUID) -> ProductRecord | None: ...
+    async def share_product_by_code(self, code: str) -> ProductRecord | None: ...
+    async def share_product_by_id(self, product_id: UUID) -> ProductRecord | None: ...
+    async def lock_creation(self, key: UUID) -> bool: ...
     async def save_sample_product(self, spec: SampleProductSpec) -> ProductRecord | None: ...
     async def activate_product_with_plan(self, product_id: UUID, razorpay_plan_id: str) -> bool: ...
     async def customer(self, user_id: UUID) -> CustomerRecord | None: ...
@@ -187,9 +191,12 @@ class BillingStore(Protocol):
     ) -> list[PaymentRecord]: ...
     async def pending_refund_totals(self, payment_ids: Sequence[UUID]) -> dict[UUID, int]: ...
     async def clawed_back_total(self, payment_id: UUID) -> int: ...
+    async def processed_refund_total(self, payment_id: UUID) -> int: ...
     async def insert_refund(self, refund: NewRefund) -> RefundRecord: ...
     async def refund_by_id(self, refund_id: UUID) -> RefundRecord | None: ...
     async def refund_by_razorpay_id(self, razorpay_refund_id: str) -> RefundRecord | None: ...
+    async def refund_by_idempotency_key(self, idempotency_key: str) -> RefundRecord | None: ...
+    async def stale_unlinked_refunds(self, before: datetime, after: UUID | None, limit: int) -> list[RefundRecord]: ...
     async def lock_refund(self, refund_id: UUID) -> RefundRecord | None: ...
     async def transition_refund(
         self, refund_id: UUID, expected: RefundStatus, target: RefundStatus, values: Mapping[str, object]
@@ -229,6 +236,7 @@ def refund_record(row: Refund) -> RefundRecord:
         amount_paise=row.amount_paise,
         status=RefundStatus(row.status),
         reason=row.reason,
+        idempotency_key=row.idempotency_key,
         initiated_by=row.initiated_by,
         credits_clawed_back=row.credits_clawed_back,
         failure_reason=row.failure_reason,
@@ -341,6 +349,25 @@ class SqlBillingRepository:
     async def product_by_id(self, product_id: UUID) -> ProductRecord | None:
         row = await self.session.scalar(select(Product).where(Product.id == product_id).execution_options(**FRESH_ROWS))
         return product_record(row) if row is not None else None
+
+    async def share_product_by_code(self, code: str) -> ProductRecord | None:
+        row = await self.session.scalar(
+            select(Product).where(Product.code == code).with_for_update(read=True).execution_options(**FRESH_ROWS)
+        )
+        return product_record(row) if row is not None else None
+
+    async def share_product_by_id(self, product_id: UUID) -> ProductRecord | None:
+        row = await self.session.scalar(
+            select(Product).where(Product.id == product_id).with_for_update(read=True).execution_options(**FRESH_ROWS)
+        )
+        return product_record(row) if row is not None else None
+
+    async def lock_creation(self, key: UUID) -> bool:
+        lock_key = key.int & ADVISORY_KEY_MASK
+        if await self.session.scalar(select(func.pg_try_advisory_xact_lock(lock_key))):
+            return True
+        await self.session.execute(select(func.pg_advisory_xact_lock(lock_key)))
+        return False
 
     async def save_sample_product(self, spec: SampleProductSpec) -> ProductRecord | None:
         saved = await self.session.scalar(
@@ -523,7 +550,7 @@ class SqlBillingRepository:
             fee_paise=payment.fee_paise,
             tax_paise=payment.tax_paise,
             credits_granted=0,
-            refunded_paise=0,
+            refunded_paise=payment.refunded_paise,
             error_code=payment.error_code,
             error_description=payment.error_description,
             captured_at=payment.captured_at,
@@ -809,6 +836,14 @@ class SqlBillingRepository:
         )
         return int(total or 0)
 
+    async def processed_refund_total(self, payment_id: UUID) -> int:
+        total = await self.session.scalar(
+            select(func.coalesce(func.sum(Refund.amount_paise), 0)).where(
+                Refund.payment_id == payment_id, Refund.status == RefundStatus.PROCESSED.value
+            )
+        )
+        return int(total or 0)
+
     async def insert_refund(self, refund: NewRefund) -> RefundRecord:
         row = Refund(
             id=refund.id,
@@ -816,6 +851,8 @@ class SqlBillingRepository:
             amount_paise=refund.amount_paise,
             status=RefundStatus.PENDING.value,
             reason=refund.reason,
+            idempotency_key=refund.idempotency_key,
+            razorpay_refund_id=refund.razorpay_refund_id,
             initiated_by=refund.initiated_by,
             credits_clawed_back=0,
         )
@@ -827,6 +864,23 @@ class SqlBillingRepository:
     async def refund_by_id(self, refund_id: UUID) -> RefundRecord | None:
         row = await self.session.scalar(select(Refund).where(Refund.id == refund_id).execution_options(**FRESH_ROWS))
         return refund_record(row) if row is not None else None
+
+    async def refund_by_idempotency_key(self, idempotency_key: str) -> RefundRecord | None:
+        row = await self.session.scalar(
+            select(Refund).where(Refund.idempotency_key == idempotency_key).execution_options(**FRESH_ROWS)
+        )
+        return refund_record(row) if row is not None else None
+
+    async def stale_unlinked_refunds(self, before: datetime, after: UUID | None, limit: int) -> list[RefundRecord]:
+        statement = select(Refund).where(
+            Refund.status == RefundStatus.PENDING.value,
+            Refund.razorpay_refund_id.is_(None),
+            Refund.created_at < before,
+        )
+        if after is not None:
+            statement = statement.where(Refund.id > after)
+        rows = await self.session.scalars(statement.order_by(Refund.id).limit(limit).execution_options(**FRESH_ROWS))
+        return [refund_record(row) for row in rows]
 
     async def refund_by_razorpay_id(self, razorpay_refund_id: str) -> RefundRecord | None:
         row = await self.session.scalar(

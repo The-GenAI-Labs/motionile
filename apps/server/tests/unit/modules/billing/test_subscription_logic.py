@@ -6,6 +6,7 @@ from uuid import UUID
 import pytest
 
 from motionile.core.ids import new_id
+from motionile.modules.billing.exceptions import SubscriptionPeriodUnknownError
 from motionile.modules.billing.razorpay.models import RazorpayPayment, RazorpaySubscription
 from motionile.modules.billing.records import ProductRecord, SubscriptionRecord
 from motionile.modules.billing.services.subscription_logic import (
@@ -203,7 +204,9 @@ def test_a_cancellation_ends_the_subscription_only_when_no_paid_period_is_left(
 def test_credits_expire_with_the_period_unless_they_roll_over() -> None:
     assert grant_expiry(NOW + MONTH, rollover=False) == NOW + MONTH
     assert grant_expiry(NOW + MONTH, rollover=True) is None
-    assert grant_expiry(None, rollover=False) is None
+    assert grant_expiry(None, rollover=True) is None
+    with pytest.raises(SubscriptionPeriodUnknownError):
+        grant_expiry(None, rollover=False)
 
 
 @pytest.mark.parametrize(

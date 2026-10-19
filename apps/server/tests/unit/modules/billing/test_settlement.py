@@ -207,7 +207,7 @@ async def test_replaying_a_mismatched_payment_neither_alerts_nor_grants_again(bi
 
     replay = await settle(billing_harness, payment)
 
-    assert replay.outcome is SettlementOutcome.ALREADY_SETTLED
+    assert replay.outcome is SettlementOutcome.MISMATCH
     assert replay.credits_granted == 0
     assert len(billing_harness.world.alerts) == 1
     assert billing_harness.balance() == 0

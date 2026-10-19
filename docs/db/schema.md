@@ -918,25 +918,28 @@ Module `credits` · Phase 7 · **Append-only** · Will be partitioned monthly
 
 Module `billing` · Phase 7 · Mutable
 
-| Column                | Type          | Null | Default     | Notes                                        |
-| --------------------- | ------------- | ---- | ----------- | -------------------------------------------- |
-| `id`                  | `uuid`        | no   | -           | UUIDv7; sent to Razorpay in the refund notes |
-| `payment_id`          | `uuid`        | no   | -           |                                              |
-| `razorpay_refund_id`  | `text`        | yes  | -           | Set when Razorpay accepts the refund         |
-| `amount_paise`        | `bigint`      | no   | -           |                                              |
-| `status`              | `text`        | no   | `'pending'` | See `state-machines.md`                      |
-| `reason`              | `text`        | no   | -           | Admin-entered, at most 500 characters        |
-| `initiated_by`        | `uuid`        | yes  | -           | Admin who started it                         |
-| `credits_clawed_back` | `bigint`      | no   | `0`         |                                              |
-| `failure_reason`      | `text`        | yes  | -           | Explains `failed` refunds                    |
-| `processed_at`        | `timestamptz` | yes  | -           |                                              |
-| `created_at`          | `timestamptz` | no   | `now()`     |                                              |
-| `updated_at`          | `timestamptz` | no   | `now()`     |                                              |
+| Column                | Type          | Null | Default     | Notes                                                                                                     |
+| --------------------- | ------------- | ---- | ----------- | --------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`        | no   | -           | UUIDv7; sent to Razorpay in the refund notes                                                              |
+| `payment_id`          | `uuid`        | no   | -           |                                                                                                           |
+| `razorpay_refund_id`  | `text`        | yes  | -           | Set when Razorpay accepts the refund                                                                      |
+| `amount_paise`        | `bigint`      | no   | -           |                                                                                                           |
+| `status`              | `text`        | no   | `'pending'` | See `state-machines.md`                                                                                   |
+| `reason`              | `text`        | no   | -           | Admin-entered, at most 500 characters                                                                     |
+| `idempotency_key`     | `text`        | no   | -           | Hash of admin, payment and request key; `external:<Razorpay refund id>` for refunds made in the dashboard |
+| `initiated_by`        | `uuid`        | yes  | -           | Admin who started it                                                                                      |
+| `credits_clawed_back` | `bigint`      | no   | `0`         |                                                                                                           |
+| `failure_reason`      | `text`        | yes  | -           | Explains `failed` refunds                                                                                 |
+| `processed_at`        | `timestamptz` | yes  | -           |                                                                                                           |
+| `created_at`          | `timestamptz` | no   | `now()`     |                                                                                                           |
+| `updated_at`          | `timestamptz` | no   | `now()`     |                                                                                                           |
 
 - `pk_refunds` primary key (`id`).
 - `fk_refunds_payment_id_payments` → `payments.id` **ON DELETE RESTRICT**.
 - `fk_refunds_initiated_by_users` → `users.id` **ON DELETE SET NULL**.
 - `uq_refunds_razorpay_refund_id` unique (`razorpay_refund_id`): webhook lookup.
+- `uq_refunds_idempotency_key` unique (`idempotency_key`): a retried request resumes its refund instead of creating a second one.
+- `ck_refunds_idempotency_key_length`: `char_length(idempotency_key) BETWEEN 1 AND 200`.
 - `ck_refunds_status`: `status IN ('pending', 'processed', 'failed')`.
 - `ck_refunds_amount_paise_positive`: `amount_paise > 0`.
 - `ck_refunds_credits_clawed_back_non_negative`: `credits_clawed_back >= 0`.

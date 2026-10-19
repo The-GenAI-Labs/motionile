@@ -238,6 +238,7 @@ class CreditsService:
                 key=key,
                 ref=command.ref,
                 metadata={
+                    **(command.metadata or {}),
                     "lotId": str(lot.id),
                     "source": command.source,
                     "expiresAt": command.expires_at.isoformat() if command.expires_at else None,

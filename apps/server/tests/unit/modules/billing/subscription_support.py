@@ -131,7 +131,7 @@ class SubscriptionHarness:
                 lot_lookup=self._lot_lookup,
             ),
         )
-        RefundEventHandlers(self.refund_settlement, base.billing, base.world.alert).register(self.registry)
+        RefundEventHandlers(self.refund_settlement, base.billing, base.world.alert, base.audit).register(self.registry)
         self.refunds = RefundService(
             RefundDependencies(
                 transaction=base.world.transaction,

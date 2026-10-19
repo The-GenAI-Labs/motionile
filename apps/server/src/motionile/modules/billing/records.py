@@ -113,6 +113,7 @@ class NewPayment:
     error_description: str | None = None
     captured_at: datetime | None = None
     subscription_id: UUID | None = None
+    refunded_paise: int = 0
 
 
 @dataclass(frozen=True)
@@ -158,6 +159,7 @@ class RefundRecord:
     amount_paise: int
     status: RefundStatus
     reason: str
+    idempotency_key: str
     initiated_by: UUID | None
     credits_clawed_back: int
     failure_reason: str | None
@@ -172,6 +174,8 @@ class NewRefund:
     amount_paise: int
     reason: str
     initiated_by: UUID | None
+    idempotency_key: str
+    razorpay_refund_id: str | None = None
 
 
 @dataclass(frozen=True)

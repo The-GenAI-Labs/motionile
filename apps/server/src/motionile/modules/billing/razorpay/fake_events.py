@@ -21,6 +21,7 @@ class WebhookEventName(StrEnum):
     REFUND_CREATED = "refund.created"
     REFUND_PROCESSED = "refund.processed"
     REFUND_FAILED = "refund.failed"
+    SUBSCRIPTION_AUTHENTICATED = "subscription.authenticated"
     SUBSCRIPTION_ACTIVATED = "subscription.activated"
     SUBSCRIPTION_CHARGED = "subscription.charged"
     SUBSCRIPTION_PENDING = "subscription.pending"
@@ -39,6 +40,7 @@ CONTAINS_BY_EVENT: dict[WebhookEventName, tuple[str, ...]] = {
     WebhookEventName.REFUND_CREATED: ("refund", "payment"),
     WebhookEventName.REFUND_PROCESSED: ("refund", "payment"),
     WebhookEventName.REFUND_FAILED: ("refund", "payment"),
+    WebhookEventName.SUBSCRIPTION_AUTHENTICATED: ("subscription",),
     WebhookEventName.SUBSCRIPTION_ACTIVATED: ("subscription",),
     WebhookEventName.SUBSCRIPTION_CHARGED: ("subscription", "payment"),
     WebhookEventName.SUBSCRIPTION_PENDING: ("subscription",),

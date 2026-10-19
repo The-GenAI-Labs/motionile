@@ -26,6 +26,7 @@ from motionile.modules.billing.services.decisions import (
     decide_settlement,
 )
 from motionile.modules.billing.services.receipts import PaymentReceipt, ReceiptSender
+from motionile.modules.billing.services.refund_rules import credits_after_refund, settled_payment_status
 from motionile.modules.billing.states import (
     PAYMENT_MACHINE,
     OrderStatus,
@@ -68,6 +69,18 @@ class SettlementCase:
     source: SettlementSource
 
 
+def held_outcome(order: OrderRecord, existing: PaymentRecord) -> SettlementOutcome | None:
+    if order.flagged_at is None or existing.credits_granted > 0 or existing.status is not PaymentRecordStatus.CAPTURED:
+        return None
+    if order.flag_reason == FLAG_DUPLICATE_PAYMENT:
+        return SettlementOutcome.DUPLICATE
+    return SettlementOutcome.MISMATCH
+
+
+def refunded_of(payment: RazorpayPayment) -> int:
+    return max(0, min(payment.amount_refunded, payment.amount))
+
+
 def payment_key(payment_id: UUID) -> str:
     return f"{PAYMENT_KEY_PREFIX}:{payment_id}"
 
@@ -105,11 +118,21 @@ class SettlementService:
         if order is None:
             return SettlementResult(SettlementOutcome.UNKNOWN_ORDER)
         existing = await store.payment_by_razorpay_id(payment.id)
+        recorded = existing
         if existing is not None and existing.status is not PaymentRecordStatus.AUTHORIZED:
             if existing.status not in CAPTURED_FAMILY:
                 PAYMENT_MACHINE.require(existing.status, PaymentRecordStatus.CAPTURED)
-            return SettlementResult(SettlementOutcome.ALREADY_SETTLED, order.id, existing.id, existing.credits_granted)
-        recorded = await self._record_captured(store, order, payment, existing)
+            held = held_outcome(order, existing)
+            if held is not None:
+                return SettlementResult(held, order.id, existing.id)
+            if order.status is OrderStatus.PAID:
+                return SettlementResult(
+                    SettlementOutcome.ALREADY_SETTLED, order.id, existing.id, existing.credits_granted
+                )
+        else:
+            recorded = await self._record_captured(store, order, payment, existing)
+        if recorded is None:
+            raise UnexpectedOrderStateError(str(order.id), "linked to its payment")
         case = SettlementCase(session, store, order, payment, recorded, source)
         decision = decide_settlement(order, payment.amount, payment.currency)
         if decision is SettlementDecision.GRANT:
@@ -164,6 +187,8 @@ class SettlementService:
         existing: PaymentRecord | None,
     ) -> PaymentRecord:
         now = self._clock.now()
+        refunded = refunded_of(payment)
+        target = settled_payment_status(amount_paise=payment.amount, refunded_paise=refunded)
         if existing is None:
             return await store.insert_payment(
                 NewPayment(
@@ -173,11 +198,12 @@ class SettlementService:
                     razorpay_payment_id=payment.id,
                     amount_paise=payment.amount,
                     currency=payment.currency,
-                    status=PaymentRecordStatus.CAPTURED,
+                    status=target,
                     method=payment.method,
                     fee_paise=payment.fee,
                     tax_paise=payment.tax,
                     captured_at=now,
+                    refunded_paise=refunded,
                 )
             )
         await transition_payment(
@@ -194,8 +220,11 @@ class SettlementService:
                 "captured_at": now,
                 "error_code": None,
                 "error_description": None,
+                "refunded_paise": refunded,
             },
         )
+        if target is not PaymentRecordStatus.CAPTURED:
+            await transition_payment(store, existing.id, PaymentRecordStatus.CAPTURED, target)
         refreshed = await store.payment_by_razorpay_id(payment.id)
         if refreshed is None:
             raise UnexpectedOrderStateError(str(order.id), "linked to its payment")
@@ -207,23 +236,34 @@ class SettlementService:
         previous = order.status
         if not await transition_order(case.store, order.id, previous, OrderStatus.PAID, {"paid_at": now}):
             raise UnexpectedOrderStateError(str(order.id), previous.value)
-        grant = await self._credits.grant(
-            case.session,
-            GrantCommand(
-                user_id=order.user_id,
-                amount=order.credits_granted,
-                source="purchase",
-                key=payment_key(case.recorded.id),
-                expires_at=None,
-                ref=CreditRef("payment", case.recorded.id),
-            ),
+        refunded = refunded_of(case.payment)
+        payable = credits_after_refund(
+            credits_granted=order.credits_granted, payment_amount_paise=order.amount_paise, refunded_paise=refunded
         )
-        await case.store.set_payment_credits(case.recorded.id, grant.amount)
-        await self._audit_event(case, "billing.order.paid", {"credits": grant.amount, "ledgerId": str(grant.ledger_id)})
+        granted = 0
+        details: dict[str, object] = {"credits": 0, "refundedPaise": refunded}
+        if payable > 0:
+            grant = await self._credits.grant(
+                case.session,
+                GrantCommand(
+                    user_id=order.user_id,
+                    amount=payable,
+                    source="purchase",
+                    key=payment_key(case.recorded.id),
+                    expires_at=None,
+                    ref=CreditRef("payment", case.recorded.id),
+                    metadata={"refundedPaise": refunded, "orderCredits": order.credits_granted} if refunded else None,
+                ),
+            )
+            granted = grant.amount
+            details = {"credits": granted, "ledgerId": str(grant.ledger_id), "refundedPaise": refunded}
+            await case.store.set_payment_credits(case.recorded.id, granted)
+        await self._audit_event(case, "billing.order.paid", details)
         if previous not in ON_TIME_STATUSES:
             await self._audit_event(case, "billing.order.settled_late", {"previousStatus": previous.value})
-        await self._send_receipt(case, now)
-        return SettlementResult(SettlementOutcome.SETTLED, order.id, case.recorded.id, grant.amount)
+        if granted > 0:
+            await self._send_receipt(case, now, granted)
+        return SettlementResult(SettlementOutcome.SETTLED, order.id, case.recorded.id, granted)
 
     async def _hold_for_review(self, case: SettlementCase, decision: SettlementDecision) -> SettlementResult:
         reason = FLAG_BY_DECISION[decision]
@@ -268,7 +308,7 @@ class SettlementService:
             ),
         )
 
-    async def _send_receipt(self, case: SettlementCase, paid_at: datetime) -> None:
+    async def _send_receipt(self, case: SettlementCase, paid_at: datetime, credit_count: int) -> None:
         product = await case.store.product_by_id(case.order.product_id)
         await self._receipts(
             case.session,
@@ -277,7 +317,7 @@ class SettlementService:
                 product_name=product.name if product is not None else FALLBACK_PRODUCT_NAME,
                 amount_paise=case.order.amount_paise,
                 currency=case.order.currency,
-                credits=case.order.credits_granted,
+                credits=credit_count,
                 paid_at=paid_at,
                 order_reference=str(case.order.id),
             ),

@@ -9,6 +9,7 @@ from tests.unit.modules.billing.subscription_support import PLAN_CREDITS, Subscr
 from motionile.core.ids import new_id
 from motionile.modules.audit import AuditEvent
 from motionile.modules.billing.exceptions import PaymentProviderUnavailableError, SweepFailedError
+from motionile.modules.billing.razorpay.fake_events import WebhookEventName
 from motionile.modules.billing.razorpay.fake_simulator import SubscriptionEvent
 from motionile.modules.billing.razorpay.fake_store import EntityKind, FaultKind, FaultOperation
 from motionile.modules.billing.records import RunOutcome
@@ -330,4 +331,105 @@ async def test_a_created_subscription_that_the_provider_activated_is_repaired(
     counts = await harness.sync.run()
 
     assert counts.repaired == 1
+    assert harness.local(checkout).status is SubscriptionStatus.ACTIVE
+
+
+async def test_an_authorized_checkout_that_was_never_verified_is_not_cancelled_at_the_provider(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    plan = await harness.add_plan()
+    checkout = await harness.subscribe(plan)
+    await harness.authorize(checkout.razorpay_subscription_id)
+    harness.base.clock.advance(timedelta(seconds=harness.base.settings.order_expiry_seconds + 1))
+
+    counts = await harness.finalizer.finalize()
+
+    assert counts.expired == 0
+    assert (await harness.remote(checkout.razorpay_subscription_id)).status == "authenticated"
+    subscription = harness.local(checkout)
+    assert subscription.status is SubscriptionStatus.AUTHENTICATED
+    assert harness.base.billing.orders[checkout.order_id].status is OrderStatus.PENDING
+
+
+async def test_a_checkout_activated_at_the_provider_is_synced_forward_instead_of_expired(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    plan = await harness.add_plan()
+    checkout = await harness.subscribe(plan)
+    await harness.authorize(checkout.razorpay_subscription_id)
+    await harness.advance(checkout.razorpay_subscription_id, SubscriptionEvent.ACTIVATED)
+    harness.base.clock.advance(timedelta(seconds=harness.base.settings.order_expiry_seconds + 1))
+
+    counts = await harness.finalizer.finalize()
+
+    assert counts.expired == 0
+    assert harness.local(checkout).status is SubscriptionStatus.ACTIVE
+    assert (await harness.remote(checkout.razorpay_subscription_id)).status == "active"
+
+
+async def test_a_subscription_already_closed_at_the_provider_is_expired_locally(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    plan = await harness.add_plan()
+    checkout = await harness.subscribe(plan)
+    await harness.base.razorpay.cancel_subscription(checkout.razorpay_subscription_id, at_cycle_end=False)
+    harness.base.clock.advance(timedelta(seconds=harness.base.settings.order_expiry_seconds + 1))
+
+    counts = await harness.finalizer.finalize()
+
+    assert counts.expired == 1
+    assert harness.local(checkout).status is SubscriptionStatus.EXPIRED
+
+
+async def test_the_subscription_is_rechecked_before_any_provider_call(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    plan = await harness.add_plan()
+    checkout = await harness.subscribe(plan)
+    selected = harness.local(checkout)
+    harness.patch(checkout.subscription_id, last_event_at=harness.base.clock.now())
+    harness.base.clock.advance(timedelta(seconds=harness.base.settings.order_expiry_seconds + 1))
+
+    expired = await harness.finalizer.expire(selected)
+
+    assert expired == 0
+    assert (await harness.remote(checkout.razorpay_subscription_id)).status == "created"
+    assert harness.local(checkout).status is SubscriptionStatus.CREATED
+
+
+async def test_the_authenticated_event_moves_a_created_subscription_and_records_the_activity(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    plan = await harness.add_plan()
+    checkout = await harness.subscribe(plan)
+    await harness.authorize(checkout.razorpay_subscription_id)
+
+    delivered = await harness.emit(WebhookEventName.SUBSCRIPTION_AUTHENTICATED, checkout.razorpay_subscription_id)
+
+    assert delivered.ignored_reason is None
+    subscription = harness.local(checkout)
+    assert subscription.status is SubscriptionStatus.AUTHENTICATED
+    assert subscription.last_event_at == harness.base.clock.now()
+    harness.base.clock.advance(timedelta(seconds=harness.base.settings.order_expiry_seconds + 1))
+    assert (await harness.finalizer.finalize()).expired == 0
+    assert (await harness.remote(checkout.razorpay_subscription_id)).status == "authenticated"
+
+
+async def test_a_late_authenticated_event_after_activation_is_a_no_op(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    plan = await harness.add_plan()
+    checkout = await harness.subscribe(plan)
+    await harness.activate(checkout)
+    harness.base.clock.advance(timedelta(seconds=1))
+
+    delivered = await harness.emit(WebhookEventName.SUBSCRIPTION_AUTHENTICATED, checkout.razorpay_subscription_id)
+
+    assert delivered.ignored_reason is None
     assert harness.local(checkout).status is SubscriptionStatus.ACTIVE

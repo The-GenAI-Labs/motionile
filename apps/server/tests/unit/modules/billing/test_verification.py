@@ -13,8 +13,9 @@ from motionile.modules.billing.exceptions import (
 )
 from motionile.modules.billing.razorpay.credentials import razorpay_credentials
 from motionile.modules.billing.razorpay.exceptions import RazorpayNotConfiguredError
+from motionile.modules.billing.razorpay.fake_entities import PaymentSpec, new_entity_id, payment_entity
 from motionile.modules.billing.razorpay.fake_simulator import PaymentOutcome
-from motionile.modules.billing.razorpay.fake_store import FaultKind, FaultOperation
+from motionile.modules.billing.razorpay.fake_store import EntityKind, FaultKind, FaultOperation
 from motionile.modules.billing.razorpay.signatures import sign_order_payment
 from motionile.modules.billing.records import OrderRecord
 from motionile.modules.billing.services.verification import (
@@ -202,3 +203,58 @@ async def test_missing_credentials_are_reported_as_a_provider_error(billing_harn
 
     with pytest.raises(PaymentProviderError):
         await service.verify(billing_harness.user_id, command_for(order, "pay_x"))
+
+
+async def add_duplicate_capture(harness: BillingHarness, order: OrderRecord) -> str:
+    payment_id = await new_entity_id(harness.razorpay_store, "pay")
+    entity = payment_entity(
+        payment_id,
+        harness.clock.now(),
+        PaymentSpec(amount=PACK_PRICE, currency="INR", status="captured", order_id=order.razorpay_order_id),
+    )
+    await harness.razorpay_store.put(EntityKind.PAYMENT, payment_id, entity)
+    return payment_id
+
+
+async def test_verifying_a_payment_held_for_review_keeps_answering_pending(billing_harness: BillingHarness) -> None:
+    order = await billing_harness.open_order()
+    payment = await billing_harness.pay(order, amount=PACK_PRICE + 1)
+    service = service_for(billing_harness)
+
+    first = await service.verify(billing_harness.user_id, command_for(order, payment.id))
+    second = await service.verify(billing_harness.user_id, command_for(order, payment.id))
+
+    assert first == second == VerificationResult(order.id, "pending", 0)
+    assert billing_harness.balance() == 0
+    assert billing_harness.billing.orders[order.id].status is not OrderStatus.PAID
+
+
+async def test_a_mismatched_payment_does_not_report_paid_after_another_payment_paid_the_order(
+    billing_harness: BillingHarness,
+) -> None:
+    order = await billing_harness.open_order()
+    wrong = await billing_harness.pay(order, amount=PACK_PRICE - 1)
+    service = service_for(billing_harness)
+    await service.verify(billing_harness.user_id, command_for(order, wrong.id))
+    right = await billing_harness.simulator.pay_order(order.razorpay_order_id or "", PaymentOutcome.SUCCESS)
+    paid = await service.verify(billing_harness.user_id, command_for(order, right.payment["id"]))
+
+    again = await service.verify(billing_harness.user_id, command_for(order, wrong.id))
+
+    assert paid.status == "paid"
+    assert again == VerificationResult(order.id, "pending", 0)
+    assert billing_harness.balance() == PACK_CREDITS
+
+
+async def test_a_duplicate_payment_keeps_answering_with_no_credits(billing_harness: BillingHarness) -> None:
+    order = await billing_harness.open_order()
+    first = await billing_harness.pay(order)
+    service = service_for(billing_harness)
+    await service.verify(billing_harness.user_id, command_for(order, first.id))
+    payment_id = await add_duplicate_capture(billing_harness, order)
+    once = await service.verify(billing_harness.user_id, command_for(order, payment_id))
+
+    twice = await service.verify(billing_harness.user_id, command_for(order, payment_id))
+
+    assert once == twice == VerificationResult(order.id, "paid", 0)
+    assert billing_harness.balance() == PACK_CREDITS

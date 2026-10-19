@@ -89,7 +89,7 @@ class OrderService:
             store = self._store_factory(session)
             existing = await store.order_for_key(user_id, idempotency_key)
             if existing is None:
-                product = await store.product_by_code(product_code)
+                product = await store.share_product_by_code(product_code)
                 if product is None or not product.is_active:
                     raise ProductNotFoundError
                 if product.kind != CREDIT_PACK:
@@ -107,11 +107,34 @@ class OrderService:
         return PreparedOrder(existing, owned, retried=True)
 
     async def _open_remote_order(self, prepared: PreparedOrder) -> OrderRecord:
-        order = prepared.order
-        remote = await self._remote_order(order, look_first=prepared.retried)
-        if remote.amount != order.amount_paise or remote.currency != order.currency:
-            raise PaymentProviderError("The payment provider order does not match the stored order.")
-        return await self._attach(order, remote.id)
+        rejection: PaymentProviderRejectedError | None = None
+        async with self._transaction() as session:
+            uncontended = await self._store_factory(session).lock_creation(prepared.order.id)
+            order = await self._current(prepared.order)
+            if order.status is not OrderStatus.CREATED:
+                return self._require_pending(order)
+            try:
+                remote = await self._remote_order(order, look_first=prepared.retried or not uncontended)
+            except PaymentProviderRejectedError as error:
+                rejection = error
+            else:
+                if remote.amount != order.amount_paise or remote.currency != order.currency:
+                    raise PaymentProviderError("The payment provider order does not match the stored order.")
+                return await self._attach(order, remote.id)
+        raise rejection
+
+    async def _current(self, order: OrderRecord) -> OrderRecord:
+        async with self._transaction() as session:
+            current = await self._store_factory(session).order_for_key(order.user_id, order.idempotency_key)
+        if current is None:
+            raise OrderNotFoundError
+        return current
+
+    @staticmethod
+    def _require_pending(order: OrderRecord) -> OrderRecord:
+        if order.status is not OrderStatus.PENDING:
+            raise OrderNotPayableError("This order can no longer be paid. Start a new purchase.")
+        return order
 
     async def _remote_order(self, order: OrderRecord, *, look_first: bool) -> RazorpayOrder:
         if look_first:

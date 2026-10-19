@@ -5,6 +5,7 @@ import pytest
 from tests.unit.modules.billing.conftest import BillingHarness
 from tests.unit.modules.billing.subscription_support import (
     KEY_ID,
+    KEY_SECRET,
     PLAN_CREDITS,
     PLAN_PRICE,
     SubscriptionHarness,
@@ -23,9 +24,13 @@ from motionile.modules.billing.exceptions import (
     SubscriptionNotChangeableError,
     SubscriptionNotFoundError,
 )
+from motionile.modules.billing.razorpay.fake import FakeRazorpay
+from motionile.modules.billing.razorpay.fake_entities import bad_request
 from motionile.modules.billing.razorpay.fake_simulator import SubscriptionEvent
 from motionile.modules.billing.razorpay.fake_store import EntityKind, FaultKind, FaultOperation
+from motionile.modules.billing.razorpay.models import RazorpaySubscription
 from motionile.modules.billing.records import NewOrder
+from motionile.modules.billing.services.subscription_management import ManagementDependencies, SubscriptionManagement
 from motionile.modules.billing.states import OrderStatus, SubscriptionStatus
 
 
@@ -553,3 +558,70 @@ async def test_the_whole_flow_from_checkout_to_renewal_and_back_to_a_clean_state
     assert harness.local(checkout).status is SubscriptionStatus.CANCELLED
     assert await harness.management.current(harness.base.user_id) is None
     assert harness.base.balance() == 2 * PLAN_CREDITS
+
+
+class RefusesRepeatedCancellation(FakeRazorpay):
+    async def cancel_subscription(self, subscription_id: str, *, at_cycle_end: bool) -> RazorpaySubscription:
+        del subscription_id, at_cycle_end
+        raise bad_request("The subscription is already scheduled to be cancelled")
+
+
+def management_with(harness: SubscriptionHarness, razorpay: FakeRazorpay) -> SubscriptionManagement:
+    base = harness.base
+    return SubscriptionManagement(
+        ManagementDependencies(
+            base.world.transaction, razorpay, base.clock, lambda: KEY_SECRET, base.audit, base.world.send_notice
+        ),
+        base.billing,
+    )
+
+
+async def test_a_retried_cycle_end_cancellation_refused_by_the_provider_is_accepted_when_it_is_already_scheduled(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    plan = await harness.add_plan()
+    checkout = await harness.subscribe(plan)
+    await harness.activate(checkout)
+    await harness.base.razorpay_store.add_fault(FaultOperation.CANCEL_SUBSCRIPTION, FaultKind.TIMEOUT_AFTER_CREATE, 1)
+    with pytest.raises(PaymentProviderUnavailableError):
+        await harness.management.cancel(harness.base.user_id)
+    assert harness.local(checkout).cancel_at_period_end is False
+    refusing = RefusesRepeatedCancellation(harness.base.razorpay_store, harness.base.clock)
+
+    view = await management_with(harness, refusing).cancel(harness.base.user_id)
+
+    assert view.subscription.cancel_at_period_end is True
+    assert harness.local(checkout).cancel_at_period_end is True
+
+
+async def test_a_refused_cancellation_is_not_accepted_when_nothing_is_scheduled(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    plan = await harness.add_plan()
+    checkout = await harness.subscribe(plan)
+    await harness.activate(checkout)
+    refusing = RefusesRepeatedCancellation(harness.base.razorpay_store, harness.base.clock)
+
+    with pytest.raises(PaymentProviderRejectedError):
+        await management_with(harness, refusing).cancel(harness.base.user_id)
+
+    assert harness.local(checkout).cancel_at_period_end is False
+
+
+async def test_a_scheduled_plan_change_is_not_mistaken_for_a_scheduled_cancellation(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    plan = await harness.add_plan()
+    bigger = await harness.add_plan(price=199_900, credit_amount=1_500, name="Max")
+    checkout = await harness.subscribe(plan)
+    await harness.activate(checkout)
+    await harness.management.change(harness.base.user_id, bigger.code)
+    refusing = RefusesRepeatedCancellation(harness.base.razorpay_store, harness.base.clock)
+
+    with pytest.raises(PaymentProviderRejectedError):
+        await management_with(harness, refusing).cancel(harness.base.user_id)
+
+    assert harness.local(checkout).cancel_at_period_end is False

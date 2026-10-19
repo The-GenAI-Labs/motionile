@@ -32,6 +32,7 @@ EXPECTED_SCHEDULES = {
     "motionile:billing.finalize_subscriptions": "*/15 * * * *",
     "motionile:billing.sync_subscriptions": "15 3 * * *",
     "motionile:billing.settlement_check": "0 4 * * *",
+    "motionile:billing.reconcile_pending_refunds": "*/15 * * * *",
 }
 
 
@@ -72,6 +73,7 @@ def test_every_task_runs_on_its_queue() -> None:
     assert queues["motionile:billing.finalize_subscriptions"] == "billing"
     assert queues["motionile:billing.sync_subscriptions"] == "billing"
     assert queues["motionile:billing.settlement_check"] == "billing"
+    assert queues["motionile:billing.reconcile_pending_refunds"] == "billing"
     assert queues["motionile:billing.revalidate_products"] == "default"
 
 
@@ -226,6 +228,29 @@ class StubSettlementCheck:
     async def run(self) -> Any:
         self.runs += 1
         return self.result
+
+
+@dataclass
+class StubRefunds:
+    runs: int = 0
+
+    async def reconcile_stale(self) -> Any:
+        self.runs += 1
+        return SimpleNamespace(linked=1, failed=1, errors=0)
+
+
+async def test_the_refund_reconciliation_task_calls_the_refund_service(
+    in_memory_app: tuple[App, InMemoryConnector], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app, connector = in_memory_app
+    refunds = StubRefunds()
+    install_services(monkeypatch, refunds=refunds)
+    await tasks.reconcile_pending_refunds.defer_async(timestamp=1_760_000_000)
+
+    await app.run_worker_async(wait=False, install_signal_handlers=False)
+
+    assert refunds.runs == 1
+    assert [job["status"] for job in connector.jobs.values()] == [Status.SUCCEEDED.value]
 
 
 @pytest.mark.parametrize("task_name", ["finalize_subscriptions", "sync_subscriptions", "settlement_check"])

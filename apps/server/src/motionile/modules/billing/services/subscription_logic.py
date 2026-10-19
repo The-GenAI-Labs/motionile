@@ -3,6 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
+from motionile.modules.billing.exceptions import SubscriptionPeriodUnknownError
 from motionile.modules.billing.razorpay.models import RazorpayPayment, RazorpaySubscription
 from motionile.modules.billing.records import ProductRecord, SubscriptionRecord
 from motionile.modules.billing.states import (
@@ -86,7 +87,11 @@ def plan_cancellation(status: SubscriptionStatus, period_end: datetime | None, n
 
 
 def grant_expiry(period_end: datetime | None, *, rollover: bool) -> datetime | None:
-    return None if rollover else period_end
+    if rollover:
+        return None
+    if period_end is None:
+        raise SubscriptionPeriodUnknownError
+    return period_end
 
 
 def charge_matches_product(product: ProductRecord, payment: RazorpayPayment) -> bool:

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import timedelta
 from uuid import UUID
 
@@ -90,12 +90,34 @@ class SubscriptionCheckout:
         if order.status not in PAYABLE_ORDER_STATUSES or subscription.status is not SubscriptionStatus.CREATED:
             raise OrderNotPayableError("This subscription can no longer be paid. Start a new one.")
         customer = await self._customers.ensure(user_id)
-        remote_id = subscription.razorpay_subscription_id
-        if remote_id is None:
-            remote_id = (await self._open_remote(prepared)).id
         if subscription.razorpay_subscription_id is None or order.status is OrderStatus.CREATED:
-            subscription, order = await self._attach(prepared, remote_id)
+            subscription, order = await self._open_and_attach(prepared)
         return self._checkout(subscription, order, prepared.product, customer)
+
+    async def _open_and_attach(self, prepared: PreparedSubscription) -> tuple[SubscriptionRecord, OrderRecord]:
+        rejection: PaymentProviderRejectedError | None = None
+        async with self._transaction() as session:
+            uncontended = await self._store_factory(session).lock_creation(prepared.subscription.id)
+            async with self._transaction() as reading:
+                store = self._store_factory(reading)
+                subscription = await store.subscription_for_user(
+                    prepared.subscription.id, prepared.subscription.user_id
+                )
+                order = await store.lock_order(prepared.order.id)
+            if subscription is None or order is None:
+                raise SubscriptionNotFoundError
+            if subscription.razorpay_subscription_id is not None and order.status is not OrderStatus.CREATED:
+                return subscription, order
+            current = replace(
+                prepared, subscription=subscription, order=order, retried=prepared.retried or not uncontended
+            )
+            try:
+                remote_id = subscription.razorpay_subscription_id or (await self._open_remote(current)).id
+            except PaymentProviderRejectedError as error:
+                rejection = error
+            else:
+                return await self._attach(current, remote_id)
+        raise rejection
 
     async def _prepare(self, user_id: UUID, product_code: str, idempotency_key: str) -> PreparedSubscription:
         try:
@@ -109,7 +131,7 @@ class SubscriptionCheckout:
             existing = await store.order_for_key(user_id, idempotency_key)
             if existing is not None:
                 return await self._resume(store, existing, product_code)
-            product = plan_product_or_raise(await store.product_by_code(product_code))
+            product = plan_product_or_raise(await store.share_product_by_code(product_code))
             if await store.live_subscription(user_id) is not None:
                 raise SubscriptionExistsError("You already have a subscription.")
             subscription = await store.insert_subscription(

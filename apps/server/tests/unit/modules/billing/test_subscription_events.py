@@ -5,6 +5,7 @@ import pytest
 from tests.unit.modules.billing.conftest import BillingHarness
 from tests.unit.modules.billing.subscription_support import PLAN_CREDITS, PLAN_PRICE, SubscriptionHarness
 
+from motionile.modules.billing.exceptions import WebhookProcessingError
 from motionile.modules.billing.razorpay.fake_events import WebhookEventName
 from motionile.modules.billing.razorpay.fake_simulator import SubscriptionEvent
 from motionile.modules.billing.razorpay.fake_store import EntityKind
@@ -21,6 +22,7 @@ def subscription_harness(billing_harness: BillingHarness) -> SubscriptionHarness
 
 def test_every_subscription_and_refund_event_has_a_handler(subscription_harness: SubscriptionHarness) -> None:
     assert subscription_harness.registry.event_types() == {
+        "subscription.authenticated",
         "subscription.activated",
         "subscription.charged",
         "subscription.pending",
@@ -674,3 +676,62 @@ async def test_every_arrival_order_reaches_the_same_state_and_grants_each_paymen
     assert balance == 2 * PLAN_CREDITS
     assert lot_count == 2
     assert len(keys) == len(set(keys)) == 2
+
+
+async def test_a_charge_without_a_known_period_is_retried_instead_of_granting_a_non_expiring_lot(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    _, checkout = await started(harness)
+    authorization, _ = await harness.authorize(checkout.razorpay_subscription_id)
+    await harness.advance(checkout.razorpay_subscription_id, SubscriptionEvent.ACTIVATED)
+    entity = await harness.stored(EntityKind.SUBSCRIPTION, checkout.razorpay_subscription_id)
+    entity["current_end"] = None
+    await harness.base.razorpay_store.put(EntityKind.SUBSCRIPTION, checkout.razorpay_subscription_id, entity)
+    prepared = await harness.prepare(
+        WebhookEventName.SUBSCRIPTION_CHARGED,
+        checkout.razorpay_subscription_id,
+        payment_id=authorization.payment["id"],
+    )
+
+    with pytest.raises(WebhookProcessingError):
+        await harness.deliver(prepared)
+
+    assert not harness.base.billing.payments
+    assert not harness.lots()
+    assert harness.base.billing.events[next(iter(harness.base.billing.events))].status is WebhookEventStatus.FAILED
+    harness.rollover = True
+    retry = await harness.processor.process(next(iter(harness.base.billing.events)))
+    assert retry.state is ProcessingState.PROCESSED
+    [lot] = harness.lots()
+    assert lot.expires_at is None
+
+
+async def test_a_charge_for_a_period_that_is_already_over_grants_nothing_records_the_payment_and_alerts(
+    subscription_harness: SubscriptionHarness,
+) -> None:
+    harness = subscription_harness
+    _, checkout = await started(harness)
+    authorization, _ = await harness.authorize(checkout.razorpay_subscription_id)
+    await harness.advance(checkout.razorpay_subscription_id, SubscriptionEvent.ACTIVATED)
+    now = harness.base.clock.now()
+    entity = await harness.stored(EntityKind.SUBSCRIPTION, checkout.razorpay_subscription_id)
+    entity["current_start"] = int((now - timedelta(days=40)).timestamp())
+    entity["current_end"] = int((now - timedelta(days=10)).timestamp())
+    await harness.base.razorpay_store.put(EntityKind.SUBSCRIPTION, checkout.razorpay_subscription_id, entity)
+
+    delivered = await harness.emit(
+        WebhookEventName.SUBSCRIPTION_CHARGED,
+        checkout.razorpay_subscription_id,
+        payment_id=authorization.payment["id"],
+    )
+
+    assert delivered.result.state is ProcessingState.PROCESSED
+    [payment] = harness.base.billing.payments.values()
+    assert (payment.credits_granted, payment.status.value) == (0, "captured")
+    assert not harness.lots()
+    assert harness.base.balance() == 0
+    assert "billing.subscription.charge_expired" in harness.base.audit_actions()
+    assert "billing.subscription_charge_expired" in [code for code, _ in harness.base.world.alerts]
+    assert harness.base.billing.orders[checkout.order_id].status is OrderStatus.PAID
+    assert not harness.base.world.notices

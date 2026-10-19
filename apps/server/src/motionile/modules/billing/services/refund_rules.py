@@ -1,7 +1,15 @@
 from motionile.modules.billing.exceptions import RefundExceedsRefundableError
 from motionile.modules.billing.states import PaymentRecordStatus
 
+EXTERNAL_KEY_PREFIX = "external:"
+EXTERNAL_REASON = "external_refund"
 REFUNDABLE_PAYMENT_STATUSES = frozenset({PaymentRecordStatus.CAPTURED, PaymentRecordStatus.PARTIALLY_REFUNDED})
+
+
+def settled_payment_status(*, amount_paise: int, refunded_paise: int) -> PaymentRecordStatus:
+    if refunded_paise <= 0:
+        return PaymentRecordStatus.CAPTURED
+    return refund_payment_status(amount_paise=amount_paise, refunded_paise=refunded_paise)
 
 
 def refundable_paise(*, amount_paise: int, refunded_paise: int, pending_paise: int) -> int:
@@ -25,6 +33,13 @@ def proportional_credits(*, credits_granted: int, payment_amount_paise: int, ref
     if credits_granted <= 0 or payment_amount_paise <= 0 or refund_amount_paise <= 0:
         return 0
     return -(-credits_granted * refund_amount_paise // payment_amount_paise)
+
+
+def credits_after_refund(*, credits_granted: int, payment_amount_paise: int, refunded_paise: int) -> int:
+    refunded = max(0, min(refunded_paise, payment_amount_paise))
+    return credits_granted - proportional_credits(
+        credits_granted=credits_granted, payment_amount_paise=payment_amount_paise, refund_amount_paise=refunded
+    )
 
 
 def clawback_amount(

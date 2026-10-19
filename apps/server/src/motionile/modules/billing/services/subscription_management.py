@@ -83,6 +83,15 @@ def user_cancel_actor(subscription: SubscriptionRecord) -> CancelActor:
     return CancelActor(ActorType.USER, subscription.user_id, "billing.subscription.cancel_requested")
 
 
+def cancellation_in_place(
+    remote: RazorpaySubscription, subscription: SubscriptionRecord, decision: CancelDecision
+) -> bool:
+    if remote.status == RemoteStatus.CANCELLED or remote.ended_at is not None:
+        return True
+    scheduled = remote.has_scheduled_changes and subscription.pending_product_id is None
+    return scheduled and not decision.immediate
+
+
 class SubscriptionManagement:
     def __init__(self, deps: ManagementDependencies, store_factory: StoreFactory) -> None:
         self._transaction = deps.transaction
@@ -184,6 +193,14 @@ class SubscriptionManagement:
             if locked is None:
                 raise SubscriptionNotFoundError
             self._require_changeable(locked)
+            shared = await store.share_product_by_id(target.id)
+            if (
+                shared is None
+                or not shared.is_active
+                or shared.razorpay_plan_id != target.razorpay_plan_id
+                or shared.currency != target.currency
+            ):
+                raise SubscriptionNotChangeableError("The new plan changed while you were switching. Try again.")
             await store.update_subscription(locked.id, {"pending_product_id": target.id})
             await self._audit(
                 session,
@@ -243,7 +260,7 @@ class SubscriptionManagement:
             await self._razorpay.cancel_subscription(remote_id, at_cycle_end=not decision.immediate)
         except RazorpayBadRequestError as error:
             remote = await self._fetch(remote_id)
-            if remote.status != RemoteStatus.CANCELLED:
+            if not cancellation_in_place(remote, subscription, decision):
                 raise PaymentProviderRejectedError("The payment provider rejected the cancellation.") from error
         except RazorpayError as error:
             raise provider_error(error) from error

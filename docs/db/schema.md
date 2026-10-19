@@ -34,13 +34,13 @@ Read [`conventions.md`](conventions.md) first; this file assumes it. Diagrams li
 | Platform (configuration) | `permissions`, `role_permissions`, `user_preferences`, `system_settings`, `feature_flags`                                                                                                                                    | 6     |
 | Catalog                  | `categories`, `topics`, `catalog_slug_history`                                                                                                                                                                               | 6     |
 | Billing and credits      | `products`, `billing_customers`, `orders`, `payments`, `subscriptions`, `refunds`, `webhook_events`, `billing_reconciliation_runs`, `credit_wallets`, `credit_lots`, `credit_reservations`, `credit_ledger`, `usage_records` | 7     |
-| Media and voices         | `assets`, `voices`, `voice_consents`                                                                                                                                                                                         | 8     |
-| Generation               | `jobs`, `storyboards`, `scenes`, `job_events`, `renditions`, `share_links`, `prompt_templates`, `prompt_versions`                                                                                                            | 9     |
+| Media and voices         | `assets`, `renders`, `renditions`, `tts_cache`, `music_tracks`, `voices`, `voice_consents`                                                                                                                                   | 8     |
+| Generation               | `jobs`, `storyboards`, `scenes`, `job_events`, `share_links`, `prompt_templates`, `prompt_versions`                                                                                                                          | 9     |
 | Skills, memory and RAG   | `skills`, `skill_versions`, `skill_files`, `skill_embeddings`, `job_skills`, `memories`, `rag_sources`, `rag_chunks`                                                                                                         | 10    |
 | Publishing               | `platform_specs`, `connected_accounts`, `account_credentials`, `publications`, `publication_targets`                                                                                                                         | 11    |
 | Integrations             | `api_keys`, `mcp_clients`, `mcp_grants`                                                                                                                                                                                      | 12    |
 
-`renditions` and `share_links` move from the media phase to Phase 9 because they reference `jobs`; `job_skills` is an addition explained under its table.
+`share_links` moves from the media phase to Phase 9 because it belongs to a finished job; `renditions` stays in Phase 8 and references `renders` ([ADR 0021](../adr/0021-renders-as-an-aggregate.md)); `job_skills` is an addition explained under its table.
 
 ---
 
@@ -1055,62 +1055,224 @@ Every stored object in the private bucket has one row.
 - `ix_assets_owner_user_id_kind_created_at` (`owner_user_id`, `kind`, `created_at`): a user's media library; supports the foreign key.
 - `ix_assets_status_created_at` (`status`, `created_at`) `WHERE status = 'pending'`: cleanup of abandoned uploads.
 
+### `renders`
+
+Module `media` · Phase 8 · Mutable · Refinement: a render is its own aggregate ([ADR 0021](../adr/0021-renders-as-an-aggregate.md))
+
+One row per run of the render pipeline: a composition plus narration becoming renditions. Phase 9 jobs and MCP submissions reference a render; the admin test bed creates renders directly.
+
+| Column                   | Type          | Null | Default    | Notes                                                                                                                    |
+| ------------------------ | ------------- | ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `id`                     | `uuid`        | no   | -          | UUIDv7                                                                                                                   |
+| `owner_user_id`          | `uuid`        | no   | -          | The user the renditions belong to                                                                                        |
+| `source`                 | `text`        | no   | -          | `testbed`, `job`, `mcp`                                                                                                  |
+| `status`                 | `text`        | no   | `'queued'` | See `state-machines.md`                                                                                                  |
+| `stage`                  | `text`        | yes  | -          | Pipeline stage running or last started; kept after a failure to show where it stopped                                    |
+| `progress`               | `smallint`    | no   | `0`        | 0 to 100                                                                                                                 |
+| `options`                | `jsonb`       | no   | `'{}'`     | Validated by `RenderOptions`: aspects, frame rate, narration source, voice, music track, subtitles, burn-in              |
+| `composition_asset_id`   | `uuid`        | no   | -          | The submitted composition HTML (`html` asset)                                                                            |
+| `mixed_audio_asset_id`   | `uuid`        | yes  | -          | Set when mixing finishes                                                                                                 |
+| `subtitles_vtt_asset_id` | `uuid`        | yes  | -          | WebVTT track, set when finalizing finishes                                                                               |
+| `subtitles_srt_asset_id` | `uuid`        | yes  | -          | SRT track, set when finalizing finishes                                                                                  |
+| `duration_ms`            | `integer`     | yes  | -          | Narration duration without the tail                                                                                      |
+| `validation_report`      | `jsonb`       | yes  | -          | The `ValidationReport`: issues with scene, time, selector, kind and severity                                             |
+| `stage_timings`          | `jsonb`       | no   | `'{}'`     | Milliseconds spent per stage                                                                                             |
+| `checkpoints`            | `jsonb`       | no   | `'{}'`     | Per stage: completion time and the deterministic storage keys of its outputs; a retry resumes at the first missing stage |
+| `error_code`             | `text`        | yes  | -          | Stable code such as `network_violation`, `timeout`, `validation_failed`                                                  |
+| `error_message`          | `text`        | yes  | -          | At most 2000 characters, never provider internals                                                                        |
+| `cancel_requested_at`    | `timestamptz` | yes  | -          | Workers check it between frames                                                                                          |
+| `started_at`             | `timestamptz` | yes  | -          |                                                                                                                          |
+| `completed_at`           | `timestamptz` | yes  | -          | Set for `completed`, `failed`, `cancelled`                                                                               |
+| `created_at`             | `timestamptz` | no   | `now()`    |                                                                                                                          |
+| `updated_at`             | `timestamptz` | no   | `now()`    | Touched by every progress update, so a stalled render is recognizable                                                    |
+
+- `pk_renders` primary key (`id`).
+- `fk_renders_owner_user_id_users` → `users.id` **ON DELETE CASCADE**. The purge job deletes the `media/`, `work/` and `voice/` objects of the user before deleting the row.
+- `fk_renders_composition_asset_id_assets`, `fk_renders_mixed_audio_asset_id_assets`, `fk_renders_subtitles_vtt_asset_id_assets`, `fk_renders_subtitles_srt_asset_id_assets` → `assets.id` **ON DELETE NO ACTION**: an asset used by a render cannot be deleted on its own; deleting the user removes both.
+- `ck_renders_source`: `source IN ('testbed', 'job', 'mcp')`.
+- `ck_renders_status`: `status IN ('queued', 'preparing', 'voicing', 'mixing', 'capturing', 'encoding', 'finalizing', 'completed', 'failed', 'cancelled')`.
+- `ck_renders_stage`: `stage IS NULL OR stage IN ('preparing', 'voicing', 'mixing', 'capturing', 'encoding', 'finalizing')`.
+- `ck_renders_progress_range`: `progress BETWEEN 0 AND 100`.
+- `ck_renders_completed_progress`: `status <> 'completed' OR progress = 100`.
+- `ck_renders_options_object`, `ck_renders_stage_timings_object`, `ck_renders_checkpoints_object`: `jsonb_typeof(...) = 'object'`; `ck_renders_validation_report_object`: `validation_report IS NULL OR jsonb_typeof(validation_report) = 'object'`.
+- `ck_renders_duration_non_negative`: `duration_ms IS NULL OR duration_ms >= 0`.
+- `ck_renders_error_code_format`: `error_code IS NULL OR error_code ~ '^[a-z][a-z0-9_]{1,59}$'`; `ck_renders_error_message_length`: `error_message IS NULL OR char_length(error_message) <= 2000`.
+- `ck_renders_failed_has_error`: `status <> 'failed' OR error_code IS NOT NULL`.
+- `ck_renders_terminal_has_completed_at`: `(status IN ('completed', 'failed', 'cancelled')) = (completed_at IS NOT NULL)`.
+- `ix_renders_owner_user_id_created_at_id` (`owner_user_id`, `created_at`, `id`): a user's renders newest first; supports the foreign key.
+- `ix_renders_status_updated_at` (`status`, `updated_at`) `WHERE status NOT IN ('completed', 'failed', 'cancelled')`: sweeper for stalled renders.
+- `ix_renders_composition_asset_id`, `ix_renders_mixed_audio_asset_id`, `ix_renders_subtitles_vtt_asset_id`, `ix_renders_subtitles_srt_asset_id`: support the foreign keys.
+
+### `renditions`
+
+Module `media` · Phase 8 (moved back from Phase 9; references `renders` instead of `jobs`) · Mutable
+
+| Column                 | Type          | Null | Default     | Notes                                           |
+| ---------------------- | ------------- | ---- | ----------- | ----------------------------------------------- |
+| `id`                   | `uuid`        | no   | -           | UUIDv7                                          |
+| `render_id`            | `uuid`        | no   | -           |                                                 |
+| `aspect`               | `text`        | no   | -           | `16:9`, `9:16`, `1:1`                           |
+| `width`                | `integer`     | no   | -           |                                                 |
+| `height`               | `integer`     | no   | -           |                                                 |
+| `asset_id`             | `uuid`        | yes  | -           | The MP4; set when ready                         |
+| `poster_webp_asset_id` | `uuid`        | yes  | -           | Poster frame as WebP; added for players         |
+| `poster_jpeg_asset_id` | `uuid`        | yes  | -           | Poster frame as JPEG for platforms and previews |
+| `status`               | `text`        | no   | `'pending'` | `pending`, `rendering`, `ready`, `failed`       |
+| `duration_ms`          | `integer`     | yes  | -           | Added for players and platform limits           |
+| `burned_in_subtitles`  | `boolean`     | no   | `false`     | Whether the subtitles are part of the picture   |
+| `created_at`           | `timestamptz` | no   | `now()`     |                                                 |
+| `updated_at`           | `timestamptz` | no   | `now()`     |                                                 |
+
+- `pk_renditions` primary key (`id`).
+- `fk_renditions_render_id_renders` → `renders.id` **ON DELETE CASCADE**.
+- `fk_renditions_asset_id_assets`, `fk_renditions_poster_webp_asset_id_assets`, `fk_renditions_poster_jpeg_asset_id_assets` → `assets.id` **ON DELETE NO ACTION**: a rendition's files cannot be deleted on their own; deleting the user removes both.
+- `uq_renditions_render_id_aspect` unique (`render_id`, `aspect`); supports the render foreign key.
+- `ck_renditions_aspect`: `aspect IN ('16:9', '9:16', '1:1')`.
+- `ck_renditions_status`: `status IN ('pending', 'rendering', 'ready', 'failed')`.
+- `ck_renditions_dimensions_positive`: `width > 0 AND height > 0`.
+- `ck_renditions_duration_non_negative`: `duration_ms IS NULL OR duration_ms >= 0`.
+- `ck_renditions_ready_has_asset`: `status <> 'ready' OR asset_id IS NOT NULL`.
+- `ix_renditions_asset_id`, `ix_renditions_poster_webp_asset_id`, `ix_renditions_poster_jpeg_asset_id`: support the foreign keys.
+
+### `tts_cache`
+
+Module `media` · Phase 8 · Mutable · Refinement: identical narration is never synthesized or paid for twice ([ADR 0022](../adr/0022-tts-cache-by-content-hash.md))
+
+| Column              | Type          | Null | Default | Notes                                                                       |
+| ------------------- | ------------- | ---- | ------- | --------------------------------------------------------------------------- |
+| `id`                | `uuid`        | no   | -       | UUIDv7                                                                      |
+| `content_hash`      | `bytea`       | no   | -       | SHA-256 over provider, model, voice, normalized text and synthesis settings |
+| `provider`          | `text`        | no   | -       | `elevenlabs`, `openai`, `fake`                                              |
+| `model`             | `text`        | no   | -       | Provider model identifier                                                   |
+| `provider_voice_id` | `text`        | no   | -       | The voice the audio was produced with                                       |
+| `characters`        | `integer`     | no   | -       | Billed characters of the original synthesis                                 |
+| `duration_ms`       | `integer`     | no   | -       |                                                                             |
+| `word_timings`      | `jsonb`       | no   | -       | Array of `{text, startMs, endMs}` relative to the start of the audio        |
+| `audio_asset_id`    | `uuid`        | no   | -       | System asset under `tts/`; never served by the CDN                          |
+| `hit_count`         | `bigint`      | no   | `0`     | Times the entry replaced a synthesis                                        |
+| `last_used_at`      | `timestamptz` | no   | -       | Prune key                                                                   |
+| `created_at`        | `timestamptz` | no   | `now()` |                                                                             |
+| `updated_at`        | `timestamptz` | no   | `now()` |                                                                             |
+
+- `pk_tts_cache` primary key (`id`).
+- `fk_tts_cache_audio_asset_id_assets` → `assets.id` **ON DELETE NO ACTION**: the audio of an entry cannot be deleted on its own; pruning deletes the entry first and the asset second.
+- `uq_tts_cache_content_hash` unique (`content_hash`): the cache lookup.
+- `ck_tts_cache_content_hash_length`: `octet_length(content_hash) = 32`.
+- `ck_tts_cache_provider`: `provider IN ('elevenlabs', 'openai', 'fake')`.
+- `ck_tts_cache_counters`: `characters >= 0 AND duration_ms > 0 AND hit_count >= 0`.
+- `ck_tts_cache_word_timings_array`: `jsonb_typeof(word_timings) = 'array'`.
+- `ix_tts_cache_audio_asset_id` (`audio_asset_id`): supports the foreign key.
+- `ix_tts_cache_last_used_at` (`last_used_at`): pruning of entries unused for the retention period.
+- `ix_tts_cache_provider_provider_voice_id` (`provider`, `provider_voice_id`): removal of every entry of a deleted cloned voice.
+
+### `music_tracks`
+
+Module `media` · Phase 8 · Mutable · Refinement: only licensed tracks can be used ([ADR 0023](../adr/0023-music-library-and-licensing.md))
+
+| Column               | Type          | Null | Default | Notes                                                                  |
+| -------------------- | ------------- | ---- | ------- | ---------------------------------------------------------------------- |
+| `id`                 | `uuid`        | no   | -       | UUIDv7                                                                 |
+| `title`              | `text`        | no   | -       | At most 120 characters                                                 |
+| `audio_asset_id`     | `uuid`        | no   | -       | System asset under `music/`                                            |
+| `mood`               | `text`        | no   | -       | Lowercase slug such as `calm`, `upbeat`                                |
+| `bpm`                | `smallint`    | yes  | -       |                                                                        |
+| `duration_ms`        | `integer`     | no   | -       | Measured with ffprobe at upload                                        |
+| `license_name`       | `text`        | no   | -       | For example `CC BY 4.0`, `Pixabay Content License`                     |
+| `license_url`        | `text`        | no   | -       | HTTPS link to the license text or the purchase record                  |
+| `attribution_text`   | `text`        | yes  | -       | Credit line the license requires, shown with videos that use the track |
+| `is_active`          | `boolean`     | no   | `false` | Only active tracks can be selected for a render                        |
+| `created_by_user_id` | `uuid`        | yes  | -       | The admin who uploaded the track                                       |
+| `created_at`         | `timestamptz` | no   | `now()` |                                                                        |
+| `updated_at`         | `timestamptz` | no   | `now()` |                                                                        |
+
+- `pk_music_tracks` primary key (`id`).
+- `fk_music_tracks_audio_asset_id_assets` → `assets.id` **ON DELETE NO ACTION**: the audio cannot be deleted while the track exists.
+- `fk_music_tracks_created_by_user_id_users` → `users.id` **ON DELETE SET NULL**.
+- `ck_music_tracks_title_length`: `char_length(title) BETWEEN 1 AND 120`.
+- `ck_music_tracks_mood_format`: `mood ~ '^[a-z][a-z0-9-]{1,39}$'`.
+- `ck_music_tracks_bpm_range`: `bpm IS NULL OR bpm BETWEEN 30 AND 300`.
+- `ck_music_tracks_duration_positive`: `duration_ms > 0`.
+- `ck_music_tracks_license_recorded`: `char_length(license_name) BETWEEN 1 AND 120 AND license_url ~ '^https://[^\s]+$' AND char_length(license_url) <= 2000`.
+- `ck_music_tracks_attribution_length`: `attribution_text IS NULL OR char_length(attribution_text) <= 500`.
+- `ix_music_tracks_audio_asset_id` (`audio_asset_id`), `ix_music_tracks_created_by_user_id` (`created_by_user_id`): support the foreign keys.
+- `ix_music_tracks_mood` (`mood`) `WHERE is_active`: track picker.
+
 ### `voices`
 
 Module `voices` · Phase 8 · Mutable
 
-| Column              | Type          | Null | Default     | Notes                                                                       |
-| ------------------- | ------------- | ---- | ----------- | --------------------------------------------------------------------------- |
-| `id`                | `uuid`        | no   | -           | UUIDv7                                                                      |
-| `owner_user_id`     | `uuid`        | yes  | -           | Null for built-in voices                                                    |
-| `provider`          | `text`        | no   | -           | `elevenlabs`, `openai`, `fake`                                              |
-| `provider_voice_id` | `text`        | no   | -           |                                                                             |
-| `name`              | `text`        | no   | -           | At most 80 characters                                                       |
-| `kind`              | `text`        | no   | -           | `builtin`, `cloned`                                                         |
-| `language`          | `text`        | no   | -           | BCP 47                                                                      |
-| `status`            | `text`        | no   | `'pending'` | `pending`, `ready`, `failed`, `disabled`                                    |
-| `preview_asset_id`  | `uuid`        | yes  | -           |                                                                             |
-| `labels`            | `jsonb`       | no   | `'{}'`      | Accent, gender, style from the provider; added for the voice picker filters |
-| `created_at`        | `timestamptz` | no   | `now()`     |                                                                             |
-| `updated_at`        | `timestamptz` | no   | `now()`     |                                                                             |
+| Column              | Type          | Null | Default     | Notes                                                                                                                                  |
+| ------------------- | ------------- | ---- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                | `uuid`        | no   | -           | UUIDv7                                                                                                                                 |
+| `owner_user_id`     | `uuid`        | yes  | -           | Null for built-in voices                                                                                                               |
+| `provider`          | `text`        | no   | -           | `elevenlabs`, `openai`, `fake`                                                                                                         |
+| `provider_voice_id` | `text`        | yes  | -           | Null while a cloned voice is still being created (refines "required"); required once `ready`                                           |
+| `name`              | `text`        | no   | -           | At most 80 characters                                                                                                                  |
+| `kind`              | `text`        | no   | -           | `builtin`, `cloned`                                                                                                                    |
+| `language`          | `text`        | no   | -           | BCP 47                                                                                                                                 |
+| `status`            | `text`        | no   | `'pending'` | `pending`, `ready`, `failed`, `disabled`. A synchronized built-in voice starts `disabled` and becomes `ready` when an admin exposes it |
+| `failure_code`      | `text`        | yes  | -           | Stable code such as `consent_mismatch`, `sample_invalid`, `provider_failed`; added for failed clones                                   |
+| `preview_asset_id`  | `uuid`        | yes  | -           |                                                                                                                                        |
+| `labels`            | `jsonb`       | no   | `'{}'`      | Accent, gender, style from the provider and the tags an admin sets; added for the voice picker filters                                 |
+| `created_at`        | `timestamptz` | no   | `now()`     |                                                                                                                                        |
+| `updated_at`        | `timestamptz` | no   | `now()`     |                                                                                                                                        |
 
 - `pk_voices` primary key (`id`).
 - `fk_voices_owner_user_id_users` → `users.id` **ON DELETE CASCADE**.
 - `fk_voices_preview_asset_id_assets` → `assets.id` **ON DELETE SET NULL**.
-- `uq_voices_provider_provider_voice_id` unique (`provider`, `provider_voice_id`).
+- `uq_voices_provider_provider_voice_id` unique (`provider`, `provider_voice_id`) (nulls distinct: voices still being created never collide).
 - `ck_voices_kind`: `kind IN ('builtin', 'cloned')`.
 - `ck_voices_status`: `status IN ('pending', 'ready', 'failed', 'disabled')`.
 - `ck_voices_provider`: `provider IN ('elevenlabs', 'openai', 'fake')`.
 - `ck_voices_ownership`: `(kind = 'builtin') = (owner_user_id IS NULL)`.
+- `ck_voices_name_length`: `char_length(name) BETWEEN 1 AND 80`.
+- `ck_voices_language_format`: `language ~ '^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$'`.
+- `ck_voices_labels_object`: `jsonb_typeof(labels) = 'object'`.
+- `ck_voices_ready_has_provider_voice_id`: `status <> 'ready' OR provider_voice_id IS NOT NULL`.
+- `ck_voices_failed_has_failure_code`: `status <> 'failed' OR failure_code IS NOT NULL`.
+- `ck_voices_failure_code_format`: `failure_code IS NULL OR failure_code ~ '^[a-z][a-z0-9_]{1,59}$'`.
 - `ix_voices_owner_user_id` (`owner_user_id`): a user's cloned voices; supports the foreign key.
 - `ix_voices_preview_asset_id` (`preview_asset_id`): supports the foreign key.
 - `ix_voices_kind_language` (`kind`, `language`) `WHERE status = 'ready'`: voice picker.
 
 ### `voice_consents`
 
-Module `voices` · Phase 8 · Mutable (never updated in practice) · Evidence for voice cloning
+Module `voices` · Phase 8 · Mutable (never updated in practice) · Evidence for voice cloning ([ADR 0027](../adr/0027-voice-consent-verification.md))
 
-| Column              | Type          | Null | Default | Notes                                                                                        |
-| ------------------- | ------------- | ---- | ------- | -------------------------------------------------------------------------------------------- |
-| `id`                | `uuid`        | no   | -       | UUIDv7                                                                                       |
-| `voice_id`          | `uuid`        | no   | -       |                                                                                              |
-| `user_id`           | `uuid`        | no   | -       |                                                                                              |
-| `statement_version` | `text`        | no   | -       | Version of the consent text shown                                                            |
-| `statement_sha256`  | `bytea`       | no   | -       | Hash of the exact text accepted; added so the evidence survives later edits of the statement |
-| `accepted_at`       | `timestamptz` | no   | -       |                                                                                              |
-| `ip`                | `inet`        | yes  | -       |                                                                                              |
-| `user_agent`        | `text`        | yes  | -       | Added as part of the consent evidence                                                        |
-| `sample_asset_id`   | `uuid`        | no   | -       | The recorded sample                                                                          |
-| `created_at`        | `timestamptz` | no   | `now()` |                                                                                              |
-| `updated_at`        | `timestamptz` | no   | `now()` |                                                                                              |
+The row outlives the voice: deleting a cloned voice removes it at the provider and removes its samples and preview from storage, but the consent evidence stays for the period in `retention.md`.
+
+| Column               | Type          | Null | Default | Notes                                                                                                   |
+| -------------------- | ------------- | ---- | ------- | ------------------------------------------------------------------------------------------------------- |
+| `id`                 | `uuid`        | no   | -       | UUIDv7                                                                                                  |
+| `voice_id`           | `uuid`        | yes  | -       | Set to null when the voice is deleted (refines "required")                                              |
+| `voice_reference`    | `uuid`        | no   | -       | The voice's ID, kept without a constraint so the evidence stays attributable after the voice is deleted |
+| `user_id`            | `uuid`        | no   | -       |                                                                                                         |
+| `statement_version`  | `text`        | no   | -       | Version of the consent text shown                                                                       |
+| `statement_sha256`   | `bytea`       | no   | -       | Hash of the exact text accepted; added so the evidence survives later edits of the statement            |
+| `accepted_at`        | `timestamptz` | no   | -       |                                                                                                         |
+| `ip`                 | `inet`        | yes  | -       |                                                                                                         |
+| `user_agent`         | `text`        | yes  | -       | Added as part of the consent evidence                                                                   |
+| `consent_asset_id`   | `uuid`        | no   | -       | The recording of the user reading the consent sentence (refines `sample_asset_id`)                      |
+| `challenge_sentence` | `text`        | no   | -       | The random sentence generated for this attempt                                                          |
+| `transcript`         | `text`        | no   | -       | What the transcription of the recording said                                                            |
+| `match_percent`      | `smallint`    | no   | -       | Similarity between sentence and transcript, 0 to 100                                                    |
+| `sample_count`       | `smallint`    | no   | -       | Voice samples used for the clone                                                                        |
+| `sample_total_ms`    | `integer`     | no   | -       | Their combined duration                                                                                 |
+| `created_at`         | `timestamptz` | no   | `now()` |                                                                                                         |
+| `updated_at`         | `timestamptz` | no   | `now()` |                                                                                                         |
 
 - `pk_voice_consents` primary key (`id`).
-- `fk_voice_consents_voice_id_voices` → `voices.id` **ON DELETE CASCADE**.
+- `fk_voice_consents_voice_id_voices` → `voices.id` **ON DELETE SET NULL**.
 - `fk_voice_consents_user_id_users` → `users.id` **ON DELETE CASCADE**.
-- `fk_voice_consents_sample_asset_id_assets` → `assets.id` **ON DELETE NO ACTION**: the sample cannot be removed while its consent exists, but a user deletion cascading through both succeeds.
-- `uq_voice_consents_voice_id` unique (`voice_id`): one consent per cloned voice; supports the foreign key.
+- `fk_voice_consents_consent_asset_id_assets` → `assets.id` **ON DELETE NO ACTION**: the recording cannot be removed while its consent exists, but a user deletion cascading through both succeeds.
+- `uq_voice_consents_voice_id` unique (`voice_id`) (nulls distinct): one consent per existing cloned voice; supports the foreign key.
+- `uq_voice_consents_voice_reference` unique (`voice_reference`): one consent per cloned voice ever created.
 - `ck_voice_consents_statement_sha256_length`: `octet_length(statement_sha256) = 32`.
-- `ix_voice_consents_user_id` (`user_id`), `ix_voice_consents_sample_asset_id` (`sample_asset_id`): support foreign keys.
+- `ck_voice_consents_match_percent_range`: `match_percent BETWEEN 0 AND 100`.
+- `ck_voice_consents_text_length`: `char_length(challenge_sentence) BETWEEN 1 AND 300 AND char_length(transcript) <= 600`.
+- `ck_voice_consents_user_agent_length`: `user_agent IS NULL OR char_length(user_agent) <= 512`.
+- `ck_voice_consents_samples`: `sample_count >= 1 AND sample_total_ms > 0`.
+- `ix_voice_consents_user_id` (`user_id`), `ix_voice_consents_consent_asset_id` (`consent_asset_id`): support foreign keys.
 
 ---
 
@@ -1138,6 +1300,7 @@ Module `generation` · Phase 9 · Mutable
 | `cancel_requested_at` | `timestamptz` | yes  | -          | Added so workers can stop cooperatively between stages                                                                                                         |
 | `started_at`          | `timestamptz` | yes  | -          |                                                                                                                                                                |
 | `completed_at`        | `timestamptz` | yes  | -          | Set for `completed`, `failed`, `cancelled`                                                                                                                     |
+| `render_id`           | `uuid`        | yes  | -          | The render that produced this job's renditions; set when rendering starts                                                                                      |
 | `idempotency_key`     | `text`        | yes  | -          | From the create request                                                                                                                                        |
 | `created_at`          | `timestamptz` | no   | `now()`    |                                                                                                                                                                |
 | `updated_at`          | `timestamptz` | no   | `now()`    |                                                                                                                                                                |
@@ -1145,6 +1308,7 @@ Module `generation` · Phase 9 · Mutable
 - `pk_jobs` primary key (`id`).
 - `fk_jobs_user_id_users` → `users.id` **ON DELETE CASCADE**.
 - `fk_jobs_topic_id_topics` → `topics.id` **ON DELETE SET NULL**.
+- `fk_jobs_render_id_renders` → `renders.id` **ON DELETE SET NULL**.
 - `uq_jobs_user_id_idempotency_key` unique (`user_id`, `idempotency_key`) (nulls distinct: jobs without a key never collide).
 - `ck_jobs_source`: `source IN ('catalog', 'query', 'mcp')`.
 - `ck_jobs_status`: `status IN ('queued', 'planning', 'awaiting_approval', 'voicing', 'generating', 'validating', 'rendering', 'completed', 'failed', 'cancelled')`.
@@ -1157,6 +1321,7 @@ Module `generation` · Phase 9 · Mutable
 - `ix_jobs_user_id_active` (`user_id`) `WHERE status NOT IN ('completed', 'failed', 'cancelled')`: concurrent-job limit (at most 2).
 - `ix_jobs_status_updated_at` (`status`, `updated_at`) `WHERE status NOT IN ('completed', 'failed', 'cancelled', 'awaiting_approval')`: sweeper for stuck jobs.
 - `ix_jobs_topic_id` (`topic_id`): supports the foreign key.
+- `ix_jobs_render_id` (`render_id`): supports the foreign key.
 
 ### `storyboards`
 
@@ -1258,33 +1423,6 @@ Added because a generation must be reproducible: it records exactly which skill 
 - `fk_job_skills_skill_version_id_skill_versions` → `skill_versions.id` **ON DELETE NO ACTION**: a skill version used by a job is kept, but a user deletion cascading through both succeeds.
 - `ck_job_skills_selection`: `selection IN ('pinned', 'routed')`.
 - `ix_job_skills_skill_version_id` (`skill_version_id`): "jobs using this skill"; supports the foreign key.
-
-### `renditions`
-
-Module `media` · Phase 9 (moved from Phase 8 because it references `jobs`) · Mutable
-
-| Column        | Type          | Null | Default     | Notes                                     |
-| ------------- | ------------- | ---- | ----------- | ----------------------------------------- |
-| `id`          | `uuid`        | no   | -           | UUIDv7                                    |
-| `job_id`      | `uuid`        | no   | -           |                                           |
-| `aspect`      | `text`        | no   | -           | `16:9`, `9:16`, `1:1`                     |
-| `width`       | `integer`     | no   | -           |                                           |
-| `height`      | `integer`     | no   | -           |                                           |
-| `asset_id`    | `uuid`        | yes  | -           | Set when ready                            |
-| `status`      | `text`        | no   | `'pending'` | `pending`, `rendering`, `ready`, `failed` |
-| `duration_ms` | `integer`     | yes  | -           | Added for players and platform limits     |
-| `created_at`  | `timestamptz` | no   | `now()`     |                                           |
-| `updated_at`  | `timestamptz` | no   | `now()`     |                                           |
-
-- `pk_renditions` primary key (`id`).
-- `fk_renditions_job_id_jobs` → `jobs.id` **ON DELETE CASCADE**.
-- `fk_renditions_asset_id_assets` → `assets.id` **ON DELETE NO ACTION**: a rendition's video cannot be deleted on its own; deleting the user removes both.
-- `uq_renditions_job_id_aspect` unique (`job_id`, `aspect`); supports the job foreign key.
-- `ck_renditions_aspect`: `aspect IN ('16:9', '9:16', '1:1')`.
-- `ck_renditions_status`: `status IN ('pending', 'rendering', 'ready', 'failed')`.
-- `ck_renditions_dimensions_positive`: `width > 0 AND height > 0`.
-- `ck_renditions_ready_has_asset`: `status <> 'ready' OR asset_id IS NOT NULL`.
-- `ix_renditions_asset_id` (`asset_id`): supports the foreign key.
 
 ### `share_links`
 

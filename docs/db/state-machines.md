@@ -204,6 +204,42 @@ stateDiagram-v2
 
 - A `settlement` run is unique per UTC day. A `failed` run, or a `running` run older than one hour, is resumed by the next attempt; a `completed` run is never repeated.
 
+## `renders.status`
+
+```mermaid
+stateDiagram-v2
+    [*] --> queued: created
+    queued --> preparing: worker picks up
+    preparing --> voicing: composition sanitized and validated
+    voicing --> mixing: narration synthesized or uploaded
+    mixing --> capturing: audio mixed
+    capturing --> encoding: frames captured
+    encoding --> finalizing: video segments joined and muxed
+    finalizing --> completed: renditions uploaded
+    queued --> cancelled
+    preparing --> cancelled
+    voicing --> cancelled
+    mixing --> cancelled
+    capturing --> cancelled
+    encoding --> cancelled
+    finalizing --> cancelled
+    preparing --> failed
+    voicing --> failed
+    mixing --> failed
+    capturing --> failed
+    encoding --> failed
+    finalizing --> failed
+    queued --> failed: sweeper gives up
+    completed --> [*]
+    failed --> [*]
+    cancelled --> [*]
+```
+
+- Completing a stage records its checkpoint and moves the status to the next stage in one transaction, so the status always names the first incomplete stage. A retried task resumes there and never repeats a checkpointed stage.
+- The pipeline keeps frame and per-aspect checkpoints inside `capturing` and `encoding`; they live in storage under `work/renders/<id>/` and are named in `checkpoints`.
+- Deterministic failures (`network_violation`, `timeout`, `validation_failed`, `page_error`, `unsupported_composition`) end in `failed` immediately. Infrastructure failures raise, the task retries and resumes; the sweeper fails a render whose `updated_at` has not moved for the stall limit.
+- Cancellation sets `cancel_requested_at`; the worker stops between frames and moves the render to `cancelled`.
+
 ## `publications.status`
 
 ```mermaid

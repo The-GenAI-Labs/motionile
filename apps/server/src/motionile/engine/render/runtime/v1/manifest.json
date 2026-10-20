@@ -1,0 +1,175 @@
+{
+  "runtime": "v1",
+  "components": [
+    {
+      "name": "gsap",
+      "package": "gsap",
+      "version": "3.15.0",
+      "license": "GSAP Standard No Charge License",
+      "licenseUrl": "https://gsap.com/standard-license"
+    },
+    {
+      "name": "Geist",
+      "package": "@fontsource-variable/geist",
+      "version": "5.3.0",
+      "license": "SIL Open Font License 1.1",
+      "licenseUrl": "https://openfontlicense.org"
+    },
+    {
+      "name": "Geist Mono",
+      "package": "@fontsource-variable/geist-mono",
+      "version": "5.3.0",
+      "license": "SIL Open Font License 1.1",
+      "licenseUrl": "https://openfontlicense.org"
+    },
+    {
+      "name": "Noto Sans",
+      "package": "@fontsource-variable/noto-sans",
+      "version": "5.3.0",
+      "license": "SIL Open Font License 1.1",
+      "licenseUrl": "https://openfontlicense.org"
+    },
+    {
+      "name": "Noto Sans Devanagari",
+      "package": "@fontsource-variable/noto-sans-devanagari",
+      "version": "5.3.0",
+      "license": "SIL Open Font License 1.1",
+      "licenseUrl": "https://openfontlicense.org"
+    }
+  ],
+  "files": [
+    {
+      "path": "base.css",
+      "source": "base.css",
+      "contentType": "text/css; charset=utf-8",
+      "size": 4273,
+      "sha256": "2746f9bb2fa21d95b31d20c2d463f8cc781abe76a9646c9d7bbbca68e3ca0db6"
+    },
+    {
+      "path": "fonts/LICENSE-geist-mono.txt",
+      "source": "vendor/fonts/LICENSE-geist-mono.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "size": 4498,
+      "sha256": "cc815ed4fc045f0e991abb10395b7932bd028c6a067deb13316d6002105074e6"
+    },
+    {
+      "path": "fonts/LICENSE-geist.txt",
+      "source": "vendor/fonts/LICENSE-geist.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "size": 4486,
+      "sha256": "71609cbb5c78b5870d712eab73a31d76622635c6ed034ab5cee3b9ecbda8685f"
+    },
+    {
+      "path": "fonts/LICENSE-noto-sans-devanagari.txt",
+      "source": "vendor/fonts/LICENSE-noto-sans-devanagari.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "size": 4384,
+      "sha256": "79c44862256af9a67fc23df7c45ae289e730c7f6d4f8fb8ef593bd3c314b6d6d"
+    },
+    {
+      "path": "fonts/LICENSE-noto-sans.txt",
+      "source": "vendor/fonts/LICENSE-noto-sans.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "size": 4518,
+      "sha256": "54ec7b5a35310ad66f9f3091426f7028484cbf9ae1ab5da30122ee412a3009e1"
+    },
+    {
+      "path": "fonts/fonts.css",
+      "source": "fonts/fonts.css",
+      "contentType": "text/css; charset=utf-8",
+      "size": 1468,
+      "sha256": "f2ce740d39e01dacdf28a30187cb1fb9f7f3a7fca072420f6aa46ba7ebff4384"
+    },
+    {
+      "path": "fonts/geist-latin-wght-normal.woff2",
+      "source": "vendor/fonts/geist-latin-wght-normal.woff2",
+      "contentType": "font/woff2",
+      "size": 29400,
+      "sha256": "19f9c92546aa300c312235e3125af1b81394d8db9a4bc4a425cd5b641d2d54e1"
+    },
+    {
+      "path": "fonts/geist-mono-latin-wght-normal.woff2",
+      "source": "vendor/fonts/geist-mono-latin-wght-normal.woff2",
+      "contentType": "font/woff2",
+      "size": 23128,
+      "sha256": "684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc"
+    },
+    {
+      "path": "fonts/noto-sans-devanagari-devanagari-wght-normal.woff2",
+      "source": "vendor/fonts/noto-sans-devanagari-devanagari-wght-normal.woff2",
+      "contentType": "font/woff2",
+      "size": 121192,
+      "sha256": "3b3cae4d2600cb502286577fcfbc7f0caa05d9bb3c28d6699aeb56302d35e730"
+    },
+    {
+      "path": "fonts/noto-sans-latin-wght-normal.woff2",
+      "source": "vendor/fonts/noto-sans-latin-wght-normal.woff2",
+      "contentType": "font/woff2",
+      "size": 35820,
+      "sha256": "51ca196f49a33e79e7870ff88ebd2829a3f627a51e7d690986618f0e7ad2b52d"
+    },
+    {
+      "path": "gsap/CustomEase.min.js",
+      "source": "vendor/gsap/CustomEase.min.js",
+      "contentType": "text/javascript; charset=utf-8",
+      "size": 7143,
+      "sha256": "466e426a5c60c21c94b15a30a3dffacac9bb39ce8f4e07d071d7d4bb1be43390"
+    },
+    {
+      "path": "gsap/DrawSVGPlugin.min.js",
+      "source": "vendor/gsap/DrawSVGPlugin.min.js",
+      "contentType": "text/javascript; charset=utf-8",
+      "size": 4351,
+      "sha256": "beb19529f54c1212f1f5117d027be01afda2f363a4926d32aa979bc11140edc1"
+    },
+    {
+      "path": "gsap/LICENSE.md",
+      "source": "vendor/gsap/LICENSE.md",
+      "contentType": "text/markdown; charset=utf-8",
+      "size": 3760,
+      "sha256": "7b57a513805274ef838c2f19820554706c9601fe6a296d5fd94308cb37cb55e3"
+    },
+    {
+      "path": "gsap/MorphSVGPlugin.min.js",
+      "source": "vendor/gsap/MorphSVGPlugin.min.js",
+      "contentType": "text/javascript; charset=utf-8",
+      "size": 21195,
+      "sha256": "19c891a412240d8521b13330813d9b551ea5b0f707907c365ffecaf1dfa0f5cf"
+    },
+    {
+      "path": "gsap/MotionPathPlugin.min.js",
+      "source": "vendor/gsap/MotionPathPlugin.min.js",
+      "contentType": "text/javascript; charset=utf-8",
+      "size": 22002,
+      "sha256": "ace44a07c6c179f5347d9b46a152d468e4c9f272ee0d68bf0354e00d60000693"
+    },
+    {
+      "path": "gsap/SplitText.min.js",
+      "source": "vendor/gsap/SplitText.min.js",
+      "contentType": "text/javascript; charset=utf-8",
+      "size": 7732,
+      "sha256": "419f7027a5f086a12cb7988736d8fdd3a6ed2200229661de25b6628ca7ced344"
+    },
+    {
+      "path": "gsap/TextPlugin.min.js",
+      "source": "vendor/gsap/TextPlugin.min.js",
+      "contentType": "text/javascript; charset=utf-8",
+      "size": 10570,
+      "sha256": "a24984fa1a33517b4c54c8b25b0bfd7aaf3df9fa7edba661e3bd496a671a2429"
+    },
+    {
+      "path": "gsap/gsap.min.js",
+      "source": "vendor/gsap/gsap.min.js",
+      "contentType": "text/javascript; charset=utf-8",
+      "size": 72927,
+      "sha256": "92bb9a96476f983d212a2bc4f54c889039c1696dd4461d40a736860938570fbb"
+    },
+    {
+      "path": "motionile.js",
+      "source": "motionile.js",
+      "contentType": "text/javascript; charset=utf-8",
+      "size": 8723,
+      "sha256": "b64396d562a70d8004091e5d585b119769d089f7fe766b290832f9c1497922bf"
+    }
+  ]
+}

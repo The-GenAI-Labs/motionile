@@ -1,0 +1,13 @@
+{
+  "language": "en",
+  "scenes": [
+    {
+      "sceneId": "array",
+      "text": "Here is a sorted list of seven numbers. We are searching for twenty-four."
+    },
+    {
+      "sceneId": "search",
+      "text": "Check the middle first. Seventeen is too small, so we keep the right half. Check again. Thirty-one is too big. The answer is twenty-four."
+    }
+  ]
+}

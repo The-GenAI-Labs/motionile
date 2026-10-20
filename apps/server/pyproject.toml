@@ -96,7 +96,7 @@ select = [
 known-first-party = ["motionile", "evals"]
 
 [tool.pyright]
-include = ["src", "tests", "evals", "migrations"]
+include = ["src", "tests", "evals", "migrations", "scripts"]
 exclude = ["**/tests/fixtures", "**/__pycache__", ".venv"]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Responsive scene</title>
+    <link rel="stylesheet" href="https://runtime.motionile.local/v1/base.css" />
+    <style>
+      .shapes {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--mo-unit) * 4);
+        width: 100%;
+        align-items: center;
+      }
+      .title {
+        margin: 0;
+        font-size: var(--mo-text-title);
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        text-align: center;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: calc(var(--mo-unit) * 2.4);
+        width: 100%;
+      }
+      .card {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--mo-unit) * 2);
+        align-items: center;
+        padding: calc(var(--mo-unit) * 2.4);
+        text-align: center;
+      }
+      .glyph {
+        flex: none;
+        border: calc(var(--mo-unit) * 0.4) solid var(--mo-accent);
+        border-radius: calc(var(--mo-unit) * 0.8);
+        background: var(--mo-elevated);
+      }
+      .glyph-wide {
+        width: calc(var(--mo-unit) * 14);
+        aspect-ratio: 16 / 9;
+      }
+      .glyph-tall {
+        height: calc(var(--mo-unit) * 14);
+        aspect-ratio: 9 / 16;
+      }
+      .glyph-square {
+        width: calc(var(--mo-unit) * 10);
+        aspect-ratio: 1;
+      }
+      .glyph-slot {
+        display: flex;
+        height: calc(var(--mo-unit) * 14);
+        align-items: center;
+        justify-content: center;
+      }
+      .card-name {
+        margin: 0;
+        font-size: var(--mo-text-body);
+        font-weight: 700;
+      }
+      .card-ratio {
+        margin: 0;
+        font-family: var(--mo-font-mono);
+      }
+      @container stage (aspect-ratio < 1) {
+        .cards {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .card {
+          flex-direction: row;
+          justify-content: flex-start;
+          gap: calc(var(--mo-unit) * 3);
+          text-align: left;
+        }
+        .glyph-slot {
+          width: calc(var(--mo-unit) * 14);
+          height: calc(var(--mo-unit) * 10);
+        }
+        .glyph-tall {
+          height: calc(var(--mo-unit) * 10);
+        }
+        .glyph-square {
+          width: calc(var(--mo-unit) * 8);
+        }
+        .glyph-wide {
+          width: calc(var(--mo-unit) * 13);
+        }
+      }
+    </style>
+    <script src="https://runtime.motionile.local/v1/gsap/gsap.min.js"></script>
+    <script src="https://runtime.motionile.local/v1/motionile.js"></script>
+  </head>
+  <body>
+    <main class="mo-stage">
+      <section class="mo-scene mo-center" data-scene="shapes">
+        <div class="shapes">
+          <h1 class="title" id="title">One video, three shapes</h1>
+          <div class="cards">
+            <div class="mo-card card" data-cue="widescreen">
+              <div class="glyph-slot"><div class="glyph glyph-wide"></div></div>
+              <div>
+                <p class="card-name">Widescreen</p>
+                <p class="mo-caption card-ratio">16:9</p>
+              </div>
+            </div>
+            <div class="mo-card card" data-cue="vertical">
+              <div class="glyph-slot"><div class="glyph glyph-tall"></div></div>
+              <div>
+                <p class="card-name">Vertical</p>
+                <p class="mo-caption card-ratio">9:16</p>
+              </div>
+            </div>
+            <div class="mo-card card" data-cue="square">
+              <div class="glyph-slot"><div class="glyph glyph-square"></div></div>
+              <div>
+                <p class="card-name">Square</p>
+                <p class="mo-caption card-ratio">1:1</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script>
+      Motionile.composition({
+        aspects: ["16:9", "9:16", "1:1"],
+        scenes: [
+          {
+            id: "shapes",
+            build(ctx) {
+              const portrait = ctx.aspect === "9:16";
+              ctx.timeline.from(
+                ctx.root.querySelector("#title"),
+                { opacity: 0, y: 36, duration: 0.6, ease: "power3.out" },
+                0.1,
+              );
+              ctx.root.querySelectorAll(".card").forEach((card) => {
+                ctx.timeline.from(
+                  card,
+                  {
+                    opacity: 0,
+                    x: portrait ? -60 : 0,
+                    y: portrait ? 0 : 50,
+                    duration: 0.55,
+                    ease: "power3.out",
+                  },
+                  Math.min(ctx.at(card.dataset.cue), ctx.duration - 0.55),
+                );
+              });
+            },
+          },
+        ],
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "language": "en",
+  "scenes": [
+    { "sceneId": "question", "text": "Every great video begins with a single question." },
+    {
+      "sceneId": "timing",
+      "text": "Each word appears exactly when it is spoken, so the picture always follows the voice."
+    },
+    { "sceneId": "close", "text": "Say it once. Show it clearly." }
+  ]
+}

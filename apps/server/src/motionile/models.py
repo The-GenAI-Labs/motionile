@@ -15,12 +15,15 @@ from motionile.modules.billing import (
 )
 from motionile.modules.catalog import CatalogSlugHistory, Category, Topic
 from motionile.modules.credits import CreditLedgerEntry, CreditLot, CreditReservation, CreditWallet, UsageRecord
+from motionile.modules.media import Asset, MusicTrack, Render, Rendition, TtsCacheEntry
 from motionile.modules.platform import FeatureFlag, SystemSetting
 from motionile.modules.users import User, UserContact, UserPreference
+from motionile.modules.voices import Voice, VoiceConsent
 
 metadata = Base.metadata
 
 __all__ = [
+    "Asset",
     "AuditLogEntry",
     "BillingCustomer",
     "CatalogSlugHistory",
@@ -32,6 +35,7 @@ __all__ = [
     "CreditWallet",
     "FeatureFlag",
     "IdempotencyRecord",
+    "MusicTrack",
     "OAuthIdentity",
     "Order",
     "Payment",
@@ -39,17 +43,22 @@ __all__ = [
     "Product",
     "ReconciliationRun",
     "Refund",
+    "Render",
+    "Rendition",
     "Role",
     "RolePermission",
     "Session",
     "Subscription",
     "SystemSetting",
     "Topic",
+    "TtsCacheEntry",
     "UsageRecord",
     "User",
     "UserContact",
     "UserPreference",
     "UserRole",
+    "Voice",
+    "VoiceConsent",
     "WebhookEvent",
     "metadata",
 ]

@@ -72,7 +72,7 @@ class UserPreferencesUpdateRequest(StrictModel):
     pace: str = Field(max_length=32)
     language: str = Field(max_length=20)
     depth: str = Field(max_length=32)
-    default_voice_id: None = None
+    default_voice_id: UUID | None = None
     default_aspect: str = Field(max_length=10)
     captions_enabled: bool
 

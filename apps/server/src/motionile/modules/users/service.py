@@ -20,6 +20,7 @@ from motionile.modules.platform import PlatformService
 from motionile.modules.users.avatar import process_avatar
 from motionile.modules.users.events import UserDeletionRequested
 from motionile.modules.users.models import User, UserContact, UserPreference
+from motionile.modules.users.preference_checks import preference_guards
 from motionile.modules.users.repository import UsersRepository
 from motionile.modules.users.schemas import (
     AvatarResponse,
@@ -295,8 +296,10 @@ class UsersService:
             allowed = await settings.setting_value(key)
             if not isinstance(allowed, list) or (value is not None and value not in allowed):
                 raise ValidationAppError(code="preference_value_invalid")
+        if body.default_voice_id is not None:
+            await preference_guards.check_default_voice(self.session, user_id, body.default_voice_id)
         row = await self.repository.preference(user_id)
-        values = body.model_dump()
+        values = body.model_dump(by_alias=False)
         if row is None:
             row = UserPreference(user_id=user_id, **values)
             self.session.add(row)

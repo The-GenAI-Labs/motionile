@@ -1,3 +1,4 @@
+import motionile.models  # noqa: F401 # type: ignore[reportUnusedImport]
 from motionile.core.config import get_settings
 from motionile.core.logging import configure_logging
 from motionile.core.tasks.app import create_task_app

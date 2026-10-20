@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, Depends, FastAPI, status
 
+import motionile.models  # noqa: F401 # type: ignore[reportUnusedImport]
 from motionile.core.config import Settings, get_settings
 from motionile.core.errors import problem_responses
 from motionile.core.logging import configure_logging
@@ -24,8 +25,10 @@ from motionile.modules.billing.router import billing_router
 from motionile.modules.billing.webhook_router import webhook_router
 from motionile.modules.catalog.router import catalog_admin_router, catalog_router
 from motionile.modules.credits.router import credits_router
+from motionile.modules.media import media_router, music_router, render_testbed_router, renders_router
 from motionile.modules.platform.router import platform_router
 from motionile.modules.users.router import users_admin_router, users_router
+from motionile.modules.voices import VoiceLookupImpl, voices_admin_router, voices_router
 
 API_TITLE = "Motionile API"
 APPLICATION_NAME = "motionile-api"
@@ -48,6 +51,12 @@ def build_v1_router(*, include_test_routes: bool) -> APIRouter:
     router.include_router(billing_router)
     router.include_router(webhook_router)
     router.include_router(billing_admin_router)
+    router.include_router(media_router)
+    router.include_router(renders_router)
+    router.include_router(music_router)
+    router.include_router(render_testbed_router)
+    router.include_router(voices_router)
+    router.include_router(voices_admin_router)
     router.include_router(access_admin_router)
     router.include_router(admin_insights_router)
     router.include_router(users_admin_router)
@@ -89,6 +98,7 @@ def create_app(
 
     app.add_exception_handler(VerificationRequiredError, verification_required_response)
     app.state.auth_runtime = AuthRuntime(app.state.resources)
+    app.state.voice_lookup = VoiceLookupImpl()
     return app
 
 

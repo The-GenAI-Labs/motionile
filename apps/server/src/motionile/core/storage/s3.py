@@ -13,9 +13,11 @@ from motionile.core.storage.base import DEFAULT_CHUNK_SIZE, ObjectInfo, ObjectNo
 
 if TYPE_CHECKING:
     from types_boto3_s3.client import S3Client
+    from types_boto3_s3.literals import BucketLocationConstraintType
     from types_boto3_s3.type_defs import ObjectIdentifierTypeDef
 
 SPOOL_MAX_MEMORY_BYTES = 8 * 1024 * 1024
+DEFAULT_REGION = "us-east-1"
 NOT_FOUND_CODES = frozenset({"404", "NoSuchKey", "NotFound"})
 
 
@@ -24,7 +26,7 @@ def is_not_found(error: ClientError) -> bool:
     return code in NOT_FOUND_CODES
 
 
-def create_s3_client(settings: StorageSettings) -> "S3Client":
+def create_s3_client(settings: StorageSettings, *, endpoint_url: str | None = None) -> "S3Client":
     config = Config(
         signature_version="s3v4",
         s3={"addressing_style": "path" if settings.force_path_style else "virtual"},
@@ -36,7 +38,7 @@ def create_s3_client(settings: StorageSettings) -> "S3Client":
     secret_key = settings.secret_access_key.get_secret_value() if settings.secret_access_key else None
     client: S3Client = boto3.client(
         "s3",
-        endpoint_url=settings.endpoint_url,
+        endpoint_url=endpoint_url or settings.endpoint_url,
         region_name=settings.region,
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
@@ -46,13 +48,19 @@ def create_s3_client(settings: StorageSettings) -> "S3Client":
 
 
 class S3Storage:
-    def __init__(self, client: "S3Client", bucket: str) -> None:
+    def __init__(self, client: "S3Client", bucket: str, presign_client: "S3Client | None" = None) -> None:
         self.client = client
         self.bucket = bucket
+        self.presign_client = presign_client or client
 
     @classmethod
     def from_settings(cls, settings: StorageSettings) -> "S3Storage":
-        return cls(create_s3_client(settings), settings.bucket)
+        presign_client = (
+            create_s3_client(settings, endpoint_url=settings.public_endpoint_url)
+            if settings.public_endpoint_url
+            else None
+        )
+        return cls(create_s3_client(settings), settings.bucket, presign_client)
 
     async def ensure_bucket(self) -> None:
         try:
@@ -60,7 +68,15 @@ class S3Storage:
         except ClientError as error:
             if not is_not_found(error):
                 raise
-            await asyncio.to_thread(self.client.create_bucket, Bucket=self.bucket)
+            region = self.client.meta.region_name
+            if region == DEFAULT_REGION:
+                await asyncio.to_thread(self.client.create_bucket, Bucket=self.bucket)
+            else:
+                await asyncio.to_thread(
+                    self.client.create_bucket,
+                    Bucket=self.bucket,
+                    CreateBucketConfiguration={"LocationConstraint": cast("BucketLocationConstraintType", region)},
+                )
 
     async def put(
         self,
@@ -160,7 +176,7 @@ class S3Storage:
             )
             params["ResponseContentDisposition"] = f'attachment; filename="{safe_name or "download"}"'
         return await asyncio.to_thread(
-            self.client.generate_presigned_url,
+            self.presign_client.generate_presigned_url,
             "get_object",
             Params=params,
             ExpiresIn=int(expires_in.total_seconds()),
@@ -169,7 +185,7 @@ class S3Storage:
     async def presigned_put_url(self, key: str, *, content_type: str, expires_in: timedelta) -> str:
         validate_key(key)
         return await asyncio.to_thread(
-            self.client.generate_presigned_url,
+            self.presign_client.generate_presigned_url,
             "put_object",
             Params={"Bucket": self.bucket, "Key": key, "ContentType": content_type},
             ExpiresIn=int(expires_in.total_seconds()),

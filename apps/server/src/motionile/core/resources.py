@@ -23,6 +23,8 @@ from motionile.core.storage.s3 import S3Storage
 
 TURNSTILE_HOSTS = ("challenges.cloudflare.com",)
 RAZORPAY_HOSTS = ("api.razorpay.com",)
+AUDIO_PROVIDER_MAX_RESPONSE_BYTES = 64 * 1024 * 1024
+AUDIO_PROVIDER_READ_TIMEOUT_SECONDS = 120.0
 
 
 @dataclass
@@ -66,6 +68,21 @@ def build_turnstile(settings: Settings, http_client: SafeHttpClient) -> Turnstil
         verify_url=settings.turnstile.verify_url,
         expected_hostnames=settings.turnstile.expected_hostnames,
     )
+
+
+def audio_provider_client(settings: Settings, base_url: str) -> SafeHttpClient:
+    host = urlsplit(base_url).hostname
+    if host is None:
+        raise ValueError("provider API base URLs require a host")
+    outbound = settings.outbound_http.model_copy(
+        update={
+            "max_response_bytes": max(settings.outbound_http.max_response_bytes, AUDIO_PROVIDER_MAX_RESPONSE_BYTES),
+            "read_timeout_seconds": max(
+                settings.outbound_http.read_timeout_seconds, AUDIO_PROVIDER_READ_TIMEOUT_SECONDS
+            ),
+        }
+    )
+    return SafeHttpClient(outbound, allowed_hosts=(host,))
 
 
 def build_resources(settings: Settings, *, application_name: str, clock: Clock | None = None) -> Resources:
@@ -114,6 +131,8 @@ def build_resources(settings: Settings, *, application_name: str, clock: Clock |
             "github": SafeHttpClient(settings.outbound_http, allowed_hosts=("github.com", "api.github.com")),
             "microsoft": SafeHttpClient(settings.outbound_http, allowed_hosts=("login.microsoftonline.com",)),
             "razorpay": SafeHttpClient(settings.outbound_http, allowed_hosts=RAZORPAY_HOSTS),
+            "elevenlabs": audio_provider_client(settings, settings.elevenlabs.api_base_url),
+            "openai": audio_provider_client(settings, settings.openai.api_base_url),
             "catalog_revalidation": SafeHttpClient(
                 settings.outbound_http,
                 allowed_hosts=(web_host,),

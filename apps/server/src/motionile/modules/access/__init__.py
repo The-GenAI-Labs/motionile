@@ -8,6 +8,8 @@ from motionile.modules.access.dependencies import (
     BillingWebhooksManageDep,
     CatalogManageDep,
     FlagsManageDep,
+    MusicManageDep,
+    RenderTestbedDep,
     RequirePermission,
     RolesManageDep,
     RolesReadDep,
@@ -16,6 +18,7 @@ from motionile.modules.access.dependencies import (
     UsersManageDep,
     UsersReadDep,
     UsersRolesAssignDep,
+    VoicesManageDep,
 )
 from motionile.modules.access.models import Permission, Role, RolePermission, UserRole
 from motionile.modules.access.permissions import PERMISSION_KEYS, PERMISSIONS
@@ -44,7 +47,9 @@ __all__ = [
     "CatalogManageDep",
     "EffectiveAccess",
     "FlagsManageDep",
+    "MusicManageDep",
     "Permission",
+    "RenderTestbedDep",
     "RequirePermission",
     "Role",
     "RolePermission",
@@ -56,6 +61,7 @@ __all__ = [
     "UsersManageDep",
     "UsersReadDep",
     "UsersRolesAssignDep",
+    "VoicesManageDep",
     "assign_default_role",
     "grant_role_by_key",
     "invalidate_user_access",

@@ -24,6 +24,9 @@ PERMISSIONS = (
     PermissionDefinition("billing.refunds.create", "Refund payments"),
     PermissionDefinition("billing.credits.adjust", "Grant or remove credits for a user"),
     PermissionDefinition("billing.webhooks.manage", "Replay and inspect webhook events"),
+    PermissionDefinition("render.testbed", "Run renders through the admin test bed"),
+    PermissionDefinition("voices.manage", "Curate the built-in voice catalog"),
+    PermissionDefinition("music.manage", "Manage the licensed music library"),
 )
 
 PERMISSION_KEYS = frozenset(definition.key for definition in PERMISSIONS)

@@ -1,11 +1,17 @@
 import base64
 import binascii
 import json
+import os
+import re
 from enum import StrEnum
 from functools import lru_cache
-from typing import Annotated, Self
+from pathlib import Path
+from typing import Annotated, Literal, Self
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+from cryptography.exceptions import UnsupportedAlgorithm
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from pydantic import BaseModel, BeforeValidator, Field, SecretStr, ValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
@@ -22,6 +28,15 @@ MINIMUM_SECRET_LENGTH = 32
 MAX_KEY_ID_LENGTH = 64
 RAZORPAY_API_BASE_URL = "https://api.razorpay.com"
 REPORT_PREFIX_PATTERN = r"^[a-z0-9][a-z0-9_-]*(/[a-z0-9][a-z0-9_-]*)*$"
+ELEVENLABS_API_BASE_URL = "https://api.elevenlabs.io"
+OPENAI_API_BASE_URL = "https://api.openai.com"
+MAX_RENDER_PAGES = 8
+HOST_LABEL = r"[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?"
+HOST_NAME_PATTERN = re.compile(rf"^(?=.{{1,253}}$){HOST_LABEL}(\.{HOST_LABEL})*$")
+PEM_MARKER = "-----BEGIN"
+
+type X264Preset = Literal["veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"]
+type AudioProviderName = Literal["elevenlabs", "openai"]
 
 
 class AppEnv(StrEnum):
@@ -34,6 +49,11 @@ class AppEnv(StrEnum):
 class ProvidersMode(StrEnum):
     FAKE = "fake"
     LIVE = "live"
+
+
+class MediaDeliveryMode(StrEnum):
+    CLOUDFRONT = "cloudfront"
+    PRESIGNED = "presigned"
 
 
 class LogLevel(StrEnum):
@@ -74,8 +94,42 @@ def blank_as_none(value: object) -> object:
     return value
 
 
+def require_https_origin(value: str) -> str:
+    parts = urlsplit(value)
+    if (
+        parts.scheme != "https"
+        or not parts.hostname
+        or parts.username
+        or parts.password
+        or parts.query
+        or parts.fragment
+        or parts.path not in {"", "/"}
+    ):
+        raise ValueError("must be an HTTPS origin without credentials, path, query or fragment")
+    return value.rstrip("/")
+
+
+def parse_private_key_pem(value: str) -> bytes:
+    text = value.strip()
+    if PEM_MARKER not in text:
+        try:
+            text = base64.b64decode(text, validate=True).decode().strip()
+        except (binascii.Error, UnicodeDecodeError):
+            raise ValueError("must be a PEM RSA private key, optionally base64 encoded") from None
+    pem = text.replace("\\n", "\n").encode()
+    try:
+        key = load_pem_private_key(pem, password=None)
+    except (ValueError, TypeError, UnsupportedAlgorithm):
+        raise ValueError("must be a PEM RSA private key, optionally base64 encoded") from None
+    if not isinstance(key, RSAPrivateKey):
+        raise ValueError("must be a PEM RSA private key, optionally base64 encoded")
+    return pem
+
+
 type OptionalSecret = Annotated[SecretStr | None, BeforeValidator(blank_as_none)]
 type OptionalText = Annotated[str | None, BeforeValidator(blank_as_none)]
+type OptionalPath = Annotated[Path | None, BeforeValidator(blank_as_none)]
+type OptionalInt = Annotated[int | None, BeforeValidator(blank_as_none)]
 
 
 class GroupSettings(BaseSettings):
@@ -222,8 +276,21 @@ class StorageSettings(GroupSettings):
     bucket: str = Field(default="motionile-local", min_length=3, max_length=63)
     access_key_id: OptionalSecret = None
     secret_access_key: OptionalSecret = None
+    public_endpoint_url: OptionalText = None
     force_path_style: bool = True
     presign_ttl_seconds: int = Field(default=900, ge=60, le=604_800)
+
+    @field_validator("public_endpoint_url")
+    @classmethod
+    def validate_public_endpoint_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        parts = urlsplit(value)
+        if parts.scheme not in {"http", "https"} or not parts.hostname or parts.username or parts.password:
+            raise ValueError("must be an http or https origin without credentials")
+        if parts.query or parts.fragment or parts.path not in {"", "/"}:
+            raise ValueError("must be an origin without path, query or fragment")
+        return value.rstrip("/")
 
 
 class TurnstileSettings(GroupSettings):
@@ -392,19 +459,146 @@ class BillingSettings(GroupSettings):
 
     @field_validator("razorpay_api_base_url")
     @classmethod
-    def require_https_origin(cls, value: str) -> str:
-        parts = urlsplit(value)
-        if (
-            parts.scheme != "https"
-            or not parts.hostname
-            or parts.username
-            or parts.password
-            or parts.query
-            or parts.fragment
-            or parts.path not in {"", "/"}
-        ):
-            raise ValueError("must be an HTTPS origin without credentials, path, query or fragment")
-        return value.rstrip("/")
+    def validate_api_base_url(cls, value: str) -> str:
+        return require_https_origin(value)
+
+
+class RenderSettings(GroupSettings):
+    model_config = SettingsConfigDict(env_prefix="RENDER_", env_ignore_empty=True)
+
+    fps: int = Field(default=30, ge=24, le=60)
+    x264_crf: int = Field(default=20, ge=0, le=51)
+    x264_preset: X264Preset = "veryfast"
+    parallel_pages: OptionalInt = None
+    chunk_seconds: int = Field(default=5, ge=1, le=30)
+    scene_padding_ms: int = Field(default=400, ge=0, le=2_000)
+    tail_ms: int = Field(default=1_000, ge=0, le=5_000)
+    max_duration_ms: int = Field(default=120_000, ge=1_000, le=120_000)
+    poster_ms: int = Field(default=2_000, ge=0, le=120_000)
+    page_load_timeout_seconds: int = Field(default=15, ge=1, le=300)
+    ready_timeout_seconds: int = Field(default=15, ge=1, le=300)
+    frame_timeout_seconds: int = Field(default=10, ge=1, le=120)
+    stage_timeout_seconds: int = Field(default=1_800, ge=60, le=14_400)
+    stall_seconds: int = Field(default=900, ge=60, le=86_400)
+    min_free_disk_mb: int = Field(default=2_048, ge=0, le=1_048_576)
+    browser_memory_mb: int = Field(default=768, ge=128, le=16_384)
+    work_directory: OptionalPath = None
+    golden_directory: OptionalPath = None
+    ffmpeg_path: str = Field(default="ffmpeg", min_length=1, max_length=1_024)
+    ffprobe_path: str = Field(default="ffprobe", min_length=1, max_length=1_024)
+
+    @field_validator("parallel_pages")
+    @classmethod
+    def bound_parallel_pages(cls, value: int | None) -> int | None:
+        if value is not None and not 1 <= value <= MAX_RENDER_PAGES:
+            raise ValueError(f"must be between 1 and {MAX_RENDER_PAGES}")
+        return value
+
+
+class AudioSettings(GroupSettings):
+    model_config = SettingsConfigDict(env_prefix="AUDIO_", env_ignore_empty=True)
+
+    tts_provider: AudioProviderName = "elevenlabs"
+    transcriber: AudioProviderName = "elevenlabs"
+
+    @property
+    def providers(self) -> frozenset[str]:
+        return frozenset({self.tts_provider, self.transcriber})
+
+
+class ElevenLabsSettings(GroupSettings):
+    model_config = SettingsConfigDict(env_prefix="ELEVENLABS_", env_ignore_empty=True)
+
+    api_key: OptionalSecret = None
+    api_base_url: str = ELEVENLABS_API_BASE_URL
+    tts_model: str = Field(default="eleven_multilingual_v2", min_length=1, max_length=100)
+    stt_model: str = Field(default="scribe_v1", min_length=1, max_length=100)
+    output_format: str = Field(default="mp3_44100_128", pattern=r"^[a-z0-9_]{1,50}$")
+    cost_micros_per_1k_chars: int = Field(default=180_000, ge=0, le=100_000_000)
+
+    @field_validator("api_base_url")
+    @classmethod
+    def validate_api_base_url(cls, value: str) -> str:
+        return require_https_origin(value)
+
+
+class OpenAISettings(GroupSettings):
+    model_config = SettingsConfigDict(env_prefix="OPENAI_", env_ignore_empty=True)
+
+    api_key: OptionalSecret = None
+    api_base_url: str = OPENAI_API_BASE_URL
+    tts_model: str = Field(default="gpt-4o-mini-tts", min_length=1, max_length=100)
+    transcribe_model: str = Field(default="whisper-1", min_length=1, max_length=100)
+    cost_micros_per_1k_chars: int = Field(default=15_000, ge=0, le=100_000_000)
+
+    @field_validator("api_base_url")
+    @classmethod
+    def validate_api_base_url(cls, value: str) -> str:
+        return require_https_origin(value)
+
+
+class MediaSettings(GroupSettings):
+    model_config = SettingsConfigDict(env_ignore_empty=True, hide_input_in_errors=True)
+
+    delivery_mode: MediaDeliveryMode = Field(
+        default=MediaDeliveryMode.PRESIGNED, validation_alias="MEDIA_DELIVERY_MODE"
+    )
+    cdn_domain: OptionalText = Field(default=None, validation_alias="CDN_DOMAIN")
+    cloudfront_key_pair_id: OptionalText = Field(default=None, validation_alias="CLOUDFRONT_KEY_PAIR_ID")
+    cloudfront_private_key: OptionalSecret = Field(default=None, validation_alias="CLOUDFRONT_PRIVATE_KEY")
+    cookie_domain: OptionalText = Field(default=None, validation_alias="MEDIA_COOKIE_DOMAIN")
+    cookie_ttl_seconds: int = Field(default=3_600, ge=60, le=86_400, validation_alias="MEDIA_COOKIE_TTL_SECONDS")
+    signed_url_ttl_seconds: int = Field(default=900, ge=60, le=604_800, validation_alias="MEDIA_SIGNED_URL_TTL_SECONDS")
+
+    @field_validator("cdn_domain")
+    @classmethod
+    def require_bare_host_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        if HOST_NAME_PATTERN.fullmatch(normalized) is None:
+            raise ValueError("must be a bare host name without scheme, port or path")
+        return normalized
+
+    @field_validator("cloudfront_key_pair_id")
+    @classmethod
+    def require_key_pair_id(cls, value: str | None) -> str | None:
+        if value is not None and re.fullmatch(r"[A-Za-z0-9]{1,64}", value) is None:
+            raise ValueError("must contain 1 to 64 letters and digits")
+        return value
+
+    @field_validator("cloudfront_private_key")
+    @classmethod
+    def require_rsa_private_key(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is not None:
+            parse_private_key_pem(value.get_secret_value())
+        return value
+
+    @property
+    def private_key_pem(self) -> bytes | None:
+        if self.cloudfront_private_key is None:
+            return None
+        return parse_private_key_pem(self.cloudfront_private_key.get_secret_value())
+
+
+class VoicesSettings(GroupSettings):
+    model_config = SettingsConfigDict(env_prefix="VOICES_", env_ignore_empty=True)
+
+    consent_match_threshold: float = Field(default=0.85, ge=0.5, le=1)
+    sample_min_total_seconds: int = Field(default=30, ge=5, le=600)
+    sample_max_total_seconds: int = Field(default=300, ge=30, le=1_800)
+    sample_max_bytes: int = Field(default=26_214_400, ge=1_048_576, le=268_435_456)
+    consent_max_seconds: int = Field(default=30, ge=3, le=120)
+    consent_min_seconds: int = Field(default=3, ge=1, le=60)
+    attempt_ttl_seconds: int = Field(default=3_600, ge=300, le=86_400)
+
+    @model_validator(mode="after")
+    def require_ordered_bounds(self) -> Self:
+        if self.sample_min_total_seconds > self.sample_max_total_seconds:
+            raise ValueError("VOICES_SAMPLE_MIN_TOTAL_SECONDS must not exceed VOICES_SAMPLE_MAX_TOTAL_SECONDS")
+        if self.consent_min_seconds > self.consent_max_seconds:
+            raise ValueError("VOICES_CONSENT_MIN_SECONDS must not exceed VOICES_CONSENT_MAX_SECONDS")
+        return self
 
 
 class NotificationSettings(GroupSettings):
@@ -445,6 +639,12 @@ class Settings(BaseModel):
     outbound_http: OutboundHttpSettings = Field(default_factory=OutboundHttpSettings)
     catalog: CatalogSettings = Field(default_factory=CatalogSettings)
     billing: BillingSettings = Field(default_factory=BillingSettings)
+    render: RenderSettings = Field(default_factory=RenderSettings)
+    audio: AudioSettings = Field(default_factory=AudioSettings)
+    elevenlabs: ElevenLabsSettings = Field(default_factory=ElevenLabsSettings)
+    openai: OpenAISettings = Field(default_factory=OpenAISettings)
+    media: MediaSettings = Field(default_factory=MediaSettings)
+    voices: VoicesSettings = Field(default_factory=VoicesSettings)
 
     @model_validator(mode="after")
     def require_safe_values_when_deployed(self) -> Self:
@@ -484,6 +684,30 @@ class Settings(BaseModel):
             problems.append("STORAGE_BUCKET must be set")
         problems.extend(self.auth_deployment_problems())
         problems.extend(self.billing_deployment_problems())
+        problems.extend(self.audio_deployment_problems())
+        problems.extend(self.media_deployment_problems())
+        return problems
+
+    def audio_deployment_problems(self) -> list[str]:
+        problems: list[str] = []
+        if "elevenlabs" in self.audio.providers and self.elevenlabs.api_key is None:
+            problems.append("ELEVENLABS_API_KEY must be set")
+        if "openai" in self.audio.providers and self.openai.api_key is None:
+            problems.append("OPENAI_API_KEY must be set")
+        return problems
+
+    def media_deployment_problems(self) -> list[str]:
+        problems: list[str] = []
+        if "delivery_mode" not in self.media.model_fields_set:
+            problems.append("MEDIA_DELIVERY_MODE must be set")
+        if self.media.delivery_mode is MediaDeliveryMode.CLOUDFRONT:
+            required = {
+                "CDN_DOMAIN": self.media.cdn_domain,
+                "CLOUDFRONT_KEY_PAIR_ID": self.media.cloudfront_key_pair_id,
+                "CLOUDFRONT_PRIVATE_KEY": self.media.cloudfront_private_key,
+                "MEDIA_COOKIE_DOMAIN or AUTH_COOKIE_DOMAIN": self.media_cookie_domain,
+            }
+            problems.extend(f"{name} must be set" for name, value in required.items() if not value)
         return problems
 
     def billing_deployment_problems(self) -> list[str]:
@@ -533,6 +757,16 @@ class Settings(BaseModel):
     @property
     def test_routes_enabled(self) -> bool:
         return self.app.env in TEST_ROUTE_ENVIRONMENTS
+
+    @property
+    def media_cookie_domain(self) -> str | None:
+        return self.media.cookie_domain or self.auth.cookie_domain
+
+    @property
+    def parallel_render_pages(self) -> int:
+        if self.render.parallel_pages is not None:
+            return self.render.parallel_pages
+        return max(1, min(MAX_RENDER_PAGES, os.cpu_count() or 1))
 
     @property
     def pagination_secret(self) -> bytes:

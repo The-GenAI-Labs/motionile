@@ -55,6 +55,7 @@ runs:
         NEXT_PUBLIC_API_URL: ${{ inputs.browser-auth == 'true' && 'https://localhost:3443' || 'http://localhost:8000' }}
         NEXT_PUBLIC_JWKS_URL: http://127.0.0.1:8000/v1/auth/jwks.json
         NEXT_PUBLIC_PROVIDERS_MODE: fake
+        NEXT_PUBLIC_MEDIA_ORIGIN: http://localhost:9000
       run: pnpm --filter @motionile/web build
     - name: Serve web app
       if: inputs.web == 'true'

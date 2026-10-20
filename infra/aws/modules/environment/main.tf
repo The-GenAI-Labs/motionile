@@ -22,6 +22,7 @@ locals {
       API_DOMAIN                    = local.api_domain
       MCP_DOMAIN                    = local.mcp_domain
       CDN_DOMAIN                    = local.cdn_domain
+      MEDIA_DELIVERY_MODE           = var.enable_cdn ? "cloudfront" : "presigned"
       ACME_EMAIL                    = var.acme_email
       CORS_ALLOWED_ORIGINS          = join(",", local.cors_origins)
       TURNSTILE_EXPECTED_HOSTNAMES  = local.web_host

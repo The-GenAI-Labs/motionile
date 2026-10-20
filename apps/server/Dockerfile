@@ -40,7 +40,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --group render --no-editable
 
 FROM base AS api
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=api-build --chown=app:app /app /app
+COPY --chown=app:app tests/fixtures/compositions /app/golden
 USER app
 EXPOSE 8000
 CMD ["uvicorn", "motionile.entrypoints.api:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--no-server-header"]
@@ -51,6 +55,7 @@ RUN apt-get update \
     && apt-get install --yes --no-install-recommends ffmpeg fonts-noto-core fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=worker-build --chown=app:app /app /app
+COPY --chown=app:app tests/fixtures/compositions /app/golden
 RUN playwright install --with-deps chromium \
     && chown -R app:app /ms-playwright \
     && rm -rf /var/lib/apt/lists/*

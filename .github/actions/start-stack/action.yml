@@ -33,7 +33,7 @@ runs:
       run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml build api ${{ contains(inputs.services, 'worker-render') && 'worker-render' || '' }}
     - name: Start data services
       shell: bash
-      run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml up --detach --wait postgres redis
+      run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml up --detach --wait postgres redis minio
     - name: Run migrations
       shell: bash
       run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml run --rm migrate

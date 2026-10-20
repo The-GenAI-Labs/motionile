@@ -31,3 +31,9 @@ variable "noncurrent_version_retention_days" {
   type        = number
   default     = 30
 }
+
+variable "work_retention_days" {
+  description = "Days to keep render checkpoints and intermediate files under work/ before the lifecycle rule expires them."
+  type        = number
+  default     = 7
+}

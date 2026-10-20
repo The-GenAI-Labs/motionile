@@ -81,6 +81,53 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
   }
 
   rule {
+    id     = "expire-render-work-files"
+    status = "Enabled"
+
+    filter {
+      prefix = "work/"
+    }
+
+    expiration {
+      days = var.work_retention_days
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
+
+  rule {
+    id     = "remove-expired-render-work-delete-markers"
+    status = "Enabled"
+
+    filter {
+      prefix = "work/"
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
+
+  rule {
+    id     = "purge-deleted-voice-versions"
+    status = "Enabled"
+
+    filter {
+      prefix = "voice/"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
+  rule {
     id     = "abort-incomplete-uploads-and-old-versions"
     status = "Enabled"
 

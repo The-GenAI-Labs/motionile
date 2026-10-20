@@ -5,10 +5,12 @@ x-server-build: &server-build
 
 x-dev-storage: &dev-storage
   STORAGE_ENDPOINT_URL: http://minio:9000
+  STORAGE_PUBLIC_ENDPOINT_URL: http://localhost:9000
   STORAGE_BUCKET: motionile-local
   STORAGE_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-motionile}
   STORAGE_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-motionile-dev-secret}
   NOTIFICATIONS_SMTP_HOST: mailpit
+  MEDIA_DELIVERY_MODE: presigned
 
 services:
   proxy:

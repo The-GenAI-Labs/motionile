@@ -1,6 +1,60 @@
 name: motionile
 
+x-media-environment: &media-environment
+  RENDER_GOLDEN_DIRECTORY: /app/golden
+  RENDER_FPS: ${RENDER_FPS:-}
+  RENDER_X264_CRF: ${RENDER_X264_CRF:-}
+  RENDER_X264_PRESET: ${RENDER_X264_PRESET:-}
+  RENDER_PARALLEL_PAGES: ${RENDER_PARALLEL_PAGES:-}
+  RENDER_CHUNK_SECONDS: ${RENDER_CHUNK_SECONDS:-}
+  RENDER_SCENE_PADDING_MS: ${RENDER_SCENE_PADDING_MS:-}
+  RENDER_TAIL_MS: ${RENDER_TAIL_MS:-}
+  RENDER_MAX_DURATION_MS: ${RENDER_MAX_DURATION_MS:-}
+  RENDER_POSTER_MS: ${RENDER_POSTER_MS:-}
+  RENDER_PAGE_LOAD_TIMEOUT_SECONDS: ${RENDER_PAGE_LOAD_TIMEOUT_SECONDS:-}
+  RENDER_READY_TIMEOUT_SECONDS: ${RENDER_READY_TIMEOUT_SECONDS:-}
+  RENDER_FRAME_TIMEOUT_SECONDS: ${RENDER_FRAME_TIMEOUT_SECONDS:-}
+  RENDER_STAGE_TIMEOUT_SECONDS: ${RENDER_STAGE_TIMEOUT_SECONDS:-}
+  RENDER_STALL_SECONDS: ${RENDER_STALL_SECONDS:-}
+  RENDER_MIN_FREE_DISK_MB: ${RENDER_MIN_FREE_DISK_MB:-}
+  RENDER_BROWSER_MEMORY_MB: ${RENDER_BROWSER_MEMORY_MB:-}
+  STORAGE_PUBLIC_ENDPOINT_URL: ${STORAGE_PUBLIC_ENDPOINT_URL:-}
+  MEDIA_DELIVERY_MODE: ${MEDIA_DELIVERY_MODE:-presigned}
+  MEDIA_COOKIE_DOMAIN: ${MEDIA_COOKIE_DOMAIN:-}
+  MEDIA_COOKIE_TTL_SECONDS: ${MEDIA_COOKIE_TTL_SECONDS:-}
+  MEDIA_SIGNED_URL_TTL_SECONDS: ${MEDIA_SIGNED_URL_TTL_SECONDS:-}
+  CDN_DOMAIN: ${CDN_DOMAIN:-}
+  CLOUDFRONT_KEY_PAIR_ID: ${CLOUDFRONT_KEY_PAIR_ID:-}
+  CLOUDFRONT_PRIVATE_KEY: ${CLOUDFRONT_PRIVATE_KEY:-}
+  AUDIO_TTS_PROVIDER: ${AUDIO_TTS_PROVIDER:-}
+  AUDIO_TRANSCRIBER: ${AUDIO_TRANSCRIBER:-}
+  ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+  ELEVENLABS_API_BASE_URL: ${ELEVENLABS_API_BASE_URL:-}
+  ELEVENLABS_TTS_MODEL: ${ELEVENLABS_TTS_MODEL:-}
+  ELEVENLABS_STT_MODEL: ${ELEVENLABS_STT_MODEL:-}
+  ELEVENLABS_OUTPUT_FORMAT: ${ELEVENLABS_OUTPUT_FORMAT:-}
+  ELEVENLABS_COST_MICROS_PER_1K_CHARS: ${ELEVENLABS_COST_MICROS_PER_1K_CHARS:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-}
+  OPENAI_TTS_MODEL: ${OPENAI_TTS_MODEL:-}
+  OPENAI_TRANSCRIBE_MODEL: ${OPENAI_TRANSCRIBE_MODEL:-}
+  OPENAI_COST_MICROS_PER_1K_CHARS: ${OPENAI_COST_MICROS_PER_1K_CHARS:-}
+  VOICES_CONSENT_MATCH_THRESHOLD: ${VOICES_CONSENT_MATCH_THRESHOLD:-}
+  VOICES_SAMPLE_MIN_TOTAL_SECONDS: ${VOICES_SAMPLE_MIN_TOTAL_SECONDS:-}
+  VOICES_SAMPLE_MAX_TOTAL_SECONDS: ${VOICES_SAMPLE_MAX_TOTAL_SECONDS:-}
+  VOICES_SAMPLE_MAX_BYTES: ${VOICES_SAMPLE_MAX_BYTES:-}
+  VOICES_CONSENT_MIN_SECONDS: ${VOICES_CONSENT_MIN_SECONDS:-}
+  VOICES_CONSENT_MAX_SECONDS: ${VOICES_CONSENT_MAX_SECONDS:-}
+  VOICES_ATTEMPT_TTL_SECONDS: ${VOICES_ATTEMPT_TTL_SECONDS:-}
+
+x-hardened: &hardened
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+
 x-server-environment: &server-environment
+  <<: *media-environment
   APP_ENV: ${APP_ENV:-local}
   PROVIDERS_MODE: ${PROVIDERS_MODE:-fake}
   DATABASE_URL: ${DATABASE_URL:-postgresql://motionile:motionile@postgres:5432/motionile}
@@ -40,6 +94,7 @@ services:
         condition: service_healthy
 
   api:
+    <<: *hardened
     image: *api-image
     restart: unless-stopped
     environment:
@@ -62,6 +117,7 @@ services:
         condition: service_healthy
 
   mcp:
+    <<: *hardened
     image: *api-image
     restart: unless-stopped
     command:
@@ -84,6 +140,7 @@ services:
         condition: service_healthy
 
   worker-default:
+    <<: *hardened
     image: *api-image
     restart: unless-stopped
     command:
@@ -102,8 +159,25 @@ services:
   worker-render:
     image: ${MOTIONILE_WORKER_IMAGE:-motionile-worker:local}
     restart: unless-stopped
-    environment: *server-environment
+    init: true
+    user: "10001:10001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=seccomp/playwright.json
+    pids_limit: 1024
+    mem_limit: 6g
+    memswap_limit: 6g
     shm_size: 1gb
+    tmpfs:
+      - /tmp:size=512m,mode=1777,nosuid,nodev
+      - /work:size=4g,mode=0700,uid=10001,gid=10001,nosuid,nodev
+    environment:
+      <<: *server-environment
+      HOME: /tmp
+      RENDER_WORK_DIRECTORY: /work
     stop_grace_period: 10m
     networks:
       - backend
@@ -112,6 +186,7 @@ services:
         condition: service_healthy
 
   migrate:
+    <<: *hardened
     image: *api-image
     profiles:
       - tools

@@ -413,6 +413,12 @@ Password login uses argon2id and a dummy verification for unknown accounts. Ten 
 | `jobs.create` | 5/min per user, at most 2 concurrent jobs |
 | `billing.order.create` | 10/min per user |
 | `skills.write` | 20/hour per user |
+| `media.session` | 60/min per user |
+| `media.upload` | 30/hour per user |
+| `music.write` | 20/hour per user |
+| `render.create` | 10/hour per user |
+| `voices.clone` | 10/hour per user (opening a cloning attempt) |
+| `voices.upload` | 60/hour per user (consent recording and sample uploads) |
 | `publishing.publish` | 30/hour per user |
 | `mcp.submit` | 10/hour per API key |
 | `webhooks.razorpay` | 600/min |
@@ -487,6 +493,19 @@ query or topic
 - The MCP path enters the pipeline at sanitization, running TTS first when only narration text is submitted.
 - Every stage writes a `usage_records` row.
 
+### Render and audio engine (Phase 8)
+
+The render and audio engine is specified in [`render.md`](render.md) (composition contract, `runtime@1`, determinism, sanitizer, sandbox, validation codes, pipeline, storage layout, delivery, test bed, benchmark) and [`audio.md`](audio.md) (providers, alignment, TTS cache, narration assembly, mixing, loudness, subtitles, voices).
+
+- **Renders are an aggregate** ([ADR 0021](adr/0021-renders-as-an-aggregate.md)): `renders` and `renditions` live in the `media` module; Phase 9 jobs and MCP submissions create a render through `create_render` and read it through `get_render` and `renditions_for`. `share_links` belongs to Phase 9.
+- **Pipeline:** `render.run` on the `render` queue runs `preparing → voicing → mixing → capturing → encoding → finalizing`; each stage records a checkpoint and a retry resumes at the first incomplete stage. Progress goes to the Redis channel `render:<id>`.
+- **TTS cache** ([ADR 0022](adr/0022-tts-cache-by-content-hash.md)): identical narration is synthesized and paid for once; `MediaService.narrate` exposes narration-first synthesis to Phase 9.
+- **Music** ([ADR 0023](adr/0023-music-library-and-licensing.md)) comes only from licensed `music_tracks`.
+- **Determinism** ([ADR 0024](adr/0024-deterministic-capture-through-web-animations-and-frozen-clock.md)): timeline and `document.getAnimations()` seeked per frame, frozen clock, seeded `Math.random`.
+- **Contract and sandbox** ([ADR 0025](adr/0025-narration-first-composition-contract.md), [ADR 0026](adr/0026-render-sandbox-design.md)): `window.__narration` in, `Motionile.composition` and `window.__timeline` out; network-isolated Chromium with its sandbox on, and a strict CSP.
+- **Voices** ([ADR 0027](adr/0027-voice-consent-verification.md)): a curated built-in catalog and consent-verified cloning with a random sentence, transcoded samples only and a retained consent record.
+- **Delivery** ([ADR 0028](adr/0028-media-delivery-and-microphone-policy.md)): CloudFront signed cookies scoped to the owner's path, or presigned URLs.
+
 ---
 
 ## 10. Publishing
@@ -515,14 +534,14 @@ One server Dockerfile with two targets produces two images.
 | `api` | `motionile-api` | uvicorn `motionile.entrypoints.api:app` |
 | `mcp` | `motionile-api` | uvicorn `motionile.entrypoints.mcp:app` |
 | `worker-default` | `motionile-api` | procrastinate worker on `default`, `billing`, `publishing` |
-| `worker-render` | `motionile-worker` | procrastinate worker on `render`, concurrency 1 |
+| `worker-render` | `motionile-worker` | procrastinate worker on `render`, concurrency 1; non-root, read-only root file system, Playwright's seccomp profile, all capabilities dropped, Chromium and ffmpeg inside |
 | `migrate` | `motionile-api` | `alembic upgrade head` (one-off) |
 | `redis` | `redis` | AOF on, `noeviction`, password |
 
 Local development adds Postgres with pgvector, MinIO and Mailpit. The web app runs with `pnpm dev` locally and on Vercel in staging and production; its Dockerfile exists for self-hosting. In staging and production, Redis and Caddy keep their data on the EBS data volume at `/srv/motionile/data`, images come from ECR, and the two environments differ only by the env file rendered from SSM.
 
 ### Environments
-`APP_ENV` is `local`, `ci`, `staging` or `production`. `PROVIDERS_MODE` is `fake` or `live`. Settings are grouped by prefix (`DATABASE_`, `REDIS_`, `SECURITY_`, `CORS_`, `RATE_LIMIT_`, `STORAGE_`, `TURNSTILE_`, `ENCRYPTION_`, `LOG_`, `OUTBOUND_HTTP_`); blank values count as unset, and staging and production refuse to start without live providers, explicit database, Redis and https CORS origins, a cursor-signing secret, encryption keys, a Turnstile secret and a storage bucket.
+`APP_ENV` is `local`, `ci`, `staging` or `production`. `PROVIDERS_MODE` is `fake` or `live`. Settings are grouped by prefix (`DATABASE_`, `REDIS_`, `SECURITY_`, `CORS_`, `RATE_LIMIT_`, `STORAGE_`, `TURNSTILE_`, `ENCRYPTION_`, `LOG_`, `OUTBOUND_HTTP_`, `RENDER_`, `AUDIO_`, `ELEVENLABS_`, `OPENAI_`, `MEDIA_`, `VOICES_`); blank values count as unset, and staging and production refuse to start without live providers, explicit database, Redis and https CORS origins, a cursor-signing secret, encryption keys, a Turnstile secret and a storage bucket.
 
 ### CI/CD
 - **`ci.yml`** on every pull request into `develop` or `prod`: lint (ESLint, ruff, no-comments, module boundaries, commitlint), typecheck (tsc, pyright), unit, integration, API contract drift, evals, scan (gitleaks, pip-audit, pnpm audit, Trivy), build images, e2e, security (security suite + ZAP baseline), load (k6 smoke).

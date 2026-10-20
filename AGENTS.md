@@ -78,6 +78,7 @@ Operational rules for any coding agent working in this repository. `docs/context
 - Access JWT `sid` is the session family ID. Revocation denies the family for the access lifetime plus verification leeway.
 - OAuth linking starts with the CSRF-protected POST endpoint; ordinary sign-in uses the GET redirect.
 - Password reset uses OTP and a verification ticket. Refresh requires family-bound CSRF; OAuth uses a separate ten-minute Lax binding cookie.
+- `voices` owns voices and voice consents and imports `users`, never the reverse: it registers its purge hook, data-export section and default-voice check with the `users` registries (`purge_registry`, `export_registry`, `preference_guards`) when the package loads. `media` reaches voices only through the `VoiceLookup` port.
 - Notifications carry encrypted queue payloads, use after-commit enqueueing, and never log codes or destinations. SES v2 is the additional instance-role AWS SDK adapter.
 
 ## API design
@@ -137,6 +138,19 @@ Operational rules for any coding agent working in this repository. `docs/context
 - Verify webhooks on the raw body, store them, deduplicate by event ID and process them asynchronously on the `billing` queue.
 - Drive status changes through explicit state machines and record stale events as `ignored`; never ignore money received.
 - Correct credits through `adjust` with a reason, never by editing rows.
+
+## Render, audio and media
+
+- Generated HTML is untrusted code. The sandbox is the control and the sanitizer is an extra layer: launch Chromium with its own sandbox on, never `--no-sandbox`, in a fresh context per render, with every request intercepted and only the virtual runtime origin and `data:` fulfilled. Any attempted outbound request fails the render with `network_violation`.
+- Compositions are written against the contract in `docs/render.md` (`runtime@1`). Change the contract only by adding a new runtime version, never by editing a published one, and update `docs/render.md` in the same pull request as any change to the runtime, the sanitizer rules or the validation codes.
+- Rendering is deterministic: seek the GSAP master timeline and every `document.getAnimations()` animation to `t`, freeze the clock, seed `Math.random` and never use Playwright's `animations: "disabled"`. Frames are streamed to ffmpeg and never written to disk.
+- Narration comes first. Synthesize through the TTS cache (`tts_cache`), never call a TTS provider directly from a module, and write a usage row for every real synthesis.
+- A render is its own aggregate. Move its status only through the transition table in `modules/media/domain.py` with a conditional update, record each stage checkpoint in the transaction that advances the status, and let a retried task resume at the first incomplete stage.
+- `engine` reads no settings and no environment: callers pass explicit config dataclasses. Run ffmpeg and ffprobe only through `engine/ffmpeg.py` with a timeout, and feed untrusted bytes through stdin with `-protocol_whitelist pipe`.
+- Storage keys follow `docs/render.md` section 11 and are built only by `modules/media/keys.py`. Only `media/` is served by the CDN; voice samples, consent recordings, `work/`, `tts/`, `music/` and `voice-preview/` are private.
+- Serve media only through `MediaDelivery`: CloudFront signed cookies scoped to `media/u/<userId>/*`, or presigned URLs. Never put an object key or a long-lived URL in a response without it.
+- A cloned voice needs a verified consent recording of a fresh random sentence, and only transcoded audio is stored. Deleting a voice deletes it at the provider and removes its samples, preview and TTS cache entries; the consent evidence stays per `docs/db/retention.md`.
+- `media` never imports `voices`; it reaches voices through the `VoiceLookup` port. Music comes only from `music_tracks` with a recorded license.
 
 ## Frontend
 

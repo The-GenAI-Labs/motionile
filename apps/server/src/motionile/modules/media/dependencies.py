@@ -15,12 +15,14 @@ from motionile.modules.media.factory import (
     music_service_for,
     render_events_for,
     speech_for,
+    stream_slots_for,
 )
 from motionile.modules.media.golden import GoldenCatalog, golden_directory
 from motionile.modules.media.music import MusicService
 from motionile.modules.media.render_events import RenderEvents
 from motionile.modules.media.service import MediaService
 from motionile.modules.media.speech import SpeechService
+from motionile.modules.media.stream_slots import StreamSlots
 from motionile.modules.media.voice_lookup import VoiceLookup
 
 
@@ -48,6 +50,10 @@ def get_render_events(resources: ResourcesDep) -> RenderEvents:
     return render_events_for(resources)
 
 
+def get_stream_slots(resources: ResourcesDep) -> StreamSlots:
+    return stream_slots_for(resources)
+
+
 def get_golden_catalog(settings: SettingsDep) -> GoldenCatalog:
     return GoldenCatalog(golden_directory(settings))
 
@@ -71,6 +77,7 @@ MediaServiceDep = Annotated[MediaService, Depends(get_media_service)]
 MusicServiceDep = Annotated[MusicService, Depends(get_music_service)]
 SpeechServiceDep = Annotated[SpeechService, Depends(get_speech_service)]
 RenderEventsDep = Annotated[RenderEvents, Depends(get_render_events)]
+StreamSlotsDep = Annotated[StreamSlots, Depends(get_stream_slots)]
 GoldenCatalogDep = Annotated[GoldenCatalog, Depends(get_golden_catalog)]
 VoiceLookupDep = Annotated[VoiceLookup, Depends(get_voice_lookup)]
 CurrentUserIdDep = Annotated[UUID, Depends(get_current_user_id)]

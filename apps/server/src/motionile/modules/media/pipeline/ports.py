@@ -22,7 +22,7 @@ class SpeechPort(Protocol):
     def default_options(self, provider: str, language: str) -> SynthesisOptions: ...
 
     async def synthesize_text(
-        self, voice: VoiceRef, text: str, options: SynthesisOptions, *, user_id: UUID
+        self, voice: VoiceRef, text: str, options: SynthesisOptions, *, user_id: UUID, job_id: UUID | None = None
     ) -> NarratedAudio: ...
 
 

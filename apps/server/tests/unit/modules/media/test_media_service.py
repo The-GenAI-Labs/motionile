@@ -273,3 +273,13 @@ def test_the_media_session_comes_from_the_delivery() -> None:
 
     assert grant.mode.value == "presigned"
     assert grant.cookies == ()
+
+
+async def test_a_rendition_asset_stored_under_another_users_prefix_is_never_linked() -> None:
+    world = World()
+    render = add_render(world, USER_A)
+    foreign = world.add_asset(f"media/u/{USER_B}/renders/r/16x9.mp4", owner=USER_A, kind="video")
+    add_rendition(world, render, "16:9", asset_id=foreign.id)
+
+    with pytest.raises(MediaKeyNotSignableError):
+        await build(world).renditions_for(fake_session(), USER_A, render.id)

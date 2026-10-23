@@ -8,6 +8,7 @@ from motionile.modules.media.builders import (
     render_events_for,
     render_pipeline_for,
     speech_for,
+    stream_slots_for,
 )
 from motionile.modules.media.service import MediaService
 from motionile.modules.media.tasks import dispatch_render
@@ -32,4 +33,5 @@ __all__ = [
     "render_events_for",
     "render_pipeline_for",
     "speech_for",
+    "stream_slots_for",
 ]

@@ -2,6 +2,7 @@ from motionile.core.errors import (
     ConflictError,
     NotFoundError,
     PayloadTooLargeError,
+    RateLimitedError,
     ServiceUnavailableError,
     ValidationAppError,
 )
@@ -128,3 +129,8 @@ class AssetKeyTakenError(Exception):
 
 class AssetReferencedError(Exception):
     pass
+
+
+class TooManyStreamsError(RateLimitedError):
+    default_code = "too_many_streams"
+    title = "Too many open progress streams"

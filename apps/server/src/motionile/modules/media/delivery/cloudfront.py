@@ -10,13 +10,12 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
 from motionile.core.clock import Clock
 from motionile.core.config import MediaDeliveryMode
+from motionile.core.security.cookies import MEDIA_COOKIES
 from motionile.modules.media.delivery.base import DeliveryCookie, MediaSessionGrant, require_media_key
 from motionile.modules.media.exceptions import MediaKeyNotSignableError
 from motionile.modules.media.keys import segment, user_media_prefix
 
-POLICY_COOKIE = "CloudFront-Policy"
-SIGNATURE_COOKIE = "CloudFront-Signature"
-KEY_PAIR_COOKIE = "CloudFront-Key-Pair-Id"
+POLICY_COOKIE, SIGNATURE_COOKIE, KEY_PAIR_COOKIE = MEDIA_COOKIES
 SHARE_ROOT = "share"
 BASE64_ALPHABET_MAP = str.maketrans({"+": "-", "=": "_", "/": "~"})
 
@@ -95,11 +94,13 @@ class CloudFrontDelivery:
         )
         return MediaSessionGrant(self.mode, expires_at, cookies)
 
-    async def url_for(self, key: str) -> str:
-        return self._url(require_media_key(key))
+    async def url_for(self, key: str, *, owner_user_id: UUID | None = None) -> str:
+        return self._url(require_media_key(key, owner_user_id=owner_user_id))
 
-    async def signed_url(self, key: str, ttl: timedelta) -> str:
-        return self._signer.canned_url(self._url(require_media_key(key)), self._expiry(ttl))
+    async def signed_url(self, key: str, ttl: timedelta, *, owner_user_id: UUID | None = None) -> str:
+        return self._signer.canned_url(
+            self._url(require_media_key(key, owner_user_id=owner_user_id)), self._expiry(ttl)
+        )
 
     def share_url(self, name: str, ttl: timedelta) -> str:
         try:

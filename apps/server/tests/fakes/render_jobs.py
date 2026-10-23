@@ -200,9 +200,9 @@ class FakeSpeech:
         return SynthesisOptions(language=language, output_format="wav")
 
     async def synthesize_text(
-        self, voice: VoiceRef, text: str, options: SynthesisOptions, *, user_id: UUID
+        self, voice: VoiceRef, text: str, options: SynthesisOptions, *, user_id: UUID, job_id: UUID | None = None
     ) -> NarratedAudio:
-        del user_id
+        del user_id, job_id
         self.calls.append(text)
         result = await self.provider.synthesize(text, voice, options)
         return NarratedAudio(

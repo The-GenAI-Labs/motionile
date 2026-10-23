@@ -41,9 +41,11 @@ from motionile.modules.media import (
     music_service_for,
     render_commands_for,
     render_pipeline_for,
+    stream_slots_for,
 )
 from motionile.modules.media.dependencies import get_media_service
 from motionile.modules.media.pipeline.toolchain import build_toolchain
+from motionile.modules.media.stream_slots import MAX_STREAMS_PER_USER
 
 FPS = 24
 TAIL_MS = 600
@@ -533,3 +535,18 @@ async def test_the_creation_endpoint_is_rate_limited_per_user(bed: RenderBed) ->
 
     assert statuses[:10] == [202] * 10
     assert statuses[10] == 429
+
+
+async def test_the_sixth_concurrent_event_stream_of_a_user_is_refused(bed: RenderBed) -> None:
+    render_id = UUID((await bed.post_golden("responsive-scene")).json()["id"])
+    slots = stream_slots_for(bed.api.resources)
+    leases = [await slots.acquire(bed.api.primary_id) for _ in range(MAX_STREAMS_PER_USER)]
+
+    refused = await bed.client.get(f"{BED}/{render_id}/events")
+    await leases[0].release()
+    await leases[1].release()
+
+    assert refused.status_code == 429
+    assert refused.json()["code"] == "too_many_streams"
+    assert refused.headers["content-type"].startswith("application/problem+json")
+    assert (await slots.acquire(bed.api.primary_id)) is not None

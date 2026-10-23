@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.engine.audio.narration_models import NarrationDocument
 from motionile.modules.audit import AuditContext
-from motionile.modules.media.delivery import MediaDelivery, MediaSessionGrant, require_media_key
+from motionile.modules.media.delivery import MediaDelivery, MediaSessionGrant
 from motionile.modules.media.domain import Aspect, AssetStatus, RenderSource, RenditionStatus
 from motionile.modules.media.exceptions import RenderNotFoundError
 from motionile.modules.media.models import Asset, Render, Rendition
@@ -41,7 +41,7 @@ class MediaService:
         return self._delivery.session(user_id)
 
     async def signed_url(self, key: str, ttl: timedelta, *, owner_user_id: UUID | None = None) -> str:
-        return await self._delivery.signed_url(require_media_key(key, owner_user_id=owner_user_id), ttl)
+        return await self._delivery.signed_url(key, ttl, owner_user_id=owner_user_id)
 
     def _render_commands(self) -> RenderCommands:
         if self._commands is None:
@@ -102,11 +102,16 @@ class MediaService:
         }
         assets = await store.assets_by_ids(user_id, asset_ids)
         attribution = await self._attribution(store, render)
-        subtitles_url = await self._url(assets, render.subtitles_vtt_asset_id)
-        subtitles_srt_url = await self._url(assets, render.subtitles_srt_asset_id)
+        subtitles_url = await self._url(user_id, assets, render.subtitles_vtt_asset_id)
+        subtitles_srt_url = await self._url(user_id, assets, render.subtitles_srt_asset_id)
         return [
             await self._rendition_view(
-                item, assets, attribution=attribution, subtitles_url=subtitles_url, subtitles_srt_url=subtitles_srt_url
+                user_id,
+                item,
+                assets,
+                attribution=attribution,
+                subtitles_url=subtitles_url,
+                subtitles_srt_url=subtitles_srt_url,
             )
             for item in renditions
         ]
@@ -132,14 +137,15 @@ class MediaService:
             attribution_text=track.attribution_text,
         )
 
-    async def _url(self, assets: dict[UUID, Asset], asset_id: UUID | None) -> str | None:
+    async def _url(self, owner_user_id: UUID, assets: dict[UUID, Asset], asset_id: UUID | None) -> str | None:
         asset = assets.get(asset_id) if asset_id is not None else None
         if asset is None or asset.status != AssetStatus.READY.value:
             return None
-        return await self._delivery.url_for(asset.storage_key)
+        return await self._delivery.url_for(asset.storage_key, owner_user_id=owner_user_id)
 
-    async def _rendition_view(
+    async def _rendition_view(  # noqa: PLR0913
         self,
+        owner_user_id: UUID,
         rendition: Rendition,
         assets: dict[UUID, Asset],
         *,
@@ -156,9 +162,9 @@ class MediaService:
             duration_ms=rendition.duration_ms,
             status=RenditionStatus(rendition.status),
             burned_in_subtitles=rendition.burned_in_subtitles,
-            url=await self._url(assets, rendition.asset_id) if ready else None,
-            poster_url=await self._url(assets, rendition.poster_webp_asset_id),
-            poster_jpeg_url=await self._url(assets, rendition.poster_jpeg_asset_id),
+            url=await self._url(owner_user_id, assets, rendition.asset_id) if ready else None,
+            poster_url=await self._url(owner_user_id, assets, rendition.poster_webp_asset_id),
+            poster_jpeg_url=await self._url(owner_user_id, assets, rendition.poster_jpeg_asset_id),
             subtitles_url=subtitles_url,
             subtitles_srt_url=subtitles_srt_url,
             attribution=attribution,

@@ -1,9 +1,9 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Query, Request, UploadFile, status
-from fastapi.exceptions import RequestValidationError
+from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import JSONResponse
+from starlette.datastructures import UploadFile
 
 from motionile.core.dependencies import CursorCodecDep, SettingsDep
 from motionile.core.errors import problem_responses
@@ -11,6 +11,16 @@ from motionile.core.idempotency import IdempotencyGuard, idempotent
 from motionile.core.ratelimit.limiter import rate_limit
 from motionile.modules.audit import context_from_request
 from motionile.modules.auth import enforce_csrf
+from motionile.modules.media import (
+    FORM_OVERHEAD_BYTES,
+    FormLimits,
+    file_upload_schema,
+    missing,
+    multipart_body,
+    parse_bounded_form,
+    read_upload_part,
+    unique_parts,
+)
 from motionile.modules.voices.dependencies import CloneServiceDep, CurrentUserIdDep, VoicesServiceDep
 from motionile.modules.voices.exceptions import AudioTooLargeError
 from motionile.modules.voices.repository import VoiceFilter
@@ -26,7 +36,12 @@ from motionile.modules.voices.schemas import (
 )
 
 SUBMIT_SCOPE = "voices.clone.submit"
-UPLOAD_FIELDS = frozenset({"file"})
+FILE_FIELD = "file"
+UPLOAD_FIELDS = frozenset({FILE_FIELD})
+CONSENT_BODY = "Body_voices_replace_consent_recording"
+SAMPLE_BODY = "Body_voices_add_clone_sample"
+CONSENT_OPENAPI = multipart_body(CONSENT_BODY, file_upload_schema(CONSENT_BODY))
+SAMPLE_OPENAPI = multipart_body(SAMPLE_BODY, file_upload_schema(SAMPLE_BODY))
 
 voices_router = APIRouter(
     prefix="/voices",
@@ -38,22 +53,17 @@ CLONE_LIMIT = [Depends(rate_limit("voices.clone"))]
 UPLOAD_LIMIT = [Depends(rate_limit("voices.upload"))]
 
 
-async def audio_upload(request: Request, file: Annotated[UploadFile, File()], settings: SettingsDep) -> bytes:
-    unknown = sorted(set((await request.form()).keys()) - UPLOAD_FIELDS)
-    if unknown:
-        raise RequestValidationError(
-            [
-                {"type": "extra_forbidden", "loc": ("body", name), "msg": "Extra inputs are not permitted"}
-                for name in unknown
-            ]
-        )
+async def audio_upload(request: Request, settings: SettingsDep) -> bytes:
     limit = settings.voices.sample_max_bytes
-    if file.size is not None and file.size > limit:
-        raise AudioTooLargeError
-    content = await file.read(limit + 1)
-    if len(content) > limit:
-        raise AudioTooLargeError
-    return content
+    limits = FormLimits(limit + FORM_OVERHEAD_BYTES, max_files=2, max_fields=len(UPLOAD_FIELDS) + 2)
+    form = await parse_bounded_form(request, limits, AudioTooLargeError, required_field=FILE_FIELD)
+    try:
+        file = unique_parts(form, UPLOAD_FIELDS).get(FILE_FIELD)
+        if not isinstance(file, UploadFile):
+            raise missing(FILE_FIELD)
+        return await read_upload_part(file, limit, AudioTooLargeError)
+    finally:
+        await form.close()
 
 
 AudioUploadDep = Annotated[bytes, Depends(audio_upload)]
@@ -92,9 +102,10 @@ async def get_voice_clone_attempt(
     summary="Upload or replace the recording of the consent sentence",
     dependencies=UPLOAD_LIMIT,
     responses=problem_responses(409, 413),
+    openapi_extra=CONSENT_OPENAPI,
 )
 async def replace_consent_recording(
-    attempt_id: UUID, content: AudioUploadDep, user_id: CurrentUserIdDep, service: CloneServiceDep
+    attempt_id: UUID, user_id: CurrentUserIdDep, content: AudioUploadDep, service: CloneServiceDep
 ) -> CloneAttemptView:
     return await service.replace_consent_recording(user_id, attempt_id, content)
 
@@ -106,9 +117,10 @@ async def replace_consent_recording(
     summary="Add a voice sample to a cloning attempt",
     dependencies=UPLOAD_LIMIT,
     responses=problem_responses(409, 413),
+    openapi_extra=SAMPLE_OPENAPI,
 )
 async def add_clone_sample(
-    attempt_id: UUID, content: AudioUploadDep, user_id: CurrentUserIdDep, service: CloneServiceDep
+    attempt_id: UUID, user_id: CurrentUserIdDep, content: AudioUploadDep, service: CloneServiceDep
 ) -> CloneAttemptView:
     return await service.add_sample(user_id, attempt_id, content)
 

@@ -141,7 +141,7 @@ def test_sse_frames_follow_the_event_stream_format() -> None:
     assert HEARTBEAT_FRAME == b": heartbeat\n\n"
 
 
-async def collect_stream(rig: Rig, render_id: UUID, user_id: UUID, **options: float) -> list[bytes]:
+async def collect_stream(rig: Rig, render_id: UUID, user_id: UUID, poll_seconds: float = 1.0) -> list[bytes]:
     frames: list[bytes] = []
     stream = stream_render_events(
         rig.world.transaction,
@@ -150,7 +150,7 @@ async def collect_stream(rig: Rig, render_id: UUID, user_id: UUID, **options: fl
         user_id,
         render_id,
         is_disconnected=never_disconnected,
-        **options,
+        poll_seconds=poll_seconds,
     )
     async for frame in stream:
         frames.append(frame)

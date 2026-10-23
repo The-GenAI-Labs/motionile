@@ -286,6 +286,18 @@ async def test_uploads_that_are_not_audio_are_rejected(
     assert await voices_api.scalar("SELECT count(*) FROM assets") == 0
 
 
+async def test_a_body_far_over_the_limit_is_cut_off_while_streaming(voices_api: VoicesApi) -> None:
+    resources = voices_api.media.resources
+    resources.settings = resources.settings.model_copy(update={"voices": VoicesSettings(sample_max_bytes=1_048_576)})
+    primary = voices_api.media.primary
+    attempt_id = str((await start_attempt(primary)).json()["attemptId"])
+
+    response = await post_sample(primary, attempt_id, b"RIFF" + bytes(3_000_000))
+
+    assert (response.status_code, response.json()["code"]) == (413, "audio_too_large")
+    assert await voices_api.scalar("SELECT count(*) FROM assets") == 0
+
+
 async def test_an_oversized_upload_is_rejected_before_it_is_processed(voices_api: VoicesApi) -> None:
     resources = voices_api.media.resources
     resources.settings = resources.settings.model_copy(update={"voices": VoicesSettings(sample_max_bytes=1_048_576)})

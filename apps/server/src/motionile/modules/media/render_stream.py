@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import AsyncGenerator, Awaitable, Callable
+from dataclasses import dataclass
 from uuid import UUID
 
 from motionile.modules.media.domain import is_terminal
@@ -7,6 +8,7 @@ from motionile.modules.media.ports import Transaction
 from motionile.modules.media.render_events import RenderEvents, RenderProgress
 from motionile.modules.media.schemas import RenderView
 from motionile.modules.media.service import MediaService
+from motionile.modules.media.stream_slots import StreamLease
 
 HEARTBEAT_SECONDS = 15.0
 POLL_SECONDS = 1.0
@@ -14,6 +16,13 @@ RECHECK_SECONDS = 10.0
 HEARTBEAT_FRAME = b": heartbeat\n\n"
 
 type Disconnected = Callable[[], Awaitable[bool]]
+type Authorize = Callable[[], Awaitable[bool]]
+
+
+@dataclass(frozen=True, slots=True)
+class StreamGuards:
+    authorize: Authorize
+    lease: StreamLease
 
 
 def sse_frame(event: str, data: str) -> bytes:
@@ -47,32 +56,44 @@ async def stream_render_events(  # noqa: PLR0913
     render_id: UUID,
     *,
     is_disconnected: Disconnected,
+    guards: StreamGuards | None = None,
     heartbeat_seconds: float = HEARTBEAT_SECONDS,
     poll_seconds: float = POLL_SECONDS,
     recheck_seconds: float = RECHECK_SECONDS,
 ) -> AsyncGenerator[bytes]:
-    async with events.subscribe(render_id) as subscription:
-        snapshot = await current_state(transaction, service, user_id, render_id)
-        yield sse_frame("snapshot", snapshot.to_json())
-        if snapshot.is_terminal:
-            return
-        loop = asyncio.get_running_loop()
-        last_sent = last_checked = loop.time()
-        while not await is_disconnected():
-            message = await subscription.next(poll_seconds)
-            now = loop.time()
-            if message is not None:
-                yield sse_frame("progress", message.to_json())
-                last_sent = last_checked = now
-                if message.is_terminal:
-                    return
-                continue
-            if now - last_checked >= recheck_seconds:
-                last_checked = now
-                state = await current_state(transaction, service, user_id, render_id)
-                if is_terminal(state.status):
-                    yield sse_frame("progress", state.to_json())
-                    return
-            if now - last_sent >= heartbeat_seconds:
-                last_sent = now
-                yield HEARTBEAT_FRAME
+    try:
+        async with events.subscribe(render_id) as subscription:
+            if guards is not None and not await guards.authorize():
+                return
+            snapshot = await current_state(transaction, service, user_id, render_id)
+            yield sse_frame("snapshot", snapshot.to_json())
+            if snapshot.is_terminal:
+                return
+            loop = asyncio.get_running_loop()
+            last_sent = last_checked = last_authorized = loop.time()
+            while not await is_disconnected():
+                message = await subscription.next(poll_seconds)
+                now = loop.time()
+                if guards is not None and now - last_authorized >= recheck_seconds:
+                    last_authorized = now
+                    if not await guards.authorize():
+                        return
+                    await guards.lease.renew()
+                if message is not None:
+                    yield sse_frame("progress", message.to_json())
+                    last_sent = last_checked = now
+                    if message.is_terminal:
+                        return
+                    continue
+                if now - last_checked >= recheck_seconds:
+                    last_checked = now
+                    state = await current_state(transaction, service, user_id, render_id)
+                    if is_terminal(state.status):
+                        yield sse_frame("progress", state.to_json())
+                        return
+                if now - last_sent >= heartbeat_seconds:
+                    last_sent = now
+                    yield HEARTBEAT_FRAME
+    finally:
+        if guards is not None:
+            await guards.lease.release()

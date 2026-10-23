@@ -16,6 +16,7 @@ from motionile.engine.render.runtime import load_runtime_bundle
 from motionile.engine.render.sandbox import RenderSandbox
 from motionile.engine.render.thumbnails import PosterFiles, PosterTiming, write_posters
 from motionile.engine.render.validate import validate_composition
+from motionile.modules.media.browser_environment import browser_environment
 from motionile.modules.media.pipeline.ports import (
     AssembleJob,
     BrowserValidation,
@@ -46,6 +47,7 @@ def engine_config(settings: Settings, fps: int) -> RenderEngineConfig:
         browser_memory_mb=render.browser_memory_mb,
         min_free_disk_mb=render.min_free_disk_mb,
         work_directory=render.work_directory,
+        browser_environment=browser_environment(settings),
         tools=ffmpeg_tools(settings),
     )
 

@@ -69,7 +69,6 @@ def build_clone_service(resources: Resources, enqueue: EnqueueClone) -> CloneSer
         attempts=attempts_for(resources),
         processor=FfmpegAudioProcessor(ffmpeg_tools(settings)),
         settings=settings.voices,
-        billing=settings.billing,
         clock=resources.clock,
         credit_service=CreditsService(resources.clock, settings.billing),
         runtime=PlatformRuntimeSettings(resources.redis_store),

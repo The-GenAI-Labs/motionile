@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.ids import new_id
-from motionile.modules.media.domain import AssetStatus
+from motionile.modules.media.domain import AssetKind, AssetStatus
 from motionile.modules.media.exceptions import AssetKeyTakenError, AssetReferencedError
 from motionile.modules.media.models import Asset, MusicTrack, Render, Rendition
 
@@ -145,6 +145,15 @@ class SqlAssetRepository:
             if violates(error, FOREIGN_KEY_VIOLATION):
                 raise AssetReferencedError from error
             raise
+
+    async def voice_sample_owners(self, sha256: bytes) -> list[UUID]:
+        statement = select(Asset.owner_user_id).where(
+            Asset.kind == AssetKind.VOICE_SAMPLE.value,
+            Asset.status == AssetStatus.READY.value,
+            Asset.sha256 == sha256,
+            Asset.owner_user_id.is_not(None),
+        )
+        return sorted({owner for owner in await self.session.scalars(statement) if owner is not None})
 
 
 class SqlRenderRepository:

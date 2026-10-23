@@ -104,3 +104,25 @@ def test_the_owner_prefix_restricts_signing_to_that_users_media() -> None:
         require_media_key(KEY, owner_user_id=OTHER)
     with pytest.raises(MediaKeyNotSignableError):
         require_media_key(f"media/u/{USER}x/a.mp4", owner_user_id=USER)
+
+
+async def test_presigned_delivery_pins_urls_to_the_owner_when_given() -> None:
+    delivery = PresignedDelivery(InMemoryStorage(), timedelta(seconds=900))
+
+    assert await delivery.url_for(KEY, owner_user_id=USER) == f"memory://{KEY}?expires=900"
+    assert await delivery.signed_url(KEY, timedelta(seconds=60), owner_user_id=USER) == f"memory://{KEY}?expires=60"
+    with pytest.raises(MediaKeyNotSignableError):
+        await delivery.url_for(KEY, owner_user_id=OTHER)
+    with pytest.raises(MediaKeyNotSignableError):
+        await delivery.signed_url(KEY, timedelta(seconds=60), owner_user_id=OTHER)
+
+
+async def test_cloudfront_delivery_pins_urls_to_the_owner_when_given() -> None:
+    delivery = build_delivery(cloudfront_settings(), InMemoryStorage(), FrozenClock(NOW))
+
+    assert (await delivery.url_for(KEY, owner_user_id=USER)).startswith("https://cdn.motionile.test/media/u/")
+    assert "Signature=" in await delivery.signed_url(KEY, timedelta(seconds=60), owner_user_id=USER)
+    with pytest.raises(MediaKeyNotSignableError):
+        await delivery.url_for(KEY, owner_user_id=OTHER)
+    with pytest.raises(MediaKeyNotSignableError):
+        await delivery.signed_url(KEY, timedelta(seconds=60), owner_user_id=OTHER)

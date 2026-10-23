@@ -3,18 +3,20 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path, Request
 from fastapi.responses import StreamingResponse
+from starlette.background import BackgroundTask
 
-from motionile.core.dependencies import DatabaseDep, SettingsDep
+from motionile.core.dependencies import DatabaseDep, RedisStoreDep, SettingsDep
 from motionile.core.errors import UnauthorizedError, problem_responses
 from motionile.core.ratelimit.limiter import rate_limit
 from motionile.core.security.rbac import Principal
-from motionile.modules.access import RenderTestbedDep
+from motionile.modules.access import RenderTestbedDep, resolve_access
 from motionile.modules.audit import context_from_request
 from motionile.modules.auth import enforce_csrf
 from motionile.modules.media.dependencies import (
     GoldenCatalogDep,
     MediaServiceDep,
     RenderEventsDep,
+    StreamSlotsDep,
     VoiceLookupDep,
 )
 from motionile.modules.media.domain import RenderSource
@@ -31,7 +33,7 @@ from motionile.modules.media.render_bed_schemas import (
 )
 from motionile.modules.media.render_bed_upload import read_bed_upload
 from motionile.modules.media.render_options import RenderOptionsRequest, SynthesizeRequest
-from motionile.modules.media.render_stream import stream_render_events
+from motionile.modules.media.render_stream import StreamGuards, stream_render_events
 from motionile.modules.media.schemas import RenderView
 from motionile.modules.media.voice_lookup import resolve_render_options
 
@@ -41,11 +43,12 @@ testbed_router = APIRouter(
     dependencies=[Depends(enforce_csrf), Depends(rate_limit("api.default"))],
     responses=problem_responses(401, 403, 404, 422),
 )
+TESTBED_PERMISSION = "render.testbed"
 CREATE_LIMIT = [Depends(rate_limit("render.create"))]
 EVENT_STREAM_HEADERS = {"Cache-Control": "no-store", "X-Accel-Buffering": "no", "Connection": "keep-alive"}
 EVENT_STREAM_RESPONSES: dict[int | str, dict[str, object]] = {
     200: {"description": "Server-sent events", "content": {"text/event-stream": {"schema": {"type": "string"}}}},
-    **problem_responses(401, 403, 404),
+    **problem_responses(401, 403, 404, 429),
 }
 
 
@@ -214,14 +217,31 @@ async def stream_testbed_render(  # noqa: PLR0913, PLR0917
     database: DatabaseDep,
     service: MediaServiceDep,
     events: RenderEventsDep,
+    slots: StreamSlotsDep,
+    redis: RedisStoreDep,
 ) -> StreamingResponse:
     user_id = bed_user_id(principal)
     async with database.transaction() as session:
         await service.get_render(session, user_id, render_id)
+
+    async def still_permitted() -> bool:
+        async with database.transaction() as session:
+            access = await resolve_access(session, redis, user_id)
+        return "super_admin" in access.roles or TESTBED_PERMISSION in access.permissions
+
+    lease = await slots.acquire(user_id)
     stream = stream_render_events(
-        database.transaction, service, events, user_id, render_id, is_disconnected=request.is_disconnected
+        database.transaction,
+        service,
+        events,
+        user_id,
+        render_id,
+        is_disconnected=request.is_disconnected,
+        guards=StreamGuards(still_permitted, lease),
     )
-    return StreamingResponse(stream, media_type="text/event-stream", headers=EVENT_STREAM_HEADERS)
+    return StreamingResponse(
+        stream, media_type="text/event-stream", headers=EVENT_STREAM_HEADERS, background=BackgroundTask(lease.release)
+    )
 
 
 @testbed_router.post(

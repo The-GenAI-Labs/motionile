@@ -12,8 +12,9 @@ from tests.integration.media_support import MediaApi
 from tests.integration.test_auth import csrf
 
 from motionile.engine.ffmpeg import FfmpegTools, probe_bytes, run_ffmpeg
+from motionile.modules.media import FormLimits
 
-ROUTER_MODULE = "motionile.modules.media.music_router"
+UPLOAD_MODULE = "motionile.modules.media.music_upload"
 BASE = "/v1/admin/music"
 SINE = "sine=frequency=440:duration=6"
 LICENSE = "https://creativecommons.org/licenses/by/4.0/"
@@ -249,7 +250,19 @@ async def test_audio_that_is_too_short_is_rejected(
 async def test_an_oversized_file_is_rejected_with_413(
     media_api: MediaApi, admin: AsyncClient, tone: bytes, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(importlib.import_module(ROUTER_MODULE), "MUSIC_MAX_BYTES", len(tone) - 1)
+    monkeypatch.setattr(importlib.import_module(UPLOAD_MODULE), "MUSIC_MAX_BYTES", len(tone) - 1)
+
+    response = await upload(admin, tone)
+
+    assert response.status_code == 413
+    assert response.json()["code"] == "music_too_large"
+    assert await stored_tracks(media_api) == 0
+
+
+async def test_a_body_over_the_form_limit_is_refused_before_it_is_processed(
+    media_api: MediaApi, admin: AsyncClient, tone: bytes, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(importlib.import_module(UPLOAD_MODULE), "MUSIC_FORM_LIMITS", FormLimits(len(tone) // 2, 2, 8))
 
     response = await upload(admin, tone)
 

@@ -348,7 +348,7 @@ def test_media_reads_its_unprefixed_names_from_environment(monkeypatch: pytest.M
     for name, value in CLOUDFRONT_ENVIRONMENT.items():
         monkeypatch.setenv(name, value)
     monkeypatch.setenv("MEDIA_COOKIE_DOMAIN", ".motionile.com")
-    monkeypatch.setenv("MEDIA_COOKIE_TTL_SECONDS", "7200")
+    monkeypatch.setenv("MEDIA_COOKIE_TTL_SECONDS", "3000")
     monkeypatch.setenv("MEDIA_SIGNED_URL_TTL_SECONDS", "1800")
 
     media = Settings().media
@@ -358,7 +358,7 @@ def test_media_reads_its_unprefixed_names_from_environment(monkeypatch: pytest.M
     assert media.cloudfront_key_pair_id == "K2JCJMDEHXQW5F"
     assert media.cloudfront_private_key is not None
     assert media.cookie_domain == ".motionile.com"
-    assert media.cookie_ttl_seconds == 7_200
+    assert media.cookie_ttl_seconds == 3_000
     assert media.signed_url_ttl_seconds == 1_800
     assert media.private_key_pem is not None
 
@@ -457,9 +457,9 @@ def test_key_pair_id_must_be_alphanumeric(key_pair_id: str) -> None:
     ("field", "value"),
     [
         ("cookie_ttl_seconds", 59),
-        ("cookie_ttl_seconds", 86_401),
+        ("cookie_ttl_seconds", 3_601),
         ("signed_url_ttl_seconds", 59),
-        ("signed_url_ttl_seconds", 604_801),
+        ("signed_url_ttl_seconds", 3_601),
     ],
 )
 def test_media_lifetimes_are_bounded(field: str, value: int) -> None:

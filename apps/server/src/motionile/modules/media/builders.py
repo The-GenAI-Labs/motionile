@@ -20,10 +20,12 @@ from motionile.modules.media.render_events import RenderEvents
 from motionile.modules.media.render_repository import SqlRenderJobRepository
 from motionile.modules.media.speech import SpeechService
 from motionile.modules.media.speech_cache import SqlSynthesisCache
+from motionile.modules.media.stream_slots import StreamSlots
 
 DELIVERY_KEY = "media.delivery"
 ASSETS_KEY = "media.assets"
 EVENTS_KEY = "media.render_events"
+SLOTS_KEY = "media.stream_slots"
 MUSIC_KEY = "media.music"
 SPEECH_KEY = "media.speech"
 
@@ -65,6 +67,10 @@ def speech_for(resources: Resources) -> SpeechService:
 
 def render_events_for(resources: Resources) -> RenderEvents:
     return resources.shared_instance(EVENTS_KEY, lambda: RenderEvents(resources.redis_store))
+
+
+def stream_slots_for(resources: Resources) -> StreamSlots:
+    return resources.shared_instance(SLOTS_KEY, lambda: StreamSlots(resources.redis_store, resources.clock))
 
 
 def audio_check_for(resources: Resources) -> Callable[[bytes], Awaitable[ValidatedAudio]]:

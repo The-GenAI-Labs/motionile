@@ -1,4 +1,16 @@
 from motionile.modules.media.assets import AssetService, AssetSpec, AssetView
+from motionile.modules.media.bounded_upload import (
+    FORM_OVERHEAD_BYTES,
+    FormLimits,
+    file_upload_schema,
+    forbidden,
+    invalid_fields,
+    missing,
+    multipart_body,
+    parse_bounded_form,
+    read_upload_part,
+    unique_parts,
+)
 from motionile.modules.media.delivery import (
     CloudFrontDelivery,
     CloudFrontSigner,
@@ -16,6 +28,7 @@ from motionile.modules.media.dependencies import (
     MusicServiceDep,
     RenderEventsDep,
     SpeechServiceDep,
+    StreamSlotsDep,
     VoiceLookupDep,
 )
 from motionile.modules.media.domain import (
@@ -63,7 +76,9 @@ from motionile.modules.media.factory import (
     render_events_for,
     render_pipeline_for,
     speech_for,
+    stream_slots_for,
 )
+from motionile.modules.media.fake_consent import FakeConsentTranscripts
 from motionile.modules.media.keys import (
     composition_key,
     consent_recording_key,
@@ -123,6 +138,7 @@ from motionile.modules.media.voice_lookup import VoiceLookup, resolve_render_opt
 
 __all__ = [
     "ACTIVE_RENDER_STATUSES",
+    "FORM_OVERHEAD_BYTES",
     "RENDER_PIPELINE",
     "RENDER_TRANSITIONS",
     "STAGE_PROGRESS_WEIGHTS",
@@ -143,6 +159,8 @@ __all__ = [
     "CloudFrontSigner",
     "CompositionTooLargeError",
     "DeliveryCookie",
+    "FakeConsentTranscripts",
+    "FormLimits",
     "GoldenCatalogDep",
     "GoldenNotFoundError",
     "InvalidRenderTransitionError",
@@ -190,6 +208,7 @@ __all__ = [
     "SpeechResult",
     "SpeechService",
     "SpeechServiceDep",
+    "StreamSlotsDep",
     "SynthesizeNarration",
     "SynthesizeRequest",
     "TtsCacheEntry",
@@ -210,15 +229,22 @@ __all__ = [
     "consent_recording_key",
     "delivery_for",
     "ffmpeg_tools",
+    "file_upload_schema",
+    "forbidden",
+    "invalid_fields",
     "is_terminal",
     "media_router",
     "media_service_for",
+    "missing",
     "mixed_audio_key",
+    "multipart_body",
     "music_key",
     "music_router",
     "music_service_for",
+    "parse_bounded_form",
     "poster_key",
     "purge_media",
+    "read_upload_part",
     "render_channel",
     "render_commands_for",
     "render_events_for",
@@ -232,8 +258,10 @@ __all__ = [
     "require_transition",
     "resolve_render_options",
     "speech_for",
+    "stream_slots_for",
     "subtitles_key",
     "tts_key",
+    "unique_parts",
     "user_media_prefix",
     "user_voice_prefix",
     "voice_prefix",

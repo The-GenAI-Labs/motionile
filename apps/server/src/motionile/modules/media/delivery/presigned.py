@@ -17,8 +17,12 @@ class PresignedDelivery:
         del user_id
         return MediaSessionGrant(self.mode, None)
 
-    async def url_for(self, key: str) -> str:
-        return await self._storage.presigned_get_url(require_media_key(key), expires_in=self._ttl)
+    async def url_for(self, key: str, *, owner_user_id: UUID | None = None) -> str:
+        return await self._storage.presigned_get_url(
+            require_media_key(key, owner_user_id=owner_user_id), expires_in=self._ttl
+        )
 
-    async def signed_url(self, key: str, ttl: timedelta) -> str:
-        return await self._storage.presigned_get_url(require_media_key(key), expires_in=ttl)
+    async def signed_url(self, key: str, ttl: timedelta, *, owner_user_id: UUID | None = None) -> str:
+        return await self._storage.presigned_get_url(
+            require_media_key(key, owner_user_id=owner_user_id), expires_in=ttl
+        )

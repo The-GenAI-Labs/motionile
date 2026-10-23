@@ -46,6 +46,11 @@ class AppEnv(StrEnum):
     PRODUCTION = "production"
 
 
+class AppRole(StrEnum):
+    SERVICE = "service"
+    RENDER_WORKER = "render_worker"
+
+
 class ProvidersMode(StrEnum):
     FAKE = "fake"
     LIVE = "live"
@@ -146,6 +151,7 @@ class GroupSettings(BaseSettings):
 class AppSettings(GroupSettings):
     env: AppEnv = Field(default=AppEnv.LOCAL, validation_alias="APP_ENV")
     providers_mode: ProvidersMode = Field(default=ProvidersMode.FAKE, validation_alias="PROVIDERS_MODE")
+    role: AppRole = Field(default=AppRole.SERVICE, validation_alias="APP_ROLE")
 
 
 class DatabaseSettings(GroupSettings):
@@ -547,8 +553,8 @@ class MediaSettings(GroupSettings):
     cloudfront_key_pair_id: OptionalText = Field(default=None, validation_alias="CLOUDFRONT_KEY_PAIR_ID")
     cloudfront_private_key: OptionalSecret = Field(default=None, validation_alias="CLOUDFRONT_PRIVATE_KEY")
     cookie_domain: OptionalText = Field(default=None, validation_alias="MEDIA_COOKIE_DOMAIN")
-    cookie_ttl_seconds: int = Field(default=3_600, ge=60, le=86_400, validation_alias="MEDIA_COOKIE_TTL_SECONDS")
-    signed_url_ttl_seconds: int = Field(default=900, ge=60, le=604_800, validation_alias="MEDIA_SIGNED_URL_TTL_SECONDS")
+    cookie_ttl_seconds: int = Field(default=3_600, ge=60, le=3_600, validation_alias="MEDIA_COOKIE_TTL_SECONDS")
+    signed_url_ttl_seconds: int = Field(default=900, ge=60, le=3_600, validation_alias="MEDIA_SIGNED_URL_TTL_SECONDS")
 
     @field_validator("cdn_domain")
     @classmethod
@@ -621,6 +627,17 @@ class NotificationSettings(GroupSettings):
     whatsapp_api_version: str = "v23.0"
 
 
+class ProcessEnvironment(GroupSettings):
+    model_config = SettingsConfigDict(env_ignore_empty=True, hide_input_in_errors=True)
+
+    path: OptionalText = Field(default=None, validation_alias="PATH")
+    home: OptionalText = Field(default=None, validation_alias="HOME")
+    system_root: OptionalText = Field(default=None, validation_alias="SYSTEMROOT")
+    temp: OptionalText = Field(default=None, validation_alias="TEMP")
+    tmp: OptionalText = Field(default=None, validation_alias="TMP")
+    tmpdir: OptionalText = Field(default=None, validation_alias="TMPDIR")
+
+
 class Settings(BaseModel):
     model_config = {"frozen": True}
 
@@ -645,6 +662,7 @@ class Settings(BaseModel):
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     media: MediaSettings = Field(default_factory=MediaSettings)
     voices: VoicesSettings = Field(default_factory=VoicesSettings)
+    process_environment: ProcessEnvironment = Field(default_factory=ProcessEnvironment)
 
     @model_validator(mode="after")
     def require_safe_values_when_deployed(self) -> Self:
@@ -668,24 +686,30 @@ class Settings(BaseModel):
             problems.append("DATABASE_URL must be set")
         if "url" not in self.redis.model_fields_set:
             problems.append("REDIS_URL must be set")
+        if not self.encryption.keys:
+            problems.append("ENCRYPTION_KEYS must be set")
+        if "bucket" not in self.storage.model_fields_set:
+            problems.append("STORAGE_BUCKET must be set")
+        if self.app.role is AppRole.SERVICE:
+            problems.extend(self.service_deployment_problems())
+        problems.extend(self.audio_deployment_problems())
+        problems.extend(self.media_deployment_problems())
+        return problems
+
+    def service_deployment_problems(self) -> list[str]:
+        problems: list[str] = []
         if "allowed_origins" not in self.cors.model_fields_set or not self.cors.allowed_origins:
             problems.append("CORS_ALLOWED_ORIGINS must be set")
         if any(origin.startswith("http://") for origin in self.cors.allowed_origins):
             problems.append("CORS_ALLOWED_ORIGINS must use https")
         if self.security.pagination_secret is None:
             problems.append("SECURITY_PAGINATION_SECRET must be set")
-        if not self.encryption.keys:
-            problems.append("ENCRYPTION_KEYS must be set")
         if self.turnstile.secret_key is None:
             problems.append("TURNSTILE_SECRET_KEY must be set")
         if self.catalog.revalidation_secret is None:
             problems.append("CATALOG_REVALIDATION_SECRET must be set")
-        if "bucket" not in self.storage.model_fields_set:
-            problems.append("STORAGE_BUCKET must be set")
         problems.extend(self.auth_deployment_problems())
         problems.extend(self.billing_deployment_problems())
-        problems.extend(self.audio_deployment_problems())
-        problems.extend(self.media_deployment_problems())
         return problems
 
     def audio_deployment_problems(self) -> list[str]:
@@ -701,12 +725,13 @@ class Settings(BaseModel):
         if "delivery_mode" not in self.media.model_fields_set:
             problems.append("MEDIA_DELIVERY_MODE must be set")
         if self.media.delivery_mode is MediaDeliveryMode.CLOUDFRONT:
-            required = {
+            required: dict[str, object] = {
                 "CDN_DOMAIN": self.media.cdn_domain,
                 "CLOUDFRONT_KEY_PAIR_ID": self.media.cloudfront_key_pair_id,
-                "CLOUDFRONT_PRIVATE_KEY": self.media.cloudfront_private_key,
                 "MEDIA_COOKIE_DOMAIN or AUTH_COOKIE_DOMAIN": self.media_cookie_domain,
             }
+            if self.app.role is AppRole.SERVICE:
+                required["CLOUDFRONT_PRIVATE_KEY"] = self.media.cloudfront_private_key
             problems.extend(f"{name} must be set" for name, value in required.items() if not value)
         return problems
 

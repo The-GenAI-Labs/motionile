@@ -17,7 +17,7 @@ dependencies = [
     "jinja2>=3.1.6",
     "orjson>=3.13.0",
     "phonenumbers>=9.0.41",
-    "pillow>=12.3.0",
+    "pillow>=13.0.0",
     "procrastinate>=3.10.0",
     "psycopg[binary,pool]>=3.3.6",
     "pydantic>=2.14.1",
@@ -57,7 +57,7 @@ requires = ["uv_build>=0.13.0,<0.14.0"]
 build-backend = "uv_build"
 
 [tool.uv]
-default-groups = ["dev"]
+default-groups = ["dev", "render"]
 
 [tool.ruff]
 line-length = 120

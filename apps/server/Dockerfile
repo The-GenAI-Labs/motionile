@@ -18,26 +18,26 @@ COPY --from=uv /uv /usr/local/bin/uv
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-dev --no-install-project
+    uv sync --frozen --no-default-groups --no-install-project
 COPY pyproject.toml uv.lock alembic.ini ./
 COPY src ./src
 COPY migrations ./migrations
 COPY seeds ./seeds
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-editable
+    uv sync --frozen --no-default-groups --no-editable
 
 FROM base AS worker-build
 COPY --from=uv /uv /usr/local/bin/uv
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-dev --group render --no-install-project
+    uv sync --frozen --no-default-groups --group render --no-install-project
 COPY pyproject.toml uv.lock alembic.ini ./
 COPY src ./src
 COPY migrations ./migrations
 COPY seeds ./seeds
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --group render --no-editable
+    uv sync --frozen --no-default-groups --group render --no-editable
 
 FROM base AS api
 RUN apt-get update \

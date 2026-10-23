@@ -68,8 +68,8 @@ BILLING_RECONCILIATION_PENDING_AFTER_SECONDS,owner,no,Age in seconds after which
 BILLING_REPORT_STORAGE_PREFIX,owner,no,Object key prefix of reconciliation reports; defaults to billing/reconciliation
 MEDIA_DELIVERY_MODE,infra,yes,cloudfront behind the CDN or presigned for storage URLs without CloudFront
 MEDIA_COOKIE_DOMAIN,owner,no,Domain of the CloudFront signed cookies; defaults to AUTH_COOKIE_DOMAIN
-MEDIA_COOKIE_TTL_SECONDS,owner,no,Lifetime of the CloudFront signed cookies in seconds; defaults to 3600
-MEDIA_SIGNED_URL_TTL_SECONDS,owner,no,Lifetime of presigned and signed media URLs in seconds; defaults to 900
+MEDIA_COOKIE_TTL_SECONDS,owner,no,Lifetime of the CloudFront signed cookies in seconds; defaults to 3600 and may not exceed 3600
+MEDIA_SIGNED_URL_TTL_SECONDS,owner,no,Lifetime of presigned and signed media URLs in seconds; defaults to 900 and may not exceed 3600
 AUDIO_TTS_PROVIDER,owner,no,Speech synthesis provider: elevenlabs or openai; defaults to elevenlabs
 AUDIO_TRANSCRIBER,owner,no,Transcription provider for alignment and consent checks: elevenlabs or openai; defaults to elevenlabs
 ELEVENLABS_API_KEY,owner,yes,ElevenLabs API key; required while ElevenLabs is the TTS provider or the transcriber
@@ -109,4 +109,4 @@ VOICES_SAMPLE_MAX_TOTAL_SECONDS,owner,no,Maximum combined voice sample duration 
 VOICES_SAMPLE_MAX_BYTES,owner,no,Maximum size in bytes of one uploaded voice file; defaults to 26214400
 VOICES_CONSENT_MIN_SECONDS,owner,no,Minimum consent recording duration in seconds; defaults to 3
 VOICES_CONSENT_MAX_SECONDS,owner,no,Maximum consent recording duration in seconds; defaults to 30
-VOICES_ATTEMPT_TTL_SECONDS,owner,no,Lifetime of a voice clone attempt in seconds; defaults to 3600
+VOICES_ATTEMPT_TTL_SECONDS,owner,no,Lifetime of a voice clone attempt in seconds; defaults to 3600 and may not exceed 3600

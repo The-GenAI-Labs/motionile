@@ -237,7 +237,7 @@ The private key must be a 2048-bit RSA key, the only size CloudFront accepts. Th
 
    Verify: after signing in on the web app, `GET /v1/media/session` answers with `CloudFront-Policy`, `CloudFront-Signature` and `CloudFront-Key-Pair-Id` cookies, the `CloudFront-Key-Pair-Id` value equals `tofu output -raw cloudfront_public_key_id`, and a rendition on the web app plays and seeks.
 
-4. Wait for the longest lifetime of anything signed with the old key: `MEDIA_COOKIE_TTL_SECONDS` for cookies (default 3600 seconds, at most 86400) and `MEDIA_SIGNED_URL_TTL_SECONDS` for signed and presigned URLs (default 900, at most 604800). Use the values in SSM if they are set. A browser holding an old cookie keeps playing until it expires, because the old public key is still in the group; the player refreshes the cookie through `GET /v1/media/session` before expiry and receives one signed with the new key.
+4. Wait for the longest lifetime of anything signed with the old key: `MEDIA_COOKIE_TTL_SECONDS` for cookies (default and maximum 3600 seconds) and `MEDIA_SIGNED_URL_TTL_SECONDS` for signed and presigned URLs (default 900, at most 3600). Use the values in SSM if they are set. A browser holding an old cookie keeps playing until it expires, because the old public key is still in the group; the player refreshes the cookie through `GET /v1/media/session` before expiry and receives one signed with the new key.
 5. Remove the old label from `cloudfront_public_keys` and apply. Expected result: the plan removes one public key and updates the key group.
 6. Store the new private key in the password manager and delete local copies of both private keys.
 

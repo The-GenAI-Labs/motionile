@@ -18,6 +18,9 @@
 
 {$API_DOMAIN} {
 	import api_defaults
+	request_body {
+		max_size 160MiB
+	}
 	reverse_proxy api:8000
 }
 

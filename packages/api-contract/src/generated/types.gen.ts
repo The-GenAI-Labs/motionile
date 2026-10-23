@@ -1240,6 +1240,76 @@ export type AdminUserSummary = {
 };
 
 /**
+ * AdminVoicePage
+ */
+export type AdminVoicePage = {
+    /**
+     * Items
+     */
+    items: Array<AdminVoiceView>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AdminVoiceView
+ */
+export type AdminVoiceView = {
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Failurecode
+     */
+    failureCode?: string | null;
+    /**
+     * Haspreview
+     */
+    hasPreview: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    kind: VoiceKind;
+    /**
+     * Labels
+     */
+    labels: {
+        [key: string]: string;
+    };
+    /**
+     * Language
+     */
+    language: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Provider
+     */
+    provider: string;
+    /**
+     * Providervoiceid
+     */
+    providerVoiceId?: string | null;
+    status: VoiceStatus;
+    /**
+     * Tags
+     */
+    tags: Array<string>;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+};
+
+/**
  * AdminWebhookEventDetailResponse
  */
 export type AdminWebhookEventDetailResponse = {
@@ -1384,6 +1454,13 @@ export type AnalyticsResponse = {
 };
 
 /**
+ * Aspect
+ */
+export type Aspect = '16:9' | '9:16' | '1:1';
+
+export type AttributionText = string;
+
+/**
  * AuditEntryResponse
  */
 export type AuditEntryResponse = {
@@ -1462,6 +1539,66 @@ export type AvatarResponse = {
 };
 
 /**
+ * BedMusicTrackList
+ */
+export type BedMusicTrackList = {
+    /**
+     * Items
+     */
+    items: Array<BedMusicTrackView>;
+};
+
+/**
+ * BedMusicTrackView
+ */
+export type BedMusicTrackView = {
+    /**
+     * Attribution
+     */
+    attribution?: string | null;
+    /**
+     * Bpm
+     */
+    bpm?: number | null;
+    /**
+     * Durationms
+     */
+    durationMs: number;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Mood
+     */
+    mood: string;
+    /**
+     * Title
+     */
+    title: string;
+};
+
+/**
+ * Body_admin_music_upload_music_track
+ */
+export type BodyAdminMusicUploadMusicTrack = {
+    /**
+     * Activate
+     */
+    activate?: boolean;
+    attributionText?: AttributionText | null;
+    bpm?: Bpm | null;
+    /**
+     * File
+     */
+    file: Blob | File;
+    licenseName: LicenseName;
+    licenseUrl: HttpsUrl;
+    mood: Mood;
+    title: Title;
+};
+
+/**
  * Body_users_upload_avatar
  */
 export type BodyUsersUploadAvatar = {
@@ -1470,6 +1607,28 @@ export type BodyUsersUploadAvatar = {
      */
     file: Blob | File;
 };
+
+/**
+ * Body_voices_add_clone_sample
+ */
+export type BodyVoicesAddCloneSample = {
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
+ * Body_voices_replace_consent_recording
+ */
+export type BodyVoicesReplaceConsentRecording = {
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+export type Bpm = number;
 
 /**
  * CatalogCategoryResponse
@@ -1948,6 +2107,140 @@ export type ClawbackPreviewResponse = {
 };
 
 /**
+ * CloneAttemptView
+ */
+export type CloneAttemptView = {
+    /**
+     * Attemptid
+     */
+    attemptId: string;
+    consentRecording?: ConsentRecordingView | null;
+    /**
+     * Consentsentence
+     */
+    consentSentence: string;
+    /**
+     * Expiresat
+     */
+    expiresAt: string;
+    limits: CloneLimitsView;
+    /**
+     * Samples
+     */
+    samples: Array<CloneSampleView>;
+    /**
+     * Statementversion
+     */
+    statementVersion: string;
+    /**
+     * Totalsamplems
+     */
+    totalSampleMs: number;
+    /**
+     * Voiceid
+     */
+    voiceId: string;
+};
+
+/**
+ * CloneLimitsView
+ */
+export type CloneLimitsView = {
+    /**
+     * Consentmaxseconds
+     */
+    consentMaxSeconds: number;
+    /**
+     * Consentminseconds
+     */
+    consentMinSeconds: number;
+    /**
+     * Maxsamplefiles
+     */
+    maxSampleFiles: number;
+    /**
+     * Samplemaxbytes
+     */
+    sampleMaxBytes: number;
+    /**
+     * Samplemaxtotalseconds
+     */
+    sampleMaxTotalSeconds: number;
+    /**
+     * Samplemintotalseconds
+     */
+    sampleMinTotalSeconds: number;
+};
+
+/**
+ * CloneSampleView
+ */
+export type CloneSampleView = {
+    /**
+     * Durationms
+     */
+    durationMs: number;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Sizebytes
+     */
+    sizeBytes: number;
+};
+
+/**
+ * CloneStartRequest
+ */
+export type CloneStartRequest = {
+    /**
+     * Accepted
+     */
+    accepted: true;
+    statementVersion: StatementVersion;
+};
+
+/**
+ * CloneStartView
+ */
+export type CloneStartView = {
+    /**
+     * Attemptid
+     */
+    attemptId: string;
+    /**
+     * Consentsentence
+     */
+    consentSentence: string;
+    /**
+     * Expiresat
+     */
+    expiresAt: string;
+    limits: CloneLimitsView;
+    /**
+     * Statementtext
+     */
+    statementText: string;
+    /**
+     * Statementversion
+     */
+    statementVersion: string;
+    /**
+     * Voiceid
+     */
+    voiceId: string;
+};
+
+/**
+ * CloneSubmitRequest
+ */
+export type CloneSubmitRequest = {
+    language: VoiceLanguage;
+    name: VoiceName;
+};
+
+/**
  * CodeRequest
  */
 export type CodeRequest = {
@@ -1955,6 +2248,20 @@ export type CodeRequest = {
      * Code
      */
     code: string;
+};
+
+/**
+ * ConsentRecordingView
+ */
+export type ConsentRecordingView = {
+    /**
+     * Durationms
+     */
+    durationMs: number;
+    /**
+     * Sizebytes
+     */
+    sizeBytes: number;
 };
 
 /**
@@ -2488,6 +2795,91 @@ export type FlagRule = {
     values: Array<string>;
 };
 
+export type Fps = number;
+
+/**
+ * GoldenCatalogView
+ */
+export type GoldenCatalogView = {
+    /**
+     * Items
+     */
+    items: Array<GoldenCompositionView>;
+};
+
+/**
+ * GoldenCompositionView
+ */
+export type GoldenCompositionView = {
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Language
+     */
+    language: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Sceneids
+     */
+    sceneIds: Array<string>;
+    /**
+     * Scenes
+     */
+    scenes: Array<GoldenSceneView>;
+    /**
+     * Title
+     */
+    title: string;
+};
+
+export type GoldenName = string;
+
+/**
+ * GoldenRenderRequest
+ */
+export type GoldenRenderRequest = {
+    /**
+     * Aspects
+     */
+    aspects?: Array<Aspect>;
+    /**
+     * Burninsubtitles
+     */
+    burnInSubtitles?: boolean;
+    fps?: Fps | null;
+    /**
+     * Musictrackid
+     */
+    musicTrackId?: string | null;
+    /**
+     * Subtitles
+     */
+    subtitles?: boolean;
+    /**
+     * Voiceid
+     */
+    voiceId: string;
+};
+
+/**
+ * GoldenSceneView
+ */
+export type GoldenSceneView = {
+    /**
+     * Sceneid
+     */
+    sceneId: string;
+    /**
+     * Text
+     */
+    text: string;
+};
+
 /**
  * HTTPValidationError
  */
@@ -2558,6 +2950,8 @@ export type HistoryPageResponse = {
 };
 
 export type HistoryTypeName = 'order' | 'payment' | 'refund';
+
+export type HttpsUrl = string;
 
 /**
  * IdentifierRequest
@@ -2639,6 +3033,8 @@ export type LedgerReasonName = 'purchase' | 'subscription_grant' | 'promo_grant'
 
 export type LedgerRefTypeName = 'payment' | 'refund' | 'reservation' | 'lot' | 'admin' | 'promo';
 
+export type LicenseName = string;
+
 /**
  * LivenessResponse
  */
@@ -2660,6 +3056,140 @@ export type LoginRequest = {
 };
 
 export type LotSourceName = 'purchase' | 'subscription' | 'admin' | 'promo';
+
+/**
+ * MediaDeliveryMode
+ */
+export type MediaDeliveryMode = 'cloudfront' | 'presigned';
+
+/**
+ * MediaSessionView
+ */
+export type MediaSessionView = {
+    /**
+     * Expiresat
+     */
+    expiresAt?: string | null;
+    mode: MediaDeliveryMode;
+};
+
+export type Mood = string;
+
+/**
+ * MusicAttributionView
+ */
+export type MusicAttributionView = {
+    /**
+     * Attributiontext
+     */
+    attributionText?: string | null;
+    /**
+     * Licensename
+     */
+    licenseName: string;
+    /**
+     * Licenseurl
+     */
+    licenseUrl: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Trackid
+     */
+    trackId: string;
+};
+
+/**
+ * MusicTrackPage
+ */
+export type MusicTrackPage = {
+    /**
+     * Items
+     */
+    items: Array<MusicTrackView>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * MusicTrackView
+ */
+export type MusicTrackView = {
+    /**
+     * Attributiontext
+     */
+    attributionText?: string | null;
+    /**
+     * Audioassetid
+     */
+    audioAssetId: string;
+    /**
+     * Bpm
+     */
+    bpm?: number | null;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Createdbyuserid
+     */
+    createdByUserId?: string | null;
+    /**
+     * Durationms
+     */
+    durationMs: number;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Isactive
+     */
+    isActive: boolean;
+    /**
+     * Licensename
+     */
+    licenseName: string;
+    /**
+     * Licenseurl
+     */
+    licenseUrl: string;
+    /**
+     * Mood
+     */
+    mood: string;
+    /**
+     * Previewurl
+     */
+    previewUrl?: string | null;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+};
+
+/**
+ * MusicUpdateRequest
+ */
+export type MusicUpdateRequest = {
+    attributionText?: AttributionText | null;
+    bpm?: Bpm | null;
+    licenseName?: LicenseName | null;
+    licenseUrl?: HttpsUrl | null;
+    mood?: Mood | null;
+    title?: Title | null;
+};
 
 /**
  * OAuthStartQuery
@@ -3005,6 +3535,223 @@ export type RegisterRequest = {
 };
 
 /**
+ * RenderBedView
+ */
+export type RenderBedView = {
+    /**
+     * Cancelrequestedat
+     */
+    cancelRequestedAt?: string | null;
+    /**
+     * Completedat
+     */
+    completedAt?: string | null;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Durationms
+     */
+    durationMs?: number | null;
+    /**
+     * Errorcode
+     */
+    errorCode?: string | null;
+    /**
+     * Errormessage
+     */
+    errorMessage?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Options
+     */
+    options: {
+        [key: string]: unknown;
+    };
+    /**
+     * Progress
+     */
+    progress: number;
+    /**
+     * Renditions
+     */
+    renditions: Array<RenditionView>;
+    source: RenderSource;
+    stage?: RenderStage | null;
+    /**
+     * Stagetimings
+     */
+    stageTimings: {
+        [key: string]: unknown;
+    };
+    /**
+     * Startedat
+     */
+    startedAt?: string | null;
+    status: RenderStatus;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Validationreport
+     */
+    validationReport?: {
+        [key: string]: unknown;
+    } | null;
+};
+
+/**
+ * RenderSource
+ */
+export type RenderSource = 'testbed' | 'job' | 'mcp';
+
+/**
+ * RenderStage
+ */
+export type RenderStage = 'preparing' | 'voicing' | 'mixing' | 'capturing' | 'encoding' | 'finalizing';
+
+/**
+ * RenderStatus
+ */
+export type RenderStatus = 'queued' | 'preparing' | 'voicing' | 'mixing' | 'capturing' | 'encoding' | 'finalizing' | 'completed' | 'failed' | 'cancelled';
+
+/**
+ * RenderView
+ */
+export type RenderView = {
+    /**
+     * Cancelrequestedat
+     */
+    cancelRequestedAt?: string | null;
+    /**
+     * Completedat
+     */
+    completedAt?: string | null;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Durationms
+     */
+    durationMs?: number | null;
+    /**
+     * Errorcode
+     */
+    errorCode?: string | null;
+    /**
+     * Errormessage
+     */
+    errorMessage?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Options
+     */
+    options: {
+        [key: string]: unknown;
+    };
+    /**
+     * Progress
+     */
+    progress: number;
+    source: RenderSource;
+    stage?: RenderStage | null;
+    /**
+     * Stagetimings
+     */
+    stageTimings: {
+        [key: string]: unknown;
+    };
+    /**
+     * Startedat
+     */
+    startedAt?: string | null;
+    status: RenderStatus;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Validationreport
+     */
+    validationReport?: {
+        [key: string]: unknown;
+    } | null;
+};
+
+/**
+ * RenditionListView
+ */
+export type RenditionListView = {
+    /**
+     * Items
+     */
+    items: Array<RenditionView>;
+};
+
+/**
+ * RenditionStatus
+ */
+export type RenditionStatus = 'pending' | 'rendering' | 'ready' | 'failed';
+
+/**
+ * RenditionView
+ */
+export type RenditionView = {
+    aspect: Aspect;
+    attribution?: MusicAttributionView | null;
+    /**
+     * Burnedinsubtitles
+     */
+    burnedInSubtitles: boolean;
+    /**
+     * Durationms
+     */
+    durationMs?: number | null;
+    /**
+     * Height
+     */
+    height: number;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Posterjpegurl
+     */
+    posterJpegUrl?: string | null;
+    /**
+     * Posterurl
+     */
+    posterUrl?: string | null;
+    status: RenditionStatus;
+    /**
+     * Subtitlessrturl
+     */
+    subtitlesSrtUrl?: string | null;
+    /**
+     * Subtitlesurl
+     */
+    subtitlesUrl?: string | null;
+    /**
+     * Url
+     */
+    url?: string | null;
+    /**
+     * Width
+     */
+    width: number;
+};
+
+/**
  * ReorderItem
  */
 export type ReorderItem = {
@@ -3317,6 +4064,8 @@ export type SettingUpdateRequest = {
 
 export type SettingValue = boolean | number | string | Array<string>;
 
+export type StatementVersion = string;
+
 /**
  * SubcategoryDetailResponse
  */
@@ -3450,6 +4199,8 @@ export type SubscriptionResponse = {
 };
 
 export type SubscriptionStatusName = 'created' | 'authenticated' | 'active' | 'pending' | 'halted' | 'paused' | 'cancelled' | 'completed' | 'expired';
+
+export type Title = string;
 
 /**
  * TopicDetailResponse
@@ -3823,7 +4574,7 @@ export type UserPreferencesUpdateRequest = {
     /**
      * Defaultvoiceid
      */
-    defaultVoiceId?: null;
+    defaultVoiceId?: string | null;
     /**
      * Depth
      */
@@ -4014,6 +4765,128 @@ export type VerifySubscriptionRequest = {
      * Razorpaysubscriptionid
      */
     razorpaySubscriptionId: string;
+};
+
+/**
+ * VoiceKind
+ */
+export type VoiceKind = 'builtin' | 'cloned';
+
+export type VoiceLanguage = string;
+
+export type VoiceName = string;
+
+/**
+ * VoicePage
+ */
+export type VoicePage = {
+    /**
+     * Items
+     */
+    items: Array<VoiceView>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * VoicePreviewView
+ */
+export type VoicePreviewView = {
+    /**
+     * Expiresat
+     */
+    expiresAt: string;
+    /**
+     * Url
+     */
+    url: string;
+};
+
+/**
+ * VoiceStatus
+ */
+export type VoiceStatus = 'pending' | 'ready' | 'failed' | 'disabled';
+
+/**
+ * VoiceSyncView
+ */
+export type VoiceSyncView = {
+    /**
+     * Added
+     */
+    added: number;
+    /**
+     * Unchanged
+     */
+    unchanged: number;
+};
+
+export type VoiceTag = string;
+
+/**
+ * VoiceUpdateRequest
+ */
+export type VoiceUpdateRequest = {
+    language?: VoiceLanguage | null;
+    name?: VoiceName | null;
+    /**
+     * Status
+     */
+    status?: 'ready' | 'disabled' | null;
+    /**
+     * Tags
+     */
+    tags?: Array<VoiceTag> | null;
+};
+
+/**
+ * VoiceView
+ */
+export type VoiceView = {
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Failurecode
+     */
+    failureCode?: string | null;
+    /**
+     * Haspreview
+     */
+    hasPreview: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    kind: VoiceKind;
+    /**
+     * Labels
+     */
+    labels: {
+        [key: string]: string;
+    };
+    /**
+     * Language
+     */
+    language: string;
+    /**
+     * Name
+     */
+    name: string;
+    status: VoiceStatus;
+    /**
+     * Tags
+     */
+    tags: Array<string>;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
 };
 
 /**
@@ -6974,6 +7847,736 @@ export type PlatformUpdateFlagResponses = {
 
 export type PlatformUpdateFlagResponse = PlatformUpdateFlagResponses[keyof PlatformUpdateFlagResponses];
 
+export type AdminMusicListMusicTracksData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Mood
+         */
+        mood?: Mood | null;
+        /**
+         * Active
+         */
+        active?: boolean | null;
+    };
+    url: '/v1/admin/music';
+};
+
+export type AdminMusicListMusicTracksErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminMusicListMusicTracksError = AdminMusicListMusicTracksErrors[keyof AdminMusicListMusicTracksErrors];
+
+export type AdminMusicListMusicTracksResponses = {
+    /**
+     * Successful Response
+     */
+    200: MusicTrackPage;
+};
+
+export type AdminMusicListMusicTracksResponse = AdminMusicListMusicTracksResponses[keyof AdminMusicListMusicTracksResponses];
+
+export type AdminMusicUploadMusicTrackData = {
+    body: BodyAdminMusicUploadMusicTrack;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/music';
+};
+
+export type AdminMusicUploadMusicTrackErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminMusicUploadMusicTrackError = AdminMusicUploadMusicTrackErrors[keyof AdminMusicUploadMusicTrackErrors];
+
+export type AdminMusicUploadMusicTrackResponses = {
+    /**
+     * Successful Response
+     */
+    201: MusicTrackView;
+};
+
+export type AdminMusicUploadMusicTrackResponse = AdminMusicUploadMusicTrackResponses[keyof AdminMusicUploadMusicTrackResponses];
+
+export type AdminMusicGetMusicTrackData = {
+    body?: never;
+    path: {
+        /**
+         * Track Id
+         */
+        track_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/music/{track_id}';
+};
+
+export type AdminMusicGetMusicTrackErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminMusicGetMusicTrackError = AdminMusicGetMusicTrackErrors[keyof AdminMusicGetMusicTrackErrors];
+
+export type AdminMusicGetMusicTrackResponses = {
+    /**
+     * Successful Response
+     */
+    200: MusicTrackView;
+};
+
+export type AdminMusicGetMusicTrackResponse = AdminMusicGetMusicTrackResponses[keyof AdminMusicGetMusicTrackResponses];
+
+export type AdminMusicUpdateMusicTrackData = {
+    body: MusicUpdateRequest;
+    path: {
+        /**
+         * Track Id
+         */
+        track_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/music/{track_id}';
+};
+
+export type AdminMusicUpdateMusicTrackErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminMusicUpdateMusicTrackError = AdminMusicUpdateMusicTrackErrors[keyof AdminMusicUpdateMusicTrackErrors];
+
+export type AdminMusicUpdateMusicTrackResponses = {
+    /**
+     * Successful Response
+     */
+    200: MusicTrackView;
+};
+
+export type AdminMusicUpdateMusicTrackResponse = AdminMusicUpdateMusicTrackResponses[keyof AdminMusicUpdateMusicTrackResponses];
+
+export type AdminMusicActivateMusicTrackData = {
+    body?: never;
+    path: {
+        /**
+         * Track Id
+         */
+        track_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/music/{track_id}/activate';
+};
+
+export type AdminMusicActivateMusicTrackErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminMusicActivateMusicTrackError = AdminMusicActivateMusicTrackErrors[keyof AdminMusicActivateMusicTrackErrors];
+
+export type AdminMusicActivateMusicTrackResponses = {
+    /**
+     * Successful Response
+     */
+    200: MusicTrackView;
+};
+
+export type AdminMusicActivateMusicTrackResponse = AdminMusicActivateMusicTrackResponses[keyof AdminMusicActivateMusicTrackResponses];
+
+export type AdminMusicDeactivateMusicTrackData = {
+    body?: never;
+    path: {
+        /**
+         * Track Id
+         */
+        track_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/music/{track_id}/deactivate';
+};
+
+export type AdminMusicDeactivateMusicTrackErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminMusicDeactivateMusicTrackError = AdminMusicDeactivateMusicTrackErrors[keyof AdminMusicDeactivateMusicTrackErrors];
+
+export type AdminMusicDeactivateMusicTrackResponses = {
+    /**
+     * Successful Response
+     */
+    200: MusicTrackView;
+};
+
+export type AdminMusicDeactivateMusicTrackResponse = AdminMusicDeactivateMusicTrackResponses[keyof AdminMusicDeactivateMusicTrackResponses];
+
+export type AdminRenderTestbedCreateTestbedRenderData = {
+    body: {
+        composition: Blob | File;
+        /**
+         * JSON of the render options
+         */
+        options: string;
+        [key: string]: Blob | File | string;
+    };
+    path?: never;
+    query?: never;
+    url: '/v1/admin/render/testbed';
+};
+
+export type AdminRenderTestbedCreateTestbedRenderErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminRenderTestbedCreateTestbedRenderError = AdminRenderTestbedCreateTestbedRenderErrors[keyof AdminRenderTestbedCreateTestbedRenderErrors];
+
+export type AdminRenderTestbedCreateTestbedRenderResponses = {
+    /**
+     * Successful Response
+     */
+    202: RenderView;
+};
+
+export type AdminRenderTestbedCreateTestbedRenderResponse = AdminRenderTestbedCreateTestbedRenderResponses[keyof AdminRenderTestbedCreateTestbedRenderResponses];
+
+export type AdminRenderTestbedListGoldenCompositionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/render/testbed/golden';
+};
+
+export type AdminRenderTestbedListGoldenCompositionsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminRenderTestbedListGoldenCompositionsError = AdminRenderTestbedListGoldenCompositionsErrors[keyof AdminRenderTestbedListGoldenCompositionsErrors];
+
+export type AdminRenderTestbedListGoldenCompositionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: GoldenCatalogView;
+};
+
+export type AdminRenderTestbedListGoldenCompositionsResponse = AdminRenderTestbedListGoldenCompositionsResponses[keyof AdminRenderTestbedListGoldenCompositionsResponses];
+
+export type AdminRenderTestbedCreateGoldenRenderData = {
+    body: GoldenRenderRequest;
+    path: {
+        name: GoldenName;
+    };
+    query?: never;
+    url: '/v1/admin/render/testbed/golden/{name}';
+};
+
+export type AdminRenderTestbedCreateGoldenRenderErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminRenderTestbedCreateGoldenRenderError = AdminRenderTestbedCreateGoldenRenderErrors[keyof AdminRenderTestbedCreateGoldenRenderErrors];
+
+export type AdminRenderTestbedCreateGoldenRenderResponses = {
+    /**
+     * Successful Response
+     */
+    202: RenderView;
+};
+
+export type AdminRenderTestbedCreateGoldenRenderResponse = AdminRenderTestbedCreateGoldenRenderResponses[keyof AdminRenderTestbedCreateGoldenRenderResponses];
+
+export type AdminRenderTestbedListTestbedMusicTracksData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/render/testbed/music-tracks';
+};
+
+export type AdminRenderTestbedListTestbedMusicTracksErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminRenderTestbedListTestbedMusicTracksError = AdminRenderTestbedListTestbedMusicTracksErrors[keyof AdminRenderTestbedListTestbedMusicTracksErrors];
+
+export type AdminRenderTestbedListTestbedMusicTracksResponses = {
+    /**
+     * Successful Response
+     */
+    200: BedMusicTrackList;
+};
+
+export type AdminRenderTestbedListTestbedMusicTracksResponse = AdminRenderTestbedListTestbedMusicTracksResponses[keyof AdminRenderTestbedListTestbedMusicTracksResponses];
+
+export type AdminRenderTestbedGetTestbedRenderData = {
+    body?: never;
+    path: {
+        /**
+         * Render Id
+         */
+        render_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/render/testbed/{render_id}';
+};
+
+export type AdminRenderTestbedGetTestbedRenderErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminRenderTestbedGetTestbedRenderError = AdminRenderTestbedGetTestbedRenderErrors[keyof AdminRenderTestbedGetTestbedRenderErrors];
+
+export type AdminRenderTestbedGetTestbedRenderResponses = {
+    /**
+     * Successful Response
+     */
+    200: RenderBedView;
+};
+
+export type AdminRenderTestbedGetTestbedRenderResponse = AdminRenderTestbedGetTestbedRenderResponses[keyof AdminRenderTestbedGetTestbedRenderResponses];
+
+export type AdminRenderTestbedCancelTestbedRenderData = {
+    body?: never;
+    path: {
+        /**
+         * Render Id
+         */
+        render_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/render/testbed/{render_id}/cancel';
+};
+
+export type AdminRenderTestbedCancelTestbedRenderErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminRenderTestbedCancelTestbedRenderError = AdminRenderTestbedCancelTestbedRenderErrors[keyof AdminRenderTestbedCancelTestbedRenderErrors];
+
+export type AdminRenderTestbedCancelTestbedRenderResponses = {
+    /**
+     * Successful Response
+     */
+    200: RenderView;
+};
+
+export type AdminRenderTestbedCancelTestbedRenderResponse = AdminRenderTestbedCancelTestbedRenderResponses[keyof AdminRenderTestbedCancelTestbedRenderResponses];
+
+export type AdminRenderTestbedStreamTestbedRenderData = {
+    body?: never;
+    path: {
+        /**
+         * Render Id
+         */
+        render_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/render/testbed/{render_id}/events';
+};
+
+export type AdminRenderTestbedStreamTestbedRenderErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminRenderTestbedStreamTestbedRenderError = AdminRenderTestbedStreamTestbedRenderErrors[keyof AdminRenderTestbedStreamTestbedRenderErrors];
+
+export type AdminRenderTestbedStreamTestbedRenderResponses = {
+    /**
+     * Server-sent events
+     */
+    200: string;
+};
+
+export type AdminRenderTestbedStreamTestbedRenderResponse = AdminRenderTestbedStreamTestbedRenderResponses[keyof AdminRenderTestbedStreamTestbedRenderResponses];
+
 export type AdminRolesListRolesData = {
     body?: never;
     path?: never;
@@ -7834,6 +9437,241 @@ export type AdminUsersUnsuspendUserResponses = {
 };
 
 export type AdminUsersUnsuspendUserResponse = AdminUsersUnsuspendUserResponses[keyof AdminUsersUnsuspendUserResponses];
+
+export type AdminVoicesListBuiltinVoicesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Language
+         */
+        language?: VoiceLanguage | null;
+        /**
+         * Status
+         */
+        status?: VoiceStatus | null;
+    };
+    url: '/v1/admin/voices';
+};
+
+export type AdminVoicesListBuiltinVoicesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminVoicesListBuiltinVoicesError = AdminVoicesListBuiltinVoicesErrors[keyof AdminVoicesListBuiltinVoicesErrors];
+
+export type AdminVoicesListBuiltinVoicesResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminVoicePage;
+};
+
+export type AdminVoicesListBuiltinVoicesResponse = AdminVoicesListBuiltinVoicesResponses[keyof AdminVoicesListBuiltinVoicesResponses];
+
+export type AdminVoicesSyncBuiltinVoicesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/voices/sync';
+};
+
+export type AdminVoicesSyncBuiltinVoicesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminVoicesSyncBuiltinVoicesError = AdminVoicesSyncBuiltinVoicesErrors[keyof AdminVoicesSyncBuiltinVoicesErrors];
+
+export type AdminVoicesSyncBuiltinVoicesResponses = {
+    /**
+     * Successful Response
+     */
+    200: VoiceSyncView;
+};
+
+export type AdminVoicesSyncBuiltinVoicesResponse = AdminVoicesSyncBuiltinVoicesResponses[keyof AdminVoicesSyncBuiltinVoicesResponses];
+
+export type AdminVoicesUpdateBuiltinVoiceData = {
+    body: VoiceUpdateRequest;
+    path: {
+        /**
+         * Voice Id
+         */
+        voice_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/voices/{voice_id}';
+};
+
+export type AdminVoicesUpdateBuiltinVoiceErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminVoicesUpdateBuiltinVoiceError = AdminVoicesUpdateBuiltinVoiceErrors[keyof AdminVoicesUpdateBuiltinVoiceErrors];
+
+export type AdminVoicesUpdateBuiltinVoiceResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminVoiceView;
+};
+
+export type AdminVoicesUpdateBuiltinVoiceResponse = AdminVoicesUpdateBuiltinVoiceResponses[keyof AdminVoicesUpdateBuiltinVoiceResponses];
+
+export type AdminVoicesRegenerateBuiltinVoicePreviewData = {
+    body?: never;
+    path: {
+        /**
+         * Voice Id
+         */
+        voice_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/voices/{voice_id}/preview';
+};
+
+export type AdminVoicesRegenerateBuiltinVoicePreviewErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminVoicesRegenerateBuiltinVoicePreviewError = AdminVoicesRegenerateBuiltinVoicePreviewErrors[keyof AdminVoicesRegenerateBuiltinVoicePreviewErrors];
+
+export type AdminVoicesRegenerateBuiltinVoicePreviewResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminVoiceView;
+};
+
+export type AdminVoicesRegenerateBuiltinVoicePreviewResponse = AdminVoicesRegenerateBuiltinVoicePreviewResponses[keyof AdminVoicesRegenerateBuiltinVoicePreviewResponses];
 
 export type AuthJwksData = {
     body?: never;
@@ -10110,6 +11948,143 @@ export type PlatformEvaluatedFlagsResponses = {
 
 export type PlatformEvaluatedFlagsResponse = PlatformEvaluatedFlagsResponses[keyof PlatformEvaluatedFlagsResponses];
 
+export type MediaGetSessionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/media/session';
+};
+
+export type MediaGetSessionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type MediaGetSessionError = MediaGetSessionErrors[keyof MediaGetSessionErrors];
+
+export type MediaGetSessionResponses = {
+    /**
+     * Successful Response
+     */
+    200: MediaSessionView;
+};
+
+export type MediaGetSessionResponse = MediaGetSessionResponses[keyof MediaGetSessionResponses];
+
+export type RendersGetRenderData = {
+    body?: never;
+    path: {
+        /**
+         * Render Id
+         */
+        render_id: string;
+    };
+    query?: never;
+    url: '/v1/renders/{render_id}';
+};
+
+export type RendersGetRenderErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type RendersGetRenderError = RendersGetRenderErrors[keyof RendersGetRenderErrors];
+
+export type RendersGetRenderResponses = {
+    /**
+     * Successful Response
+     */
+    200: RenderView;
+};
+
+export type RendersGetRenderResponse = RendersGetRenderResponses[keyof RendersGetRenderResponses];
+
+export type RendersListRenditionsData = {
+    body?: never;
+    path: {
+        /**
+         * Render Id
+         */
+        render_id: string;
+    };
+    query?: never;
+    url: '/v1/renders/{render_id}/renditions';
+};
+
+export type RendersListRenditionsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type RendersListRenditionsError = RendersListRenditionsErrors[keyof RendersListRenditionsErrors];
+
+export type RendersListRenditionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: RenditionListView;
+};
+
+export type RendersListRenditionsResponse = RendersListRenditionsResponses[keyof RendersListRenditionsResponses];
+
 export type PlatformPublicSettingsData = {
     body?: never;
     path?: never;
@@ -10909,6 +12884,557 @@ export type UsersUpdatePreferencesResponses = {
 };
 
 export type UsersUpdatePreferencesResponse = UsersUpdatePreferencesResponses[keyof UsersUpdatePreferencesResponses];
+
+export type VoicesListVoicesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Language
+         */
+        language?: VoiceLanguage | null;
+        /**
+         * Kind
+         */
+        kind?: VoiceKind | null;
+    };
+    url: '/v1/voices';
+};
+
+export type VoicesListVoicesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type VoicesListVoicesError = VoicesListVoicesErrors[keyof VoicesListVoicesErrors];
+
+export type VoicesListVoicesResponses = {
+    /**
+     * Successful Response
+     */
+    200: VoicePage;
+};
+
+export type VoicesListVoicesResponse = VoicesListVoicesResponses[keyof VoicesListVoicesResponses];
+
+export type VoicesStartVoiceCloneData = {
+    body: CloneStartRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/voices/clones';
+};
+
+export type VoicesStartVoiceCloneErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type VoicesStartVoiceCloneError = VoicesStartVoiceCloneErrors[keyof VoicesStartVoiceCloneErrors];
+
+export type VoicesStartVoiceCloneResponses = {
+    /**
+     * Successful Response
+     */
+    201: CloneStartView;
+};
+
+export type VoicesStartVoiceCloneResponse = VoicesStartVoiceCloneResponses[keyof VoicesStartVoiceCloneResponses];
+
+export type VoicesGetVoiceCloneAttemptData = {
+    body?: never;
+    path: {
+        /**
+         * Attempt Id
+         */
+        attempt_id: string;
+    };
+    query?: never;
+    url: '/v1/voices/clones/{attempt_id}';
+};
+
+export type VoicesGetVoiceCloneAttemptErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type VoicesGetVoiceCloneAttemptError = VoicesGetVoiceCloneAttemptErrors[keyof VoicesGetVoiceCloneAttemptErrors];
+
+export type VoicesGetVoiceCloneAttemptResponses = {
+    /**
+     * Successful Response
+     */
+    200: CloneAttemptView;
+};
+
+export type VoicesGetVoiceCloneAttemptResponse = VoicesGetVoiceCloneAttemptResponses[keyof VoicesGetVoiceCloneAttemptResponses];
+
+export type VoicesReplaceConsentRecordingData = {
+    body: BodyVoicesReplaceConsentRecording;
+    path: {
+        /**
+         * Attempt Id
+         */
+        attempt_id: string;
+    };
+    query?: never;
+    url: '/v1/voices/clones/{attempt_id}/consent-recording';
+};
+
+export type VoicesReplaceConsentRecordingErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type VoicesReplaceConsentRecordingError = VoicesReplaceConsentRecordingErrors[keyof VoicesReplaceConsentRecordingErrors];
+
+export type VoicesReplaceConsentRecordingResponses = {
+    /**
+     * Successful Response
+     */
+    200: CloneAttemptView;
+};
+
+export type VoicesReplaceConsentRecordingResponse = VoicesReplaceConsentRecordingResponses[keyof VoicesReplaceConsentRecordingResponses];
+
+export type VoicesAddCloneSampleData = {
+    body: BodyVoicesAddCloneSample;
+    path: {
+        /**
+         * Attempt Id
+         */
+        attempt_id: string;
+    };
+    query?: never;
+    url: '/v1/voices/clones/{attempt_id}/samples';
+};
+
+export type VoicesAddCloneSampleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Content Too Large
+     */
+    413: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type VoicesAddCloneSampleError = VoicesAddCloneSampleErrors[keyof VoicesAddCloneSampleErrors];
+
+export type VoicesAddCloneSampleResponses = {
+    /**
+     * Successful Response
+     */
+    201: CloneAttemptView;
+};
+
+export type VoicesAddCloneSampleResponse = VoicesAddCloneSampleResponses[keyof VoicesAddCloneSampleResponses];
+
+export type VoicesRemoveCloneSampleData = {
+    body?: never;
+    path: {
+        /**
+         * Attempt Id
+         */
+        attempt_id: string;
+        /**
+         * Sample Id
+         */
+        sample_id: string;
+    };
+    query?: never;
+    url: '/v1/voices/clones/{attempt_id}/samples/{sample_id}';
+};
+
+export type VoicesRemoveCloneSampleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type VoicesRemoveCloneSampleError = VoicesRemoveCloneSampleErrors[keyof VoicesRemoveCloneSampleErrors];
+
+export type VoicesRemoveCloneSampleResponses = {
+    /**
+     * Successful Response
+     */
+    200: CloneAttemptView;
+};
+
+export type VoicesRemoveCloneSampleResponse = VoicesRemoveCloneSampleResponses[keyof VoicesRemoveCloneSampleResponses];
+
+export type VoicesSubmitVoiceCloneData = {
+    body: CloneSubmitRequest;
+    path: {
+        /**
+         * Attempt Id
+         */
+        attempt_id: string;
+    };
+    query?: never;
+    url: '/v1/voices/clones/{attempt_id}/submit';
+};
+
+export type VoicesSubmitVoiceCloneErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Payment Required
+     */
+    402: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type VoicesSubmitVoiceCloneError = VoicesSubmitVoiceCloneErrors[keyof VoicesSubmitVoiceCloneErrors];
+
+export type VoicesSubmitVoiceCloneResponses = {
+    /**
+     * Successful Response
+     */
+    202: VoiceView;
+};
+
+export type VoicesSubmitVoiceCloneResponse = VoicesSubmitVoiceCloneResponses[keyof VoicesSubmitVoiceCloneResponses];
+
+export type VoicesDeleteVoiceData = {
+    body?: never;
+    path: {
+        /**
+         * Voice Id
+         */
+        voice_id: string;
+    };
+    query?: never;
+    url: '/v1/voices/{voice_id}';
+};
+
+export type VoicesDeleteVoiceErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type VoicesDeleteVoiceError = VoicesDeleteVoiceErrors[keyof VoicesDeleteVoiceErrors];
+
+export type VoicesDeleteVoiceResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type VoicesDeleteVoiceResponse = VoicesDeleteVoiceResponses[keyof VoicesDeleteVoiceResponses];
+
+export type VoicesGetVoiceData = {
+    body?: never;
+    path: {
+        /**
+         * Voice Id
+         */
+        voice_id: string;
+    };
+    query?: never;
+    url: '/v1/voices/{voice_id}';
+};
+
+export type VoicesGetVoiceErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type VoicesGetVoiceError = VoicesGetVoiceErrors[keyof VoicesGetVoiceErrors];
+
+export type VoicesGetVoiceResponses = {
+    /**
+     * Successful Response
+     */
+    200: VoiceView;
+};
+
+export type VoicesGetVoiceResponse = VoicesGetVoiceResponses[keyof VoicesGetVoiceResponses];
+
+export type VoicesGetVoicePreviewData = {
+    body?: never;
+    path: {
+        /**
+         * Voice Id
+         */
+        voice_id: string;
+    };
+    query?: never;
+    url: '/v1/voices/{voice_id}/preview';
+};
+
+export type VoicesGetVoicePreviewErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type VoicesGetVoicePreviewError = VoicesGetVoicePreviewErrors[keyof VoicesGetVoicePreviewErrors];
+
+export type VoicesGetVoicePreviewResponses = {
+    /**
+     * Successful Response
+     */
+    200: VoicePreviewView;
+};
+
+export type VoicesGetVoicePreviewResponse = VoicesGetVoicePreviewResponses[keyof VoicesGetVoicePreviewResponses];
 
 export type WebhooksReceiveRazorpayWebhookData = {
     body?: never;

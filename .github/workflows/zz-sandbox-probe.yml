@@ -54,12 +54,5 @@ jobs:
             docker run "${base[@]}" "$@" --entrypoint python motionile-worker:probe /probe.py 2>&1 | grep -E "RESULT|zygote|FATAL|Error" | head -4 || true
           }
           seccomp="--security-opt seccomp=$PWD/deploy/seccomp/playwright.json"
-          run_variant "full hardening" --cap-drop ALL --security-opt no-new-privileges:true $seccomp --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
-          run_variant "without cap_drop" --security-opt no-new-privileges:true $seccomp --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
-          run_variant "without read_only" --cap-drop ALL --security-opt no-new-privileges:true $seccomp --tmpfs /tmp:size=512m --tmpfs /work:size=1g
-          run_variant "without no-new-privileges" --cap-drop ALL $seccomp --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
-          run_variant "default seccomp" --cap-drop ALL --security-opt no-new-privileges:true --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
-          run_variant "tmpfs with exec" --cap-drop ALL --security-opt no-new-privileges:true $seccomp --read-only --tmpfs /tmp:size=512m,exec --tmpfs /work:size=1g
-          run_variant "seccomp unconfined" --cap-drop ALL --security-opt no-new-privileges:true --security-opt seccomp=unconfined --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
-          run_variant "unconfined apparmor" --cap-drop ALL --security-opt no-new-privileges:true $seccomp --security-opt apparmor=unconfined --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
-          run_variant "bare" --security-opt seccomp=$PWD/deploy/seccomp/playwright.json
+          run_variant "drop all and add sys_chroot" --cap-drop ALL --cap-add SYS_CHROOT --security-opt no-new-privileges:true $seccomp --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
+          run_variant "drop all and add sys_chroot and sys_admin" --cap-drop ALL --cap-add SYS_CHROOT --cap-add SYS_ADMIN --security-opt no-new-privileges:true $seccomp --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g

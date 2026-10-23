@@ -14,7 +14,7 @@ Security comes from the sandbox. Static checks are an extra layer.
 **Process**
 
 - Playwright Chromium launched with its own sandbox enabled; `--no-sandbox` is never used.
-- The worker container runs as a non-root user with Playwright's recommended seccomp profile and no added capabilities. Chromium gets `shm_size` for its renderer.
+- The worker container runs as a non-root user with Playwright's recommended seccomp profile, all capabilities dropped except `SYS_CHROOT` (the seccomp profile allows the `chroot` call of Chromium's user-namespace sandbox only when the container holds it) and `no-new-privileges`. Chromium gets `shm_size` for its renderer.
 - A fresh browser context for every render, with no permissions, downloads, service workers, WebRTC, geolocation or notifications.
 - Chromium starts with an explicit minimal environment (`PATH`, `HOME`, `LANG`, `TZ` and the Windows system variables) supplied through `RenderEngineConfig.browser_environment`; the worker's secrets are never inherited. A sandbox that cannot stop its browser within the shutdown timeout kills the processes that carry its own process marker and their descendants.
 - Service workers are off through the opaque origin, `worker-src 'none'` and the init-script stub. Playwright's `service_workers="block"` is deliberately not used: it makes Playwright's injected script throw under the CSP `sandbox` header.

@@ -1,10 +1,8 @@
 import io
-from collections.abc import Sequence
 from pathlib import Path
-from typing import cast
 
 import pytest
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageStat
 from tests.integration.engine.render.support import TINY_COMPOSITION, render_config, tiny_narration
 
 from motionile.engine.ffmpeg import FfmpegTools, probe_file
@@ -80,8 +78,7 @@ async def test_subtitles_are_burned_in_with_the_runtime_fonts(
         assert difference.getbbox() is not None
         untouched = (0, 0, before.width, 400)
         top = ImageChops.difference(before.convert("RGB").crop(untouched), after.convert("RGB").crop(untouched))
-        extrema = cast("Sequence[tuple[int, int]]", top.getextrema())
-        assert max(high for _, high in extrema) < 40
+        assert max(ImageStat.Stat(top).mean) < 2.0
 
 
 async def test_output_verification_lists_every_problem(

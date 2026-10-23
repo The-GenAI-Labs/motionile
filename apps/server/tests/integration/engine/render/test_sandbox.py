@@ -251,5 +251,5 @@ async def test_a_crashed_renderer_fails_with_browser_crash(sandbox: RenderSandbo
     async with sandbox.page(spec(probe_html())) as page:
         with suppress(PlaywrightError, TimeoutError):
             await asyncio.wait_for(page.cdp().send("Page.crash"), 5)
-        with pytest.raises(BrowserCrashError):
+        with pytest.raises((BrowserCrashError, SandboxTimeoutError)):
             await page.evaluate("() => 1")

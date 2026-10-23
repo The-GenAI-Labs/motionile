@@ -4,8 +4,6 @@ import { zRunStatusName, zRunTypeName } from "@motionile/api-contract";
 import Link from "next/link";
 
 import { createDataTableColumnHelper } from "@/components/shared/data-table";
-import { PagedTable } from "@/components/shared/paged-table";
-import { Badge } from "@/components/ui/badge";
 import {
   BOOLEAN_OPTIONS,
   booleanFromValue,
@@ -13,7 +11,9 @@ import {
   optionsFromValues,
   SelectFilter,
   valueFromBoolean,
-} from "@/features/admin-billing/components/filter-fields";
+} from "@/components/shared/filter-fields";
+import { PagedTable } from "@/components/shared/paged-table";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/features/admin-billing/components/status-badge";
 import { adminBillingErrorMessage } from "@/features/admin-billing/errors";
 import {

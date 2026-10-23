@@ -14,6 +14,7 @@ Videos are private. CloudFront serves them from the bucket with signed cookies s
 - `GET /v1/media/session` refreshes the cookies or reports the mode. The player refreshes cloudfront cookies about 60 seconds before expiry through `use-media-session`, shared by every player on the page and coordinated across tabs with a Web Lock; in presigned mode the rendition list is re-fetched before the earliest presigned URL expires, read from its `X-Amz-Date` and `X-Amz-Expires` parameters.
 - Only `media/` is reachable through the CDN. Voice samples, consent recordings, `work/`, `tts/` and `music/` have no CDN behavior.
 - The CSP gains `media-src` and `img-src` entries for the CDN origin (`NEXT_PUBLIC_CDN_URL`) and for the storage origin (`NEXT_PUBLIC_MEDIA_ORIGIN`, an https origin or a local http origin). Presigned renditions and posters need the storage origin in presigned mode, and the admin music preview (`music/` has no CDN behavior) needs it in every mode. Text tracks and posters are governed by `media-src` and `img-src`, so `connect-src` stays unchanged. The `Permissions-Policy` default is `microphone=()`; a route-specific header for `/settings/voices` and its nested paths sets `microphone=(self)`, and a unit test fails when the microphone is allowed anywhere else or a wildcard appears.
+- `media-src` also lists `blob:` so the cloning wizard can play back a recording from an object URL before it is uploaded. `blob:` is not added to any other directive, and a unit test fails if it appears outside `media-src`.
 
 ## Consequences
 

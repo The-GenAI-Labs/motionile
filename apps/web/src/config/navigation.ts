@@ -1,4 +1,6 @@
 import {
+  AudioLines,
+  Clapperboard,
   CreditCard,
   FolderTree,
   Gauge,
@@ -6,6 +8,7 @@ import {
   LayoutDashboard,
   Library,
   type LucideIcon,
+  Music,
   PlusCircle,
   Receipt,
   Settings,
@@ -43,6 +46,11 @@ export interface AppNavigationArea {
 }
 
 export interface BillingLink {
+  title: string;
+  href: AppPath;
+}
+
+export interface SettingsLink {
   title: string;
   href: AppPath;
 }
@@ -120,6 +128,12 @@ export const userNavigation = {
   ],
 } as const satisfies AppNavigationArea;
 
+export const settingsNavigation = [
+  { title: "Profile", href: "/settings/profile" },
+  { title: "Voices", href: "/settings/voices" },
+  { title: "Security", href: "/settings/security" },
+] as const satisfies readonly SettingsLink[];
+
 export const billingNavigation = [
   { title: "Overview", href: "/billing" },
   { title: "Plans", href: "/billing/plans" },
@@ -148,6 +162,14 @@ export const adminNavigation = {
     { title: "Billing", href: "/admin/billing", icon: Receipt, permission: "billing.read" },
     { title: "Audit logs", href: "/admin/audit-logs", icon: History, permission: "audit.read" },
     { title: "Catalog", href: "/admin/catalog", icon: FolderTree, permission: "catalog.manage" },
+    { title: "Music", href: "/admin/music", icon: Music, permission: "music.manage" },
+    {
+      title: "Render test bed",
+      href: "/admin/render",
+      icon: Clapperboard,
+      permission: "render.testbed",
+    },
+    { title: "Voices", href: "/admin/voices", icon: AudioLines, permission: "voices.manage" },
     { title: "Feature flags", href: "/admin/flags", icon: Sparkles, permission: "flags.manage" },
     {
       title: "Settings",

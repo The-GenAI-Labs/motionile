@@ -1,3 +1,4 @@
+import re
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
 
@@ -23,6 +24,9 @@ URL_FUNCTIONS = frozenset({"url", "src"})
 IMAGE_FUNCTIONS = frozenset({"image-set", "-webkit-image-set", "image", "cross-fade", "-webkit-cross-fade"})
 DYNAMIC_FUNCTIONS = frozenset({"var", "attr", "env"})
 DYNAMIC_MARKER = "\x00dynamic"
+URL_LIKE_STRING = re.compile(
+    r"^\s*(?:data\s*:|(?:https?|ftp|file|javascript|wss?|blob|about|chrome|view-source)\s*:|//)", re.IGNORECASE
+)
 BAD_MARKER = "\x00bad"
 
 
@@ -51,14 +55,24 @@ def nested_tokens(token: Node) -> Sequence[Node]:
     return ()
 
 
+def contains_dynamic(tokens: Iterable[Node]) -> bool:
+    return any(
+        (isinstance(token, FunctionBlock) and token.lower_name in DYNAMIC_FUNCTIONS)
+        or contains_dynamic(nested_tokens(token))
+        for token in tokens
+    )
+
+
 def function_urls(block: FunctionBlock) -> Iterator[str]:
     name = block.lower_name
     if name in URL_FUNCTIONS:
-        if any(isinstance(item, FunctionBlock) and item.lower_name in DYNAMIC_FUNCTIONS for item in block.arguments):
+        if contains_dynamic(block.arguments):
             yield DYNAMIC_MARKER
         yield from (item.value for item in block.arguments if isinstance(item, StringToken))
         return
     if name in IMAGE_FUNCTIONS:
+        if contains_dynamic(block.arguments):
+            yield DYNAMIC_MARKER
         for item in block.arguments:
             if isinstance(item, StringToken):
                 yield item.value
@@ -124,8 +138,26 @@ def clean_block(content: Sequence[Node], scan: CssScan) -> str:
     return ";".join(parts)
 
 
+def iter_strings(tokens: Iterable[Node]) -> Iterator[str]:
+    for token in tokens:
+        if isinstance(token, StringToken):
+            yield token.value
+        else:
+            yield from iter_strings(nested_tokens(token))
+
+
+def judge_custom_property(declaration: Declaration, scan: CssScan) -> None:
+    for value in iter_strings(declaration.value):
+        if URL_LIKE_STRING.match(value):
+            judge_url(value, scan)
+
+
 def clean_declaration(declaration: Declaration, scan: CssScan) -> str:
-    if not judge_tokens(declaration.value, scan):
+    before = len(scan.problems)
+    judge_tokens(declaration.value, scan)
+    if declaration.name.startswith("--"):
+        judge_custom_property(declaration, scan)
+    if len(scan.problems) > before:
         return ""
     return declaration.serialize()
 

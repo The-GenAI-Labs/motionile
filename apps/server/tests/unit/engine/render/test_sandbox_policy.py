@@ -3,6 +3,7 @@ from typing import Any, cast
 
 import pytest
 from playwright.async_api import BrowserContext, Route
+from tests.fakes.settings import make_settings
 
 from motionile.engine.render.models import (
     Aspect,
@@ -19,6 +20,7 @@ from motionile.engine.render.sandbox import (
     PageSpec,
     RenderSandbox,
     SandboxPage,
+    browser_launch_environment,
     chromium_launch_args,
     init_script_source,
     load_browser_expression,
@@ -26,6 +28,7 @@ from motionile.engine.render.sandbox import (
     summarize_playwright_message,
 )
 from motionile.engine.render.synthetic import SyntheticScene, build_synthetic_narration
+from motionile.modules.media.browser_environment import browser_environment
 
 NARRATION = build_synthetic_narration([SyntheticScene("main", "hello world")])
 SPEC = PageSpec(html="<html>composition</html>", narration=NARRATION, aspect=Aspect.LANDSCAPE, seed=42)
@@ -253,3 +256,88 @@ def test_playwright_messages_are_summarized(message: str, expected: str) -> None
 def test_browser_scripts_are_loaded_as_function_expressions() -> None:
     for name in ("sandbox_init.js", "layout_probe.js"):
         assert not load_browser_expression(name).endswith(";")
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://runtime.motionile.local.evil.example/",
+        "https://runtime.motionile.local.evil.example/v1/base.css",
+        "https://runtime.motionile.local:8443/v1/base.css",
+        "https://runtime.motionile.local@evil.example/",
+        "http://runtime.motionile.local/v1/base.css",
+        "https://xruntime.motionile.local/",
+    ],
+)
+async def test_a_preflight_to_a_lookalike_origin_is_a_violation(url: str) -> None:
+    page = make_page()
+
+    route = await route_through(page, url, "OPTIONS")
+
+    assert route.fulfilled == []
+    assert route.aborted == ["blockedbyclient"]
+    assert len(page.violations) == 1
+
+
+def test_the_browser_environment_is_exactly_the_explicit_allow_list_plus_fixed_locale() -> None:
+    config = RenderEngineConfig(parallel_pages=1, browser_environment={"PATH": "/usr/bin", "HOME": "/work"})
+
+    assert browser_launch_environment(config) == {
+        "PATH": "/usr/bin",
+        "HOME": "/work",
+        "LANG": "C.UTF-8",
+        "TZ": "UTC",
+    }
+    assert browser_launch_environment(RenderEngineConfig(parallel_pages=1)) == {"LANG": "C.UTF-8", "TZ": "UTC"}
+
+
+@dataclass
+class LaunchRecorder:
+    launched: list[dict[str, Any]] = field(default_factory=list[dict[str, Any]])
+
+    async def launch(self, **kwargs: Any) -> object:
+        self.launched.append(kwargs)
+        return object()
+
+
+class FakePlaywright:
+    def __init__(self, recorder: LaunchRecorder) -> None:
+        self.chromium = recorder
+
+    async def stop(self) -> None:
+        return None
+
+
+class FakePlaywrightStarter:
+    def __init__(self, recorder: LaunchRecorder) -> None:
+        self._recorder = recorder
+
+    async def start(self) -> FakePlaywright:
+        return FakePlaywright(self._recorder)
+
+
+async def test_no_secret_looking_variable_reaches_the_browser_launch(monkeypatch: pytest.MonkeyPatch) -> None:
+    secrets = {
+        "WORKER_SIGNING_SECRET": "k",
+        "DATABASE_PASSWORD": "p",
+        "ELEVENLABS_API_KEY": "key",
+        "OPENAI_API_KEY": "sk-test",
+        "AWS_SECRET_ACCESS_KEY": "aws",
+        "RAZORPAY_KEY_SECRET": "rzp",
+    }
+    for name, value in secrets.items():
+        monkeypatch.setenv(name, value)
+    recorder = LaunchRecorder()
+    monkeypatch.setattr("motionile.engine.render.sandbox.async_playwright", lambda: FakePlaywrightStarter(recorder))
+    settings = make_settings()
+    config = RenderEngineConfig(parallel_pages=1, browser_environment=browser_environment(settings))
+
+    await RenderSandbox(config).start()
+
+    environment = recorder.launched[0]["env"]
+    assert not set(environment) & set(secrets)
+    assert not any(value in secrets.values() for value in environment.values())
+    assert set(environment) <= {"PATH", "HOME", "SYSTEMROOT", "TEMP", "TMP", "TMPDIR", "LANG", "TZ"}
+    assert environment["TZ"] == "UTC"
+    assert recorder.launched[0]["chromium_sandbox"] is True
+    assert not any("no-sandbox" in argument for argument in recorder.launched[0]["args"])

@@ -1,6 +1,6 @@
 import os
 import tempfile
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
@@ -127,6 +127,7 @@ class RenderEngineConfig:
     min_free_disk_mb: int = 2048
     encoder_threads: int = 4
     work_directory: Path | None = None
+    browser_environment: Mapping[str, str] = field(default_factory=dict[str, str])
     tools: FfmpegTools = field(default_factory=FfmpegTools)
 
     def __post_init__(self) -> None:

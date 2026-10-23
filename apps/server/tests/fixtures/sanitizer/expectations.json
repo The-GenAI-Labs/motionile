@@ -320,5 +320,29 @@
   "composition_multiple__two_calls.html": {
     "code": "composition_multiple",
     "absent": []
+  },
+  "forbidden_url__style_image_set_var.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "image-set"
+    ]
+  },
+  "forbidden_url__style_cross_fade_env.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "cross-fade"
+    ]
+  },
+  "forbidden_url__style_nested_image_set_attr.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "image-set"
+    ]
+  },
+  "forbidden_url__style_custom_property_string.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
   }
 }

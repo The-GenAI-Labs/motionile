@@ -312,3 +312,48 @@ def test_script_screen_ignores_strings_and_comments() -> None:
 
     assert screen_script(source) == []
     assert count_composition_calls("Motionile . composition ( {} )") == 1
+
+
+PIXEL = base64.b64encode(b"\x89PNG\r\n\x1a\n" + bytes(32)).decode()
+
+
+def with_style(declaration: str) -> str:
+    return shell().replace("</head>", f"<style>{declaration}</style></head>")
+
+
+@pytest.mark.parametrize(
+    "declaration",
+    [
+        ".x { background: image-set(var(--img) 1x); }",
+        ".x { background: -webkit-image-set(var(--img) 1x); }",
+        ".x { background: image-set(calc(var(--a)) 1x); }",
+        ".x { background-image: cross-fade(attr(data-src) 50%, none); }",
+        ".x { background-image: cross-fade(none, env(x) 50%); }",
+        ".x { background-image: src(var(--img)); }",
+        ".x { background-image: image(var(--img)); }",
+        ":root { --img: 'https://evil.test/a.png'; }",
+        ":root { --img: '//evil.test/a.png'; }",
+        ":root { --img: 'javascript:alert(1)'; }",
+        ":root { --img: image-set('https://evil.test/a.png' 1x); }",
+        ":root { --img: url(https://evil.test/a.png); }",
+    ],
+)
+def test_dynamic_image_functions_and_url_like_custom_properties_are_rejected(declaration: str) -> None:
+    assert "forbidden_url" in error_codes(with_style(declaration))
+
+
+@pytest.mark.parametrize(
+    "declaration",
+    [
+        ":root { --label: 'Note: this is fine'; --font: 'Inter'; --size: 12px; }",
+        ":root { --accent: #ff0; } .x { color: var(--accent); background: linear-gradient(var(--accent), #000); }",
+        ".x { content: attr(data-label); width: calc(env(safe-area-inset-top) + 1px); }",
+        f":root {{ --pixel: 'data:image/png;base64,{PIXEL}'; }}",
+    ],
+)
+def test_ordinary_custom_properties_and_dynamic_values_outside_image_functions_pass(declaration: str) -> None:
+    assert error_codes(with_style(declaration)) == set()
+
+
+def test_a_non_image_data_uri_in_a_custom_property_is_an_invalid_data_uri() -> None:
+    assert "invalid_data_uri" in error_codes(with_style(":root { --x: 'DATA:text/html;base64,AAAA'; }"))

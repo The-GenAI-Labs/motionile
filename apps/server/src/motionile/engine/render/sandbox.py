@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from importlib import resources
 from types import TracebackType
 from typing import Any, Protocol, Self, cast
-from urllib.parse import urldefrag
+from urllib.parse import urldefrag, urlsplit
 
 from playwright.async_api import (
     Browser,
@@ -37,6 +37,7 @@ from motionile.engine.render.models import (
     SandboxError,
     SandboxTimeoutError,
 )
+from motionile.engine.render.reaper import PROCESS_MARKER_FLAG, ProcessReaper, SystemProcessReaper
 from motionile.engine.render.runtime import (
     COMPOSITION_URL,
     RUNTIME_ORIGIN,
@@ -53,7 +54,6 @@ TEARDOWN_TIMEOUT_SECONDS = 5.0
 MAX_REPORTED_ERRORS = 20
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 BLACK_HOLE_PROXY = "http://127.0.0.1:1"
-PROCESS_MARKER_FLAG = "--motionile-render-id"
 DOCUMENT_CONTENT_TYPE = "text/html; charset=utf-8"
 
 CONTENT_SECURITY_POLICY = "; ".join(
@@ -146,6 +146,15 @@ def chromium_launch_args(config: RenderEngineConfig, marker: str) -> list[str]:
     ]
 
 
+def browser_launch_environment(config: RenderEngineConfig) -> dict[str, str | float | bool]:
+    return {**config.browser_environment, "LANG": "C.UTF-8", "TZ": "UTC"}
+
+
+def is_runtime_origin(url: str) -> bool:
+    parts = urlsplit(url)
+    return f"{parts.scheme}://{parts.netloc}" == RUNTIME_ORIGIN
+
+
 def load_browser_script(name: str) -> str:
     return resources.files("motionile.engine.render").joinpath("browser", name).read_text(encoding="utf-8")
 
@@ -230,9 +239,12 @@ def unique_limited(values: Iterable[str]) -> list[str]:
     return list(seen)
 
 
-async def close_quietly(awaitable: Awaitable[object], limit_seconds: float) -> None:
-    with contextlib.suppress(Exception, asyncio.CancelledError):
+async def close_quietly(awaitable: Awaitable[object], limit_seconds: float) -> bool:
+    try:
         await asyncio.wait_for(awaitable, limit_seconds)
+    except (Exception, asyncio.CancelledError):
+        return False
+    return True
 
 
 class SandboxPage:
@@ -257,7 +269,7 @@ class SandboxPage:
         self._dead = False
         self._loads = 0
         self._clock_ms = 0
-        self._tasks: set[asyncio.Task[None]] = set()
+        self._tasks: set[asyncio.Task[bool]] = set()
         self.composition: CompositionInfo | None = None
 
     @property
@@ -309,7 +321,7 @@ class SandboxPage:
                 body = b"" if request.method == "HEAD" else asset.body
                 await route.fulfill(status=200, headers=asset.headers, body=body)
                 return
-            if url.startswith(RUNTIME_ORIGIN) and request.method == "OPTIONS":
+            if is_runtime_origin(url) and request.method == "OPTIONS":
                 await route.fulfill(status=204, headers=dict(CORS_PREFLIGHT_HEADERS))
                 return
             if url == f"{RUNTIME_ORIGIN}/favicon.ico":
@@ -597,8 +609,10 @@ class RenderSandbox:
         *,
         runtime: RuntimeBundle | None = None,
         process_marker: str | None = None,
+        reaper: ProcessReaper | None = None,
     ) -> None:
         self.config = config
+        self.reaper = reaper or SystemProcessReaper()
         self.runtime = runtime or load_runtime_bundle()
         self.process_marker = process_marker or uuid.uuid4().hex
         self._playwright: Playwright | None = None
@@ -612,6 +626,7 @@ class RenderSandbox:
                 headless=True,
                 chromium_sandbox=True,
                 args=chromium_launch_args(self.config, self.process_marker),
+                env=browser_launch_environment(self.config),
                 timeout=LAUNCH_TIMEOUT_MS,
                 handle_sigint=False,
                 handle_sigterm=False,
@@ -626,10 +641,14 @@ class RenderSandbox:
         browser, playwright = self._browser, self._playwright
         self._browser = None
         self._playwright = None
+        closed = True
         if browser is not None:
-            await close_quietly(browser.close(), self.config.shutdown_timeout_seconds)
+            closed = await close_quietly(browser.close(), self.config.shutdown_timeout_seconds)
         if playwright is not None:
-            await close_quietly(playwright.stop(), self.config.shutdown_timeout_seconds)
+            stopped = await close_quietly(playwright.stop(), self.config.shutdown_timeout_seconds)
+            closed = closed and stopped
+        if not closed:
+            await close_quietly(self.reaper.reap(self.process_marker), self.config.shutdown_timeout_seconds)
 
     async def __aenter__(self) -> Self:
         return await self.start()

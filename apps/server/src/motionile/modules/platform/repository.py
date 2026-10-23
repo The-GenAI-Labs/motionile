@@ -1,7 +1,10 @@
 from sqlalchemy import delete, select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.modules.platform.models import FeatureFlag, SystemSetting
+
+DEFAULT_SETTING_VERSION = 1
 
 
 class PlatformRepository:
@@ -21,7 +24,16 @@ class PlatformRepository:
             .values(value=value, version=SystemSetting.version + 1, updated_by=updated_by)
             .returning(SystemSetting)
         )
-        return result.scalar_one_or_none()
+        row = result.scalar_one_or_none()
+        if row is not None or version != DEFAULT_SETTING_VERSION:
+            return row
+        created = await self.session.execute(
+            insert(SystemSetting)
+            .values(key=key, value=value, version=DEFAULT_SETTING_VERSION + 1, updated_by=updated_by)
+            .on_conflict_do_nothing(index_elements=[SystemSetting.key])
+            .returning(SystemSetting)
+        )
+        return created.scalar_one_or_none()
 
     async def flags(self) -> list[FeatureFlag]:
         return list(await self.session.scalars(select(FeatureFlag).order_by(FeatureFlag.key)))

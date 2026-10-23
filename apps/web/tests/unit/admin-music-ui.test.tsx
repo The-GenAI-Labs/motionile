@@ -221,11 +221,21 @@ describe("activate and deactivate", () => {
   });
 });
 
+const enterText = async (
+  user: ReturnType<typeof userEvent.setup>,
+  field: HTMLElement,
+  text: string,
+) => {
+  await user.click(field);
+  await user.paste(text);
+};
+
 const fillUpload = async (user: ReturnType<typeof userEvent.setup>, dialog: HTMLElement) => {
-  await user.type(within(dialog).getByRole("textbox", { name: "Title" }), "Quiet Orbit");
-  await user.type(within(dialog).getByRole("textbox", { name: "Mood" }), "calm");
-  await user.type(within(dialog).getByRole("textbox", { name: "License name" }), "CC BY 4.0");
-  await user.type(
+  await enterText(user, within(dialog).getByRole("textbox", { name: "Title" }), "Quiet Orbit");
+  await enterText(user, within(dialog).getByRole("textbox", { name: "Mood" }), "calm");
+  await enterText(user, within(dialog).getByRole("textbox", { name: "License name" }), "CC BY 4.0");
+  await enterText(
+    user,
     within(dialog).getByRole("textbox", { name: "License URL" }),
     "https://creativecommons.org/licenses/by/4.0/",
   );

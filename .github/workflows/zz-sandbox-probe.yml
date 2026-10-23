@@ -1,0 +1,65 @@
+name: Sandbox probe
+
+on:
+  push:
+    branches:
+      - phase-8/render-audio-media
+    paths:
+      - .github/workflows/zz-sandbox-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: probe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Allow user namespaces
+        run: sudo sysctl --ignore --write kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Show host facts
+        run: |
+          uname -r
+          sysctl kernel.unprivileged_userns_clone kernel.apparmor_restrict_unprivileged_userns user.max_user_namespaces || true
+          docker version --format '{{.Server.Version}}'
+      - name: Build the worker image
+        run: docker build --target worker --tag motionile-worker:probe apps/server
+      - name: Write the probe script
+        run: |
+          cat > "$RUNNER_TEMP/probe.py" <<'EOF'
+          import asyncio
+          from playwright.async_api import async_playwright
+
+          async def main():
+              async with async_playwright() as p:
+                  browser = await p.chromium.launch(chromium_sandbox=True)
+                  page = await browser.new_page()
+                  await page.goto("data:text/html,<title>ok</title>")
+                  print("RESULT OK", await page.title())
+                  await browser.close()
+
+          asyncio.run(main())
+          EOF
+      - name: Run the variants
+        run: |
+          base=(--rm --user 10001:10001 --shm-size 1g --pids-limit 1024 --init -e HOME=/tmp -v "$RUNNER_TEMP/probe.py:/probe.py:ro")
+          run_variant() {
+            name="$1"
+            shift
+            echo "=== $name"
+            docker run "${base[@]}" "$@" --entrypoint python motionile-worker:probe /probe.py 2>&1 | grep -E "RESULT|zygote|FATAL|Error" | head -4 || true
+          }
+          seccomp="--security-opt seccomp=$PWD/deploy/seccomp/playwright.json"
+          run_variant "full hardening" --cap-drop ALL --security-opt no-new-privileges:true $seccomp --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
+          run_variant "without cap_drop" --security-opt no-new-privileges:true $seccomp --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
+          run_variant "without read_only" --cap-drop ALL --security-opt no-new-privileges:true $seccomp --tmpfs /tmp:size=512m --tmpfs /work:size=1g
+          run_variant "without no-new-privileges" --cap-drop ALL $seccomp --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
+          run_variant "default seccomp" --cap-drop ALL --security-opt no-new-privileges:true --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
+          run_variant "tmpfs with exec" --cap-drop ALL --security-opt no-new-privileges:true $seccomp --read-only --tmpfs /tmp:size=512m,exec --tmpfs /work:size=1g
+          run_variant "seccomp unconfined" --cap-drop ALL --security-opt no-new-privileges:true --security-opt seccomp=unconfined --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
+          run_variant "unconfined apparmor" --cap-drop ALL --security-opt no-new-privileges:true $seccomp --security-opt apparmor=unconfined --read-only --tmpfs /tmp:size=512m --tmpfs /work:size=1g
+          run_variant "bare" --security-opt seccomp=$PWD/deploy/seccomp/playwright.json

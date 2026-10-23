@@ -322,7 +322,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.stack == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v7.0.1
         with:

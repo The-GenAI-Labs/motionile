@@ -1,7 +1,7 @@
 import hashlib
 import math
 from array import array
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -176,14 +176,23 @@ def evenly_timed(words: Sequence[str], duration_ms: int) -> tuple[WordTiming, ..
     return tuple(timings)
 
 
+type TranscriptTextSource = Callable[[bytes], Awaitable[str | None]]
+
+
 class FakeTranscriber:
     name = PROVIDER_NAME
 
-    def __init__(self, mode: FakeTranscriptMode = FakeTranscriptMode.EMBEDDED, fixed_text: str | None = None) -> None:
+    def __init__(
+        self,
+        mode: FakeTranscriptMode = FakeTranscriptMode.EMBEDDED,
+        fixed_text: str | None = None,
+        text_source: TranscriptTextSource | None = None,
+    ) -> None:
         if mode is FakeTranscriptMode.FIXED and fixed_text is None:
             raise ValueError("fixed mode needs a transcript")
         self.mode = mode
         self.fixed_text = fixed_text
+        self.text_source = text_source
         self.calls: list[tuple[str, str | None]] = []
 
     def words_for(self, facts: AudioFacts) -> list[str]:
@@ -201,7 +210,8 @@ class FakeTranscriber:
     async def transcribe(self, audio: bytes, filename: str, language: str | None) -> Transcript:
         self.calls.append((filename, language))
         facts = audio_facts(audio)
-        words = self.words_for(facts)
+        hinted = await self.text_source(audio) if self.text_source is not None else None
+        words = hinted.split() if hinted is not None else self.words_for(facts)
         return Transcript(text=" ".join(words), words=evenly_timed(words, facts.duration_ms))
 
 

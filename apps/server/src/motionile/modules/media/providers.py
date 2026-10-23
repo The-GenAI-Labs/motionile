@@ -22,6 +22,7 @@ from motionile.engine.audio.providers.fake import FakeTranscriber, FakeTTSProvid
 from motionile.engine.audio.providers.measure import FfmpegDurationMeter
 from motionile.engine.audio.providers.openai import OpenAIApi, OpenAIConfig, OpenAITranscriber, OpenAITTS
 from motionile.engine.ffmpeg import FfmpegTools
+from motionile.modules.media.fake_consent import consent_text_source
 
 ELEVENLABS_API = "media.elevenlabs_api"
 OPENAI_API = "media.openai_api"
@@ -92,7 +93,7 @@ def fake_voice_service(resources: Resources) -> FakeVoiceService:
 def build_transcriber(resources: Resources, provider: AudioProviderName | None = None) -> Transcriber:
     settings = resources.settings
     if settings.is_fake_providers:
-        return FakeTranscriber()
+        return FakeTranscriber(text_source=consent_text_source(resources))
     selected = provider or settings.audio.transcriber
     if selected == "openai":
         return OpenAITranscriber(openai_api(resources))

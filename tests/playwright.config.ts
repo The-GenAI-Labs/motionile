@@ -16,7 +16,7 @@ export default defineConfig({
       name: "e2e",
       testDir: "./e2e",
       use: { ...devices["Desktop Chrome"], baseURL: webBaseUrl },
-      testIgnore: ["auth/**/*.spec.ts", "billing/**/*.spec.ts"],
+      testIgnore: ["auth/**/*.spec.ts", "billing/**/*.spec.ts", "media/**/*.spec.ts"],
     },
     {
       name: "auth-browser",
@@ -34,6 +34,18 @@ export default defineConfig({
       testDir: "./e2e/billing",
       timeout: 120000,
       workers: 1,
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL: process.env["AUTH_WEB_BASE_URL"] ?? "https://localhost:3443",
+        ignoreHTTPSErrors: true,
+      },
+    },
+    {
+      name: "media-browser",
+      testDir: "./e2e/media",
+      timeout: 600000,
+      workers: 1,
+      expect: { timeout: 15000 },
       use: {
         ...devices["Desktop Chrome"],
         baseURL: process.env["AUTH_WEB_BASE_URL"] ?? "https://localhost:3443",

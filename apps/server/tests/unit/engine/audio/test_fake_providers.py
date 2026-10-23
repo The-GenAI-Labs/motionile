@@ -182,3 +182,42 @@ async def test_voice_service_tracks_deletion_and_reports_unknown_voices() -> Non
 async def test_voice_service_needs_samples() -> None:
     with pytest.raises(ProviderRejectedError):
         await FakeVoiceService().clone("Mine", "en", [], None)
+
+
+async def test_text_source_overrides_what_the_audio_embeds() -> None:
+    audio = (await FakeTTSProvider().synthesize(SENTENCE, VOICE, OPTIONS)).audio
+    seen: list[bytes] = []
+
+    async def source(received: bytes) -> str | None:
+        seen.append(received)
+        return "the hinted words"
+
+    transcript = await FakeTranscriber(text_source=source).transcribe(audio, "x.wav", "en")
+
+    assert transcript.text == "the hinted words"
+    assert [word.text for word in transcript.words] == ["the", "hinted", "words"]
+    assert seen == [audio]
+
+
+async def test_text_source_without_a_hint_leaves_the_mode_in_charge() -> None:
+    audio = (await FakeTTSProvider().synthesize(SENTENCE, VOICE, OPTIONS)).audio
+
+    async def silent(_: bytes) -> str | None:
+        return None
+
+    embedded = await FakeTranscriber(text_source=silent).transcribe(audio, "x.wav", "en")
+    wrong = await FakeTranscriber(FakeTranscriptMode.WRONG, text_source=silent).transcribe(audio, "x.wav", "en")
+
+    assert embedded.text == SENTENCE
+    assert consent_similarity(SENTENCE, wrong.text) < 0.3
+
+
+async def test_text_source_wins_over_a_fixed_transcript() -> None:
+    async def source(_: bytes) -> str | None:
+        return "from the source"
+
+    transcript = await FakeTranscriber(FakeTranscriptMode.FIXED, "from the mode", text_source=source).transcribe(
+        b"", "x.wav", None
+    )
+
+    assert transcript.text == "from the source"

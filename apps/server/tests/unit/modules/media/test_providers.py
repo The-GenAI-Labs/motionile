@@ -86,6 +86,13 @@ def test_fake_mode_builds_the_engine_fakes(fake_resources: Resources) -> None:
     assert isinstance(build_voice_catalog(fake_resources), FakeVoiceService)
 
 
+def test_fake_mode_transcriber_consults_the_consent_text_source(fake_resources: Resources) -> None:
+    transcriber = build_transcriber(fake_resources)
+
+    assert isinstance(transcriber, FakeTranscriber)
+    assert transcriber.text_source is not None
+
+
 def test_fake_mode_shares_one_voice_service_between_the_cloner_and_the_catalog(fake_resources: Resources) -> None:
     assert build_voice_cloner(fake_resources) is build_voice_catalog(fake_resources)
     assert build_voice_cloner(fake_resources) is build_voice_cloner(fake_resources)

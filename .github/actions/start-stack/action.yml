@@ -28,6 +28,10 @@ runs:
         echo 'AUTH_WEB_ORIGIN=https://localhost:3443' >> "$GITHUB_ENV"
         echo 'AUTH_API_ORIGIN=https://localhost:3443' >> "$GITHUB_ENV"
         echo 'AUTH_TEST_ACCESS_SECONDS=75' >> "$GITHUB_ENV"
+    - name: Allow the Chromium sandbox in containers
+      if: contains(inputs.services, 'worker-render')
+      shell: bash
+      run: sudo sysctl --ignore --write kernel.apparmor_restrict_unprivileged_userns=0
     - name: Build server images
       shell: bash
       run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml build api ${{ contains(inputs.services, 'worker-render') && 'worker-render' || '' }}

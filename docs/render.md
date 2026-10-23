@@ -470,3 +470,27 @@ User-facing reads for renders and their renditions are `GET /v1/renders/{renderI
 | `MEDIA_COOKIE_TTL_SECONDS`, `MEDIA_SIGNED_URL_TTL_SECONDS`                                         | `3600`, `900`        | Cookie and presigned URL lifetimes; each at most 3600 seconds                                                                                                                                        |
 
 Audio and voice settings are in [`audio.md`](audio.md).
+
+## 16. Benchmark
+
+`apps/server/scripts/benchmark_render.py` renders a synthetic composition (11 scenes, 65.4 seconds, fake narration timings) end to end through capture, segment encoding, join, mux and output verification for each aspect, and prints the time per video minute.
+
+```
+python scripts/benchmark_render.py --duration 60 --fps 30 --pages 8
+```
+
+Measured on a development machine (8 logical CPUs, Windows 11, Chromium headless shell 153, ffmpeg master build, `RENDER_PARALLEL_PAGES=8`, `RENDER_X264_PRESET=veryfast`, `RENDER_X264_CRF=20`, 30 fps):
+
+| Aspect | Frames | Wall time | Seconds per video minute | Frames per second |
+| ------ | ------ | --------- | ------------------------ | ----------------- |
+| 16:9   | 1,962  | 164.8 s   | 148.8                    | 12.1              |
+| 9:16   | 1,962  | 169.7 s   | 153.2                    | 11.7              |
+| 1:1    | 1,962  | 126.3 s   | 114.1                    | 15.8              |
+
+All three aspects render a 65-second 1080p video in under the 3-minute target on this machine, with a margin of about 1.2 times.
+
+**Profile of one frame in a single page:** about 170 ms, made of roughly 80 ms for the seek and the page render, 50 ms for the CDP PNG screenshot, 27 ms for the two animation frames and 9 ms for the clock step. With eight pages the Chromium renderers and the ffmpeg PNG decode plus x264 encode compete for the same eight cores, so the run is CPU bound, not I/O bound. The bottleneck is the browser, not ffmpeg.
+
+**Ways to gain headroom if the staging instance misses the target:** more cores (capture scales close to linearly with `RENDER_PARALLEL_PAGES` until the CPU saturates), caching frames of scenes that do not change, or a faster x264 preset such as `veryfast` already in use. JPEG intermediates would be faster but change the pixels and the color conversion, so they are not used.
+
+The target on the staging instance (a 60-second, 1080p, 30 fps render per aspect in at most 3 minutes) is measured by running the same script on the `worker-render` host after deployment; record the result here when it is run.

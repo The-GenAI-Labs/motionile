@@ -1,6 +1,8 @@
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from motionile.core.ids import new_id
 from motionile.engine.audio.cache_key import normalize_text, tts_cache_key
 from motionile.engine.audio.models import SynthesisOptions, SynthesisResult, VoiceRef, WordTiming
 from motionile.engine.audio.providers.base import TTSProvider
@@ -32,6 +34,8 @@ class NewCacheEntry:
 
 @dataclass(frozen=True, slots=True)
 class SynthesisUsage:
+    cache_key: bytes
+    nonce: str
     provider: str
     model: str
     characters: int
@@ -63,6 +67,10 @@ class UsageSink(Protocol):
     async def record(self, usage: SynthesisUsage) -> None: ...
 
 
+def new_nonce() -> str:
+    return new_id().hex
+
+
 def narrated_from(entry: CachedSynthesis, *, cache_hit: bool) -> NarratedAudio:
     return NarratedAudio(
         cache_key=entry.cache_key,
@@ -78,10 +86,13 @@ def narrated_from(entry: CachedSynthesis, *, cache_hit: bool) -> NarratedAudio:
 
 
 class CachedSynthesizer:
-    def __init__(self, provider: TTSProvider, cache: SynthesisCache, usage: UsageSink) -> None:
+    def __init__(
+        self, provider: TTSProvider, cache: SynthesisCache, usage: UsageSink, nonce: Callable[[], str] = new_nonce
+    ) -> None:
         self._provider = provider
         self._cache = cache
         self._usage = usage
+        self._nonce = nonce
 
     async def synthesize(self, text: str, voice: VoiceRef, options: SynthesisOptions) -> NarratedAudio:
         normalized = normalize_text(text)
@@ -94,9 +105,12 @@ class CachedSynthesizer:
         if cached is not None:
             await self._cache.touch(cache_key)
             return narrated_from(cached, cache_hit=True)
+        nonce = self._nonce()
         result = await self._provider.synthesize(normalized, voice, options)
-        stored = await self._cache.put(NewCacheEntry(cache_key, self._provider.name, voice, result))
         await self._usage.record(
-            SynthesisUsage(self._provider.name, result.model, result.characters, result.cost_micros_usd)
+            SynthesisUsage(
+                cache_key, nonce, self._provider.name, result.model, result.characters, result.cost_micros_usd
+            )
         )
+        stored = await self._cache.put(NewCacheEntry(cache_key, self._provider.name, voice, result))
         return narrated_from(stored, cache_hit=False)

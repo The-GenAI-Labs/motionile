@@ -187,6 +187,16 @@ class ReservationResult:
 
 
 @dataclass(frozen=True)
+class ReservationView:
+    id: UUID
+    user_id: UUID
+    amount: int
+    ref_type: str
+    ref_id: UUID
+    expires_at: datetime
+
+
+@dataclass(frozen=True)
 class CommitResult:
     reservation_id: UUID
     charged: int

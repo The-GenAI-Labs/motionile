@@ -128,13 +128,12 @@ def build_harness(monkeypatch: pytest.MonkeyPatch, *, seconds: float = 40.0) -> 
         enqueued.append((voice_id, reservation_id))
 
     clone = CloneService(
-        transaction=world.media.transaction,
+        transaction=world.transaction,
         store_factory=world.store,
         assets=assets,
         attempts=attempts,
         processor=processor,
         settings=settings.voices,
-        billing=settings.billing,
         clock=clock,
         credit_service=wallet_service,
         runtime=runtime,
@@ -142,7 +141,7 @@ def build_harness(monkeypatch: pytest.MonkeyPatch, *, seconds: float = 40.0) -> 
         provider="fake",
     )
     runner = CloneRunner(
-        transaction=world.media.transaction,
+        transaction=world.transaction,
         store_factory=world.store,
         assets=assets,
         attempts=attempts,
@@ -162,7 +161,7 @@ def build_harness(monkeypatch: pytest.MonkeyPatch, *, seconds: float = 40.0) -> 
         return provider
 
     service = VoicesService(
-        transaction=world.media.transaction,
+        transaction=world.transaction,
         store_factory=world.store,
         assets=assets,
         storage=storage,

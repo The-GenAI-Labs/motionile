@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.clock import Clock
 from motionile.core.errors import ServiceUnavailableError
-from motionile.core.ids import new_id
 from motionile.core.storage.base import ObjectNotFoundError
 from motionile.engine.audio.models import WordTiming
 from motionile.engine.audio.synthesis import CachedSynthesis, NewCacheEntry, SynthesisUsage
@@ -169,9 +168,10 @@ class SqlSynthesisCache:
 
 
 class SpeechUsageSink:
-    def __init__(self, transaction: Transaction, user_id: UUID) -> None:
+    def __init__(self, transaction: Transaction, user_id: UUID, job_id: UUID | None = None) -> None:
         self._transaction = transaction
         self._user_id = user_id
+        self._job_id = job_id
 
     async def record(self, usage: SynthesisUsage) -> None:
         async with self._transaction() as session:
@@ -181,9 +181,10 @@ class SpeechUsageSink:
                     user_id=self._user_id,
                     stage=USAGE_STAGE,
                     provider=usage.provider,
-                    key=f"{USAGE_STAGE}:{new_id().hex}",
+                    key=f"{USAGE_STAGE}:{usage.cache_key.hex()}:{usage.nonce}",
                     model=usage.model,
                     audio_characters=usage.characters,
                     cost_micros_usd=usage.cost_micros_usd,
+                    job_id=self._job_id,
                 ),
             )

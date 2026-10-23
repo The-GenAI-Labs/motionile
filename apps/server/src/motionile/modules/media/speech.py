@@ -39,10 +39,10 @@ class SpeechService:
         return SynthesisOptions(language=language, speed=speed, stability=stability, output_format=output_format)
 
     async def synthesize_text(
-        self, voice: VoiceRef, text: str, options: SynthesisOptions, *, user_id: UUID
+        self, voice: VoiceRef, text: str, options: SynthesisOptions, *, user_id: UUID, job_id: UUID | None = None
     ) -> SpeechResult:
         provider = self._providers(voice.provider)
-        synthesizer = CachedSynthesizer(provider, self._cache, SpeechUsageSink(self._transaction, user_id))
+        synthesizer = CachedSynthesizer(provider, self._cache, SpeechUsageSink(self._transaction, user_id, job_id))
         return await synthesizer.synthesize(text, voice, options)
 
     async def delete_cache_for_voice(self, provider: str, provider_voice_id: str) -> int:

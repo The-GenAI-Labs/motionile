@@ -1,6 +1,7 @@
 import hashlib
 from collections.abc import Callable, Sequence
 from datetime import timedelta
+from uuid import UUID
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,7 +15,7 @@ from motionile.engine.audio.providers.base import (
     ProviderUnavailableError,
 )
 from motionile.modules.voices import runner as runner_module
-from motionile.modules.voices.domain import VoiceFailureCode
+from motionile.modules.voices.domain import VoiceFailureCode, clone_reservation_ttl
 from motionile.modules.voices.maintenance import VoiceMaintenance
 
 
@@ -224,7 +225,23 @@ async def test_a_voice_that_is_not_pending_is_left_alone(harness: Harness) -> No
     assert len(harness.world.consents) == 1
 
 
-async def test_a_reservation_that_was_already_settled_alerts_and_keeps_the_voice_ready(
+def ledger_keys(harness: Harness) -> list[str]:
+    return [entry.idempotency_key for entry in harness.credits_store.ledger]
+
+
+def assert_clone_removed_without_charge(harness: Harness, voice_id: UUID, code: str) -> None:
+    voice = harness.world.voices[voice_id]
+    assert (voice.status, voice.failure_code, voice.provider_voice_id) == ("failed", code, None)
+    assert harness.provider.cloned == {}
+    assert len(harness.provider.deleted) == 1
+    assert harness.world.consents == []
+    assert harness.world.media.assets == {}
+    assert harness.storage.objects == {}
+    assert wallet(harness) == (100, 0)
+    assert f"voice-clone:{voice_id}:commit" not in ledger_keys(harness)
+
+
+async def test_a_reservation_released_before_the_commit_fails_the_clone_without_charging(
     harness: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     alerts: list[str] = []
@@ -235,8 +252,112 @@ async def test_a_reservation_that_was_already_settled_alerts_and_keeps_the_voice
 
     await harness.runner.run(voice_id, reservation_id)
 
-    assert harness.world.voices[voice_id].status == "ready"
+    assert_clone_removed_without_charge(harness, voice_id, "credit_reservation_expired")
     assert alerts == ["voice_clone_credit_commit_failed"]
+    assert await harness.attempts.get_submission(voice_id) is None
+
+
+async def test_a_reservation_expired_by_the_ttl_sweeper_fails_the_clone_without_charging(
+    harness: Harness,
+) -> None:
+    voice_id, reservation_id = await submitted(harness, cost=40)
+    assert reservation_id is not None
+    harness.clock.advance(clone_reservation_ttl() + timedelta(seconds=1))
+    assert await harness.wallet_service.release_stale(AsyncSession(), reservation_id) is not None
+    assert harness.credits_store.reservations[reservation_id].status == "expired"
+
+    await harness.runner.run(voice_id, reservation_id)
+
+    assert_clone_removed_without_charge(harness, voice_id, "credit_reservation_expired")
+
+
+async def test_a_clone_that_lost_its_reservation_id_never_becomes_ready_and_frees_the_credits(
+    harness: Harness,
+) -> None:
+    voice_id, _ = await submitted(harness, cost=40)
+
+    await harness.runner.run(voice_id, None)
+
+    assert_clone_removed_without_charge(harness, voice_id, "credit_reservation_expired")
+    assert f"voice-clone:{voice_id}:release" in ledger_keys(harness)
+
+
+async def test_a_commit_that_succeeds_makes_the_voice_ready_in_the_same_transaction(harness: Harness) -> None:
+    voice_id, reservation_id = await submitted(harness, cost=40)
+    assert reservation_id is not None
+
+    await harness.runner.run(voice_id, reservation_id)
+
+    assert harness.world.voices[voice_id].status == "ready"
+    assert harness.credits_store.reservations[reservation_id].status == "committed"
+    assert f"voice-clone:{voice_id}:release" not in ledger_keys(harness)
+
+
+async def test_the_stall_sweeper_releases_the_reservation_of_a_stalled_clone(harness: Harness) -> None:
+    voice_id, reservation_id = await submitted(harness, cost=40)
+    assert reservation_id is not None
+    maintenance = VoiceMaintenance(
+        harness.world.transaction, harness.world.store, harness.assets, harness.runner, harness.clock
+    )
+    harness.clock.advance(timedelta(hours=3))
+    harness.world.voices[voice_id].created_at = harness.clock.now() - timedelta(hours=3)
+
+    assert await maintenance.fail_stalled_clones(timedelta(hours=2)) == 1
+
+    assert harness.world.voices[voice_id].failure_code == "clone_stalled"
+    assert harness.credits_store.reservations[reservation_id].status == "released"
+    assert wallet(harness) == (100, 0)
+    assert ledger_keys(harness).count(f"voice-clone:{voice_id}:release") == 1
+    assert await maintenance.fail_stalled_clones(timedelta(hours=2)) == 0
+
+
+async def test_a_retried_task_after_the_sweeper_failed_the_clone_neither_charges_nor_releases_again(
+    harness: Harness,
+) -> None:
+    voice_id, reservation_id = await submitted(harness, cost=40)
+    await harness.runner.fail(voice_id, VoiceFailureCode.CLONE_STALLED)
+
+    await harness.runner.run(voice_id, reservation_id)
+    await harness.runner.fail(voice_id, VoiceFailureCode.CLONE_STALLED)
+
+    assert wallet(harness) == (100, 0)
+    keys = ledger_keys(harness)
+    assert keys.count(f"voice-clone:{voice_id}:release") == 1
+    assert f"voice-clone:{voice_id}:commit" not in keys
+
+
+async def test_the_sweeper_after_a_finalized_clone_leaves_the_charge_alone(harness: Harness) -> None:
+    voice_id, reservation_id = await submitted(harness, cost=40)
+    await harness.runner.run(voice_id, reservation_id)
+    maintenance = VoiceMaintenance(
+        harness.world.transaction, harness.world.store, harness.assets, harness.runner, harness.clock
+    )
+    harness.clock.advance(timedelta(hours=3))
+    harness.world.voices[voice_id].created_at = harness.clock.now() - timedelta(hours=3)
+
+    assert await maintenance.fail_stalled_clones(timedelta(hours=2)) == 0
+    await harness.runner.fail(voice_id, VoiceFailureCode.CLONE_STALLED)
+
+    assert harness.world.voices[voice_id].status == "ready"
+    assert wallet(harness) == (60, 0)
+    assert f"voice-clone:{voice_id}:release" not in ledger_keys(harness)
+
+
+async def test_failing_an_already_failed_clone_releases_a_reservation_left_behind(harness: Harness) -> None:
+    voice_id, reservation_id = await submitted(harness, cost=40)
+    assert reservation_id is not None
+    voice = harness.world.voices[voice_id]
+    voice.status = "failed"
+    voice.failure_code = "provider_failed"
+    assert wallet(harness) == (100, 40)
+
+    await harness.runner.fail(voice_id, VoiceFailureCode.CLONE_STALLED)
+    await harness.runner.fail(voice_id, VoiceFailureCode.CLONE_STALLED)
+
+    assert voice.failure_code == "provider_failed"
+    assert wallet(harness) == (100, 0)
+    assert ledger_keys(harness).count(f"voice-clone:{voice_id}:release") == 1
+    assert harness.credits_store.reservations[reservation_id].status == "released"
 
 
 async def test_an_undeletable_provider_voice_is_alerted_on_failure(

@@ -107,6 +107,7 @@ class CreditsStore(Protocol):
     async def reservation(self, reservation_id: UUID) -> ReservationRecord | None: ...
     async def lock_reservation(self, reservation_id: UUID) -> ReservationRecord | None: ...
     async def active_reservation_for(self, ref_type: str, ref_id: UUID) -> ReservationRecord | None: ...
+    async def active_reservation_of(self, user_id: UUID, ref_type: str, ref_id: UUID) -> ReservationRecord | None: ...
     async def add_reservation(self, reservation: ReservationRecord) -> None: ...
     async def save_reservation(self, reservation: ReservationRecord) -> None: ...
     async def expired_lot_remaining(self, user_id: UUID, now: datetime) -> int: ...
@@ -337,6 +338,19 @@ class SqlCreditsRepository:
         model = await self.session.scalar(
             select(CreditReservation)
             .where(
+                CreditReservation.ref_type == ref_type,
+                CreditReservation.ref_id == ref_id,
+                CreditReservation.status == "active",
+            )
+            .execution_options(**FRESH_ROWS)
+        )
+        return reservation_record(model) if model is not None else None
+
+    async def active_reservation_of(self, user_id: UUID, ref_type: str, ref_id: UUID) -> ReservationRecord | None:
+        model = await self.session.scalar(
+            select(CreditReservation)
+            .where(
+                CreditReservation.user_id == user_id,
                 CreditReservation.ref_type == ref_type,
                 CreditReservation.ref_id == ref_id,
                 CreditReservation.status == "active",

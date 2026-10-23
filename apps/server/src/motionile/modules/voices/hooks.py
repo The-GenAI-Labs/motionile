@@ -6,11 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.alerts import raise_alert
 from motionile.core.resources import Resources
+from motionile.modules.credits import CreditsService
 from motionile.modules.media import AssetInUseError, AssetNotFoundError, assets_for, build_voice_cloner, speech_for
 from motionile.modules.users import export_registry, preference_guards, purge_registry
+from motionile.modules.voices.domain import VoiceStatus
 from motionile.modules.voices.models import Voice, VoiceConsent
 from motionile.modules.voices.preview import delete_provider_voice
 from motionile.modules.voices.repository import SqlVoiceRepository
+from motionile.modules.voices.reservations import release_clone_reservation
 from motionile.modules.voices.selectable import ensure_voice_selectable
 
 logger = structlog.get_logger(__name__)
@@ -65,7 +68,10 @@ async def purge_user_voices(resources: Resources, session: AsyncSession, user_id
     voices = await SqlVoiceRepository(session).cloned_of(user_id)
     assets = assets_for(resources)
     speech = speech_for(resources)
+    credit_service = CreditsService(resources.clock, resources.settings.billing)
     for voice in voices:
+        if voice.status == VoiceStatus.PENDING.value:
+            await release_clone_reservation(credit_service, session, user_id, voice.id)
         provider_voice_id = voice.provider_voice_id
         if provider_voice_id is not None:
             try:

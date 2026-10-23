@@ -1,24 +1,28 @@
 from dataclasses import dataclass, field
 from datetime import timedelta
+from uuid import UUID
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+from tests.fakes.credits import FakeCreditsStore
 from tests.fakes.media import World
 from tests.fakes.settings import make_settings
 from tests.fakes.storage import InMemoryStorage
-from tests.unit.modules.media.support import NOW, USER_A
+from tests.unit.modules.media.support import NOW, RENDER, USER_A
 
 from motionile.core.clock import FrozenClock
 from motionile.core.config import AppEnv, AppSettings, ProvidersMode, Settings
+from motionile.core.ids import new_id
 from motionile.engine.audio.cache_key import tts_cache_key
 from motionile.engine.audio.models import SynthesisOptions, SynthesisResult, VoiceRef, WordTiming
 from motionile.engine.audio.providers.base import ProviderUnavailableError, TTSProvider
 from motionile.engine.audio.providers.fake import FakeTTSProvider
-from motionile.engine.audio.synthesis import EmptyNarrationTextError, NewCacheEntry
-from motionile.modules.credits import UsageEntry
+from motionile.engine.audio.synthesis import CachedSynthesis, EmptyNarrationTextError, NewCacheEntry, SynthesisUsage
+from motionile.modules.credits import UsageEntry, record_usage
 from motionile.modules.media import AssetService
 from motionile.modules.media import speech_cache as speech_cache_module
 from motionile.modules.media.speech import SpeechService
-from motionile.modules.media.speech_cache import SqlSynthesisCache
+from motionile.modules.media.speech_cache import SpeechUsageSink, SqlSynthesisCache, TtsCacheUnavailableError
 
 VOICE = VoiceRef("fake", "fake-voice-aria", "en")
 OTHER_VOICE = VoiceRef("fake", "fake-voice-bram", "en")
@@ -262,3 +266,64 @@ async def test_usage_keys_are_unique_per_synthesis(harness: Harness) -> None:
     await harness.service.synthesize_text(VOICE, "Two.", OPTIONS, user_id=USER_A)
 
     assert len({entry.key for entry in harness.usage}) == 2
+
+
+async def test_the_usage_key_combines_the_cache_key_and_a_per_call_nonce(harness: Harness) -> None:
+    await harness.service.synthesize_text(VOICE, TEXT, OPTIONS, user_id=USER_A)
+
+    [usage] = harness.usage
+    [entry] = harness.world.entries.values()
+    prefix, cache_key_hex, nonce = usage.key.split(":")
+    assert (prefix, cache_key_hex) == ("tts", entry.content_hash.hex())
+    assert len(nonce) == 32
+
+
+async def test_usage_carries_the_job_only_when_one_is_given(harness: Harness) -> None:
+    job_id = new_id()
+
+    await harness.service.synthesize_text(VOICE, "One.", OPTIONS, user_id=USER_A)
+    await harness.service.synthesize_text(VOICE, "Two.", OPTIONS, user_id=USER_A, job_id=job_id)
+
+    assert [entry.job_id for entry in harness.usage] == [None, job_id]
+
+
+async def test_a_failure_after_the_provider_call_keeps_the_billed_usage_and_a_retry_adds_its_own(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def failing_put(self: SqlSynthesisCache, entry: NewCacheEntry) -> CachedSynthesis:
+        del self, entry
+        raise TtsCacheUnavailableError
+
+    with monkeypatch.context() as patched:
+        patched.setattr(SqlSynthesisCache, "put", failing_put)
+        with pytest.raises(TtsCacheUnavailableError):
+            await harness.service.synthesize_text(VOICE, TEXT, OPTIONS, user_id=USER_A)
+
+    assert len(harness.usage) == 1
+    assert harness.world.entries == {}
+
+    retried = await harness.service.synthesize_text(VOICE, TEXT, OPTIONS, user_id=USER_A)
+
+    assert not retried.cache_hit
+    assert len(harness.provider.calls) == 2
+    assert len(harness.usage) == 2
+    assert len({entry.key for entry in harness.usage}) == 2
+
+
+async def test_recording_the_same_nonce_twice_is_a_no_op(monkeypatch: pytest.MonkeyPatch) -> None:
+    store = FakeCreditsStore(FrozenClock(NOW))
+
+    async def stored_usage(session: AsyncSession, entry: UsageEntry) -> UUID:
+        return await record_usage(session, entry, store_factory=store)
+
+    monkeypatch.setattr(speech_cache_module, "record_usage", stored_usage)
+    world = World()
+    sink = SpeechUsageSink(world.transaction, USER_A, RENDER)
+    usage = SynthesisUsage(b"k" * 32, "n" * 32, "fake", "fake-tts-1", 20, 0)
+
+    await sink.record(usage)
+    await sink.record(usage)
+    await sink.record(SynthesisUsage(b"k" * 32, "m" * 32, "fake", "fake-tts-1", 20, 0))
+
+    assert len(store.usage) == 2
+    assert {item.entry.job_id for item in store.usage} == {RENDER}

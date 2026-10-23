@@ -1,4 +1,5 @@
-from collections.abc import Mapping, Sequence
+from collections.abc import AsyncGenerator, Mapping, Sequence
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -32,6 +33,28 @@ class VoiceWorld:
     def store(self, session: AsyncSession) -> "InMemoryVoiceStore":
         del session
         return InMemoryVoiceStore(self)
+
+    @asynccontextmanager
+    async def transaction(self) -> AsyncGenerator[AsyncSession]:
+        saved = {
+            voice_id: (voice.status, voice.failure_code, voice.provider_voice_id, voice.preview_asset_id)
+            for voice_id, voice in self.voices.items()
+        }
+        consents = list(self.consents)
+        referenced = set(self.media.referenced)
+        try:
+            async with self.media.transaction() as session:
+                yield session
+        except BaseException:
+            for voice_id, (status, failure_code, provider_voice_id, preview_asset_id) in saved.items():
+                voice = self.voices[voice_id]
+                voice.status = status
+                voice.failure_code = failure_code
+                voice.provider_voice_id = provider_voice_id
+                voice.preview_asset_id = preview_asset_id
+            self.consents = consents
+            self.media.referenced = referenced
+            raise
 
     def stamp(self) -> datetime:
         self.tick += 1

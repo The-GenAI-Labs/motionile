@@ -23,11 +23,7 @@ from motionile.engine.audio.providers.base import (
     VoiceCloner,
 )
 from motionile.engine.audio.voice_clone import ConsentVerdict, evaluate_consent
-from motionile.modules.credits import (
-    CreditsService,
-    ReservationNotActiveError,
-    ReservationNotFoundError,
-)
+from motionile.modules.credits import CreditsService, ReservationNotActiveError, ReservationNotFoundError
 from motionile.modules.media import (
     AssetNotFoundError,
     AssetService,
@@ -41,6 +37,7 @@ from motionile.modules.voices.models import Voice
 from motionile.modules.voices.ports import Transaction
 from motionile.modules.voices.preview import PreviewGenerator, delete_provider_voice
 from motionile.modules.voices.repository import NewConsent, StoreFactory
+from motionile.modules.voices.reservations import commit_key, release_clone_reservation
 
 logger = structlog.get_logger(__name__)
 
@@ -58,14 +55,6 @@ RETRYABLE_ERRORS: tuple[type[Exception], ...] = (
 MAX_TRANSCRIPT_CHARACTERS = 600
 PERCENT = 100
 PREVIEW_PREFIX_ROOT = "voice-preview"
-
-
-def commit_key(voice_id: UUID) -> str:
-    return f"voice-clone:{voice_id}:commit"
-
-
-def release_key(voice_id: UUID) -> str:
-    return f"voice-clone:{voice_id}:release"
 
 
 class CloneRejectedError(Exception):
@@ -114,36 +103,41 @@ class CloneRunner:
             return
         submission = await self._attempts.get_submission(voice_id)
         if submission is None:
-            await self.fail(voice_id, VoiceFailureCode.ATTEMPT_EXPIRED, reservation_id)
+            await self.fail(voice_id, VoiceFailureCode.ATTEMPT_EXPIRED)
             return
         try:
             await self._execute(voice, voice.owner_user_id, submission, reservation_id)
         except CloneRejectedError as rejected:
-            await self.fail(voice_id, rejected.code, reservation_id)
+            await self.fail(voice_id, rejected.code)
         except RETRYABLE_ERRORS:
             raise
         except Exception:
             logger.exception("voices.clone_crashed", voice_id=str(voice_id))
-            await self.fail(voice_id, VoiceFailureCode.PROVIDER_FAILED, reservation_id)
+            await self.fail(voice_id, VoiceFailureCode.PROVIDER_FAILED)
 
-    async def fail(self, voice_id: UUID, code: VoiceFailureCode, reservation_id: UUID | None) -> None:
+    async def fail(self, voice_id: UUID, code: VoiceFailureCode) -> None:
         async with self._transaction() as session:
             voice = await self._store_factory(session).get(voice_id)
-        if voice is None or voice.status != VoiceStatus.PENDING.value or voice.owner_user_id is None:
+        if voice is None or voice.owner_user_id is None or voice.kind != VoiceKind.CLONED.value:
             return
         user_id = voice.owner_user_id
-        if voice.provider_voice_id is not None:
-            await self._speech.delete_cache_for_voice(voice.provider, voice.provider_voice_id)
-            await self._delete_at_provider(voice)
+        provider_voice_id = voice.provider_voice_id
+        if voice.status == VoiceStatus.FAILED.value:
+            async with self._transaction() as session:
+                await self._release(session, user_id, voice_id)
+            return
+        if voice.status != VoiceStatus.PENDING.value:
+            return
         async with self._transaction() as session:
             if not await self._store_factory(session).mark_failed(voice_id, code.value):
                 return
             await self._assets.delete_by_prefix(session, user_id, voice_prefix(user_id, voice_id))
             await self._assets.delete_by_prefix(session, None, f"{PREVIEW_PREFIX_ROOT}/{voice_id}.")
-            if reservation_id is not None:
-                await self._release(session, voice_id, reservation_id)
+            await self._release(session, user_id, voice_id)
             after_commit(session, lambda: self._attempts.delete_submission(voice_id))
         logger.info("voices.clone_failed", voice_id=str(voice_id), failure_code=code.value)
+        if provider_voice_id is not None:
+            await self._remove_provider_voice(voice, provider_voice_id)
 
     async def _execute(
         self, voice: Voice, user_id: UUID, submission: CloneSubmission, reservation_id: UUID | None
@@ -240,26 +234,37 @@ class CloneRunner:
             )
             if not await store.mark_ready(voice.id, preview.id):
                 raise CloneRejectedError(VoiceFailureCode.PROVIDER_FAILED)
-            if reservation_id is not None:
-                await self._commit_credits(session, voice.id, reservation_id, submission.credits_reserved)
+            await self._commit_credits(session, voice.id, reservation_id, submission.credits_reserved)
             after_commit(session, lambda: self._attempts.delete_submission(voice.id))
         logger.info("voices.clone_ready", voice_id=str(voice.id))
 
-    async def _commit_credits(self, session: AsyncSession, voice_id: UUID, reservation_id: UUID, amount: int) -> None:
+    async def _commit_credits(
+        self, session: AsyncSession, voice_id: UUID, reservation_id: UUID | None, amount: int
+    ) -> None:
+        if amount <= 0:
+            return
         try:
+            if reservation_id is None:
+                raise ReservationNotFoundError
             await self._credits.commit(session, reservation_id, amount, commit_key(voice_id))
-        except (ReservationNotActiveError, ReservationNotFoundError):
-            raise_alert("voice_clone_credit_commit_failed", voice_id=str(voice_id), reservation_id=str(reservation_id))
+        except (ReservationNotActiveError, ReservationNotFoundError) as error:
+            raise_alert(
+                "voice_clone_credit_commit_failed",
+                voice_id=str(voice_id),
+                reservation_id=str(reservation_id) if reservation_id is not None else None,
+            )
+            raise CloneRejectedError(VoiceFailureCode.CREDIT_RESERVATION_EXPIRED) from error
 
-    async def _release(self, session: AsyncSession, voice_id: UUID, reservation_id: UUID) -> None:
+    async def _release(self, session: AsyncSession, user_id: UUID, voice_id: UUID) -> None:
+        if not await release_clone_reservation(self._credits, session, user_id, voice_id):
+            logger.info("voices.no_active_reservation", voice_id=str(voice_id))
+
+    async def _remove_provider_voice(self, voice: Voice, provider_voice_id: str) -> None:
         try:
-            await self._credits.release(session, reservation_id, release_key(voice_id))
-        except (ReservationNotActiveError, ReservationNotFoundError):
-            logger.info("voices.reservation_already_settled", voice_id=str(voice_id))
-
-    async def _delete_at_provider(self, voice: Voice) -> None:
-        if voice.provider_voice_id is not None:
-            await self._delete_at_provider_id(voice, voice.provider_voice_id)
+            await self._speech.delete_cache_for_voice(voice.provider, provider_voice_id)
+        except Exception:
+            logger.exception("voices.cache_delete_failed", voice_id=str(voice.id))
+        await self._delete_at_provider_id(voice, provider_voice_id)
 
     async def _delete_at_provider_id(self, voice: Voice, provider_voice_id: str) -> None:
         try:

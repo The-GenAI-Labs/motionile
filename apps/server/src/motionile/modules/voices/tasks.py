@@ -8,12 +8,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from motionile.core.config import get_settings
 from motionile.core.resources import build_resources
 from motionile.core.tasks.registry import Queue, defer_after_commit, periodic_task, task
+from motionile.modules.voices.domain import (
+    CLONE_MAX_ATTEMPTS,
+    CLONE_RETRY_EXPONENTIAL_WAIT,
+    CLONE_RETRY_WAIT_SECONDS,
+    STALLED_CLONE_AGE,
+)
 from motionile.modules.voices.factory import build_clone_runner, build_maintenance
 from motionile.modules.voices.runner import RETRYABLE_ERRORS
 
 ABANDONED_SAMPLE_AGE = timedelta(hours=3)
-STALLED_CLONE_AGE = timedelta(hours=2)
-CLONE_RETRY = RetryStrategy(max_attempts=5, wait=10, exponential_wait=10, retry_exceptions=RETRYABLE_ERRORS)
+CLONE_RETRY = RetryStrategy(
+    max_attempts=CLONE_MAX_ATTEMPTS,
+    wait=CLONE_RETRY_WAIT_SECONDS,
+    exponential_wait=CLONE_RETRY_EXPONENTIAL_WAIT,
+    retry_exceptions=RETRYABLE_ERRORS,
+)
 
 logger = structlog.get_logger(__name__)
 

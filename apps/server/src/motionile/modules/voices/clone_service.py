@@ -6,7 +6,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.clock import Clock
-from motionile.core.config import BillingSettings, VoicesSettings
+from motionile.core.config import VoicesSettings
 from motionile.core.db import after_commit
 from motionile.core.ids import new_id
 from motionile.engine.audio.voice_clone import generate_consent_sentence
@@ -33,6 +33,7 @@ from motionile.modules.voices.clone import (
     consent_limits,
     sample_limits,
 )
+from motionile.modules.voices.domain import clone_reservation_ttl
 from motionile.modules.voices.exceptions import (
     CloneAttemptNotFoundError,
     CloneSampleNotFoundError,
@@ -45,6 +46,7 @@ from motionile.modules.voices.exceptions import (
 )
 from motionile.modules.voices.ports import Transaction
 from motionile.modules.voices.repository import NewClonedVoice, StoreFactory, VoiceStore
+from motionile.modules.voices.reservations import RESERVATION_REF_TYPE, reservation_key
 from motionile.modules.voices.runtime import RuntimeSettings
 from motionile.modules.voices.schemas import (
     CloneAttemptView,
@@ -59,12 +61,7 @@ from motionile.modules.voices.views import voice_view
 
 type EnqueueClone = Callable[[AsyncSession, UUID, UUID | None], None]
 
-RESERVATION_REF_TYPE = "voice_clone"
 AUDIT_TARGET = "voice"
-
-
-def reservation_key(voice_id: UUID) -> str:
-    return f"voice-clone:{voice_id}:reserve"
 
 
 class CloneService:
@@ -77,7 +74,6 @@ class CloneService:
         attempts: AttemptStore,
         processor: AudioProcessor,
         settings: VoicesSettings,
-        billing: BillingSettings,
         clock: Clock,
         credit_service: CreditsService,
         runtime: RuntimeSettings,
@@ -90,7 +86,6 @@ class CloneService:
         self._attempts = attempts
         self._processor = processor
         self._settings = settings
-        self._billing = billing
         self._clock = clock
         self._credits = credit_service
         self._runtime = runtime
@@ -211,7 +206,7 @@ class CloneService:
                         ref_type=RESERVATION_REF_TYPE,
                         ref_id=attempt.voice_id,
                         key=reservation_key(attempt.voice_id),
-                        ttl=timedelta(seconds=self._billing.reservation_ttl_seconds),
+                        ttl=clone_reservation_ttl(),
                     ),
                 )
                 reservation_id = reservation.id

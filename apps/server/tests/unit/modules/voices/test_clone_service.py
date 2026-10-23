@@ -12,6 +12,7 @@ from motionile.engine.audio.voice_clone import CONSENT_PHRASE
 from motionile.modules.audit import AuditContext
 from motionile.modules.credits import InsufficientCreditsError
 from motionile.modules.voices.clone import MAX_SAMPLE_FILES
+from motionile.modules.voices.domain import STALLED_CLONE_AGE, clone_reservation_ttl, clone_retry_window
 from motionile.modules.voices.exceptions import (
     CloneAttemptBusyError,
     CloneAttemptNotFoundError,
@@ -263,9 +264,7 @@ async def test_a_clone_cost_reserves_credits_with_keys_derived_from_the_voice(ha
     reservation = harness.credits_store.reservations[reservation_id]
     assert (reservation.amount, reservation.ref_type, reservation.ref_id) == (40, "voice_clone", voice.id)
     assert reservation.idempotency_key == f"voice-clone:{voice.id}:reserve"
-    assert reservation.expires_at - harness.clock.now() == timedelta(
-        seconds=harness.settings.billing.reservation_ttl_seconds
-    )
+    assert reservation.expires_at - harness.clock.now() == clone_reservation_ttl()
     submission = await harness.attempts.get_submission(voice.id)
     assert submission is not None
     assert submission.credits_reserved == 40
@@ -282,3 +281,19 @@ async def test_insufficient_credits_fail_the_submit_and_keep_the_attempt(harness
     assert harness.enqueued == []
     assert harness.world.voices == {}
     assert (await harness.clone.state(USER, attempt_id)).attempt_id == attempt_id
+
+
+async def test_the_clone_reservation_outlives_the_stall_age_and_the_retry_window_whatever_the_global_ttl(
+    harness: Harness,
+) -> None:
+    harness.runtime.cost = 40
+    await harness.fund(USER, 100)
+    attempt_id = await harness.prepared_attempt()
+
+    await harness.clone.submit(USER, attempt_id, SUBMIT, CONTEXT)
+
+    [(_, reservation_id)] = harness.enqueued
+    assert reservation_id is not None
+    lifetime = harness.credits_store.reservations[reservation_id].expires_at - harness.clock.now()
+    assert lifetime > STALLED_CLONE_AGE + clone_retry_window()
+    assert lifetime > timedelta(seconds=harness.settings.billing.reservation_ttl_seconds)

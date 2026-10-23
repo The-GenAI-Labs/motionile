@@ -91,6 +91,7 @@ class InMemorySynthesisCache:
         self.touched: list[bytes] = []
         self.puts: list[NewCacheEntry] = []
         self.winner: CachedSynthesis | None = None
+        self.put_failure: Exception | None = None
 
     async def get(self, cache_key: bytes) -> CachedSynthesis | None:
         found = self.entries.get(cache_key)
@@ -99,6 +100,8 @@ class InMemorySynthesisCache:
 
     async def put(self, entry: NewCacheEntry) -> CachedSynthesis:
         self.puts.append(entry)
+        if self.put_failure is not None:
+            raise self.put_failure
         if self.winner is not None:
             self.entries[entry.cache_key] = self.winner
             return self.winner

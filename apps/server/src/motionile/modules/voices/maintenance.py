@@ -51,5 +51,5 @@ class VoiceMaintenance:
         async with self._transaction() as session:
             rows = await self._store_factory(session).stalled_pending(cutoff, BATCH_SIZE)
         for voice in rows:
-            await self._runner.fail(voice.id, VoiceFailureCode.CLONE_STALLED, None)
+            await self._runner.fail(voice.id, VoiceFailureCode.CLONE_STALLED)
         return len(rows)

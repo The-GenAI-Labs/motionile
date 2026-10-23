@@ -217,6 +217,10 @@ class FakeCreditsStore:
             None,
         )
 
+    async def active_reservation_of(self, user_id: UUID, ref_type: str, ref_id: UUID) -> ReservationRecord | None:
+        found = await self.active_reservation_for(ref_type, ref_id)
+        return found if found is not None and found.user_id == user_id else None
+
     async def add_reservation(self, reservation: ReservationRecord) -> None:
         if reservation.amount <= 0:
             raise ConstraintViolationError("ck_credit_reservations_amount_positive")

@@ -1,5 +1,7 @@
 import asyncio
 import dataclasses
+import itertools
+from collections.abc import Callable
 
 import pytest
 from tests.unit.engine.audio.support import InMemorySynthesisCache, RecordingUsage
@@ -8,7 +10,12 @@ from motionile.engine.audio.cache_key import normalize_text, tts_cache_key
 from motionile.engine.audio.models import SynthesisOptions, VoiceRef, WordTiming
 from motionile.engine.audio.providers.base import ProviderUnavailableError
 from motionile.engine.audio.providers.fake import FakeTTSProvider
-from motionile.engine.audio.synthesis import CachedSynthesis, CachedSynthesizer, EmptyNarrationTextError
+from motionile.engine.audio.synthesis import (
+    CachedSynthesis,
+    CachedSynthesizer,
+    EmptyNarrationTextError,
+    NewCacheEntry,
+)
 
 OPTIONS = SynthesisOptions(language="en", speed=1.0, stability=0.5, output_format="mp3_44100_128")
 VOICE = VoiceRef("fake", "fake-voice-aria", "en")
@@ -93,6 +100,8 @@ async def test_miss_synthesizes_stores_and_records_usage() -> None:
     assert [(record.provider, record.model, record.characters, record.cost_micros_usd) for record in usage.records] == [
         ("fake", "fake-tts-1", len("Hello there world"), 0)
     ]
+    assert usage.records[0].cache_key == result.cache_key
+    assert usage.records[0].nonce
     assert result.duration_ms > 0
     assert [word.text for word in result.words] == ["Hello", "there", "world"]
 
@@ -181,3 +190,64 @@ async def test_provider_failure_stores_nothing_and_records_nothing() -> None:
 
     assert cache.puts == []
     assert usage.records == []
+
+
+def counting_nonces() -> Callable[[], str]:
+    counter = itertools.count(1)
+    return lambda: f"nonce-{next(counter)}"
+
+
+class OrderRecordingCache(InMemorySynthesisCache):
+    def __init__(self, usage: RecordingUsage) -> None:
+        super().__init__()
+        self.usage = usage
+        self.recorded_before_put: list[int] = []
+
+    async def put(self, entry: NewCacheEntry) -> CachedSynthesis:
+        self.recorded_before_put.append(len(self.usage.records))
+        return await super().put(entry)
+
+
+async def test_usage_is_recorded_before_the_audio_is_cached() -> None:
+    usage = RecordingUsage()
+    cache = OrderRecordingCache(usage)
+
+    await CachedSynthesizer(FakeTTSProvider(), cache, usage).synthesize("Hello world", VOICE, OPTIONS)
+
+    assert cache.recorded_before_put == [1]
+
+
+async def test_a_failure_after_the_provider_call_still_records_the_billed_usage() -> None:
+    provider = FakeTTSProvider()
+    cache = InMemorySynthesisCache()
+    cache.put_failure = RuntimeError("cache down")
+    usage = RecordingUsage()
+    synthesizer = CachedSynthesizer(provider, cache, usage, counting_nonces())
+
+    with pytest.raises(RuntimeError):
+        await synthesizer.synthesize("Hello world", VOICE, OPTIONS)
+
+    assert [record.nonce for record in usage.records] == ["nonce-1"]
+    assert cache.entries == {}
+
+    cache.put_failure = None
+    retried = await synthesizer.synthesize("Hello world", VOICE, OPTIONS)
+
+    assert not retried.cache_hit
+    assert len(provider.calls) == 2
+    assert [record.nonce for record in usage.records] == ["nonce-1", "nonce-2"]
+    assert {record.cache_key for record in usage.records} == {retried.cache_key}
+
+
+async def test_a_hit_after_a_recorded_miss_draws_no_new_nonce() -> None:
+    nonces = counting_nonces()
+    provider = FakeTTSProvider()
+    cache = InMemorySynthesisCache()
+    usage = RecordingUsage()
+    synthesizer = CachedSynthesizer(provider, cache, usage, nonces)
+
+    await synthesizer.synthesize("Hello world", VOICE, OPTIONS)
+    await synthesizer.synthesize("Hello world", VOICE, OPTIONS)
+
+    assert [record.nonce for record in usage.records] == ["nonce-1"]
+    assert nonces() == "nonce-2"

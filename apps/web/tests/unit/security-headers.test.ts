@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ALL_ROUTES_SOURCE,
   buildContentSecurityPolicy,
   buildCspDirectives,
+  buildHeaderRules,
+  buildPermissionsPolicy,
   buildSecurityHeaders,
   PERMISSIONS_POLICY,
   serializeCsp,
   STRICT_TRANSPORT_SECURITY,
+  VOICES_PERMISSIONS_POLICY,
+  VOICES_ROUTE_SOURCE,
 } from "@/config/security-headers";
 
 const production = {
@@ -14,6 +19,7 @@ const production = {
   siteUrl: "https://motionile.com",
   apiUrl: "https://api.motionile.com/",
   cdnUrl: "https://cdn.motionile.com/videos",
+  mediaOrigin: "https://storage.motionile.com",
 };
 
 const development = {
@@ -37,8 +43,18 @@ describe("content security policy", () => {
       "https://checkout.razorpay.com",
     ]);
     expect(directives["style-src"]).toEqual(["'self'", "'unsafe-inline'"]);
-    expect(directives["img-src"]).toEqual(["'self'", "data:", "https://cdn.motionile.com"]);
-    expect(directives["media-src"]).toEqual(["'self'", "https://cdn.motionile.com"]);
+    expect(directives["img-src"]).toEqual([
+      "'self'",
+      "data:",
+      "https://cdn.motionile.com",
+      "https://storage.motionile.com",
+    ]);
+    expect(directives["media-src"]).toEqual([
+      "'self'",
+      "blob:",
+      "https://cdn.motionile.com",
+      "https://storage.motionile.com",
+    ]);
     expect(directives["font-src"]).toEqual(["'self'"]);
     expect(directives["connect-src"]).toEqual([
       "'self'",
@@ -94,6 +110,65 @@ describe("content security policy", () => {
     }
   });
 
+  it("allows the CDN and storage origins as media and poster sources", () => {
+    const directives = buildCspDirectives(production);
+
+    for (const name of ["media-src", "img-src"]) {
+      expect(directives[name]).toEqual(
+        expect.arrayContaining(["https://cdn.motionile.com", "https://storage.motionile.com"]),
+      );
+    }
+    expect(directives["connect-src"]).not.toContain("https://cdn.motionile.com");
+    expect(directives["connect-src"]).not.toContain("https://storage.motionile.com");
+  });
+
+  it("allows blob: only as a media source so recordings can be played back", () => {
+    for (const options of [production, development]) {
+      const directives = buildCspDirectives(options);
+
+      expect(directives["media-src"]).toContain("blob:");
+      expect(
+        Object.entries(directives)
+          .filter(([, sources]) => sources.some((source) => source.startsWith("blob:")))
+          .map(([name]) => name),
+      ).toEqual(["media-src"]);
+    }
+    expect(buildContentSecurityPolicy(production)).toMatch(/media-src [^;]*blob:/);
+    expect(buildContentSecurityPolicy(production)).not.toMatch(
+      /(img|connect|script|default)-src [^;]*blob:/,
+    );
+  });
+
+  it("keeps media-src to self and blob when no media origin is configured", () => {
+    const directives = buildCspDirectives({
+      isDevelopment: false,
+      siteUrl: production.siteUrl,
+      apiUrl: production.apiUrl,
+    });
+
+    expect(directives["media-src"]).toEqual(["'self'", "blob:"]);
+    expect(directives["img-src"]).toEqual(["'self'", "data:"]);
+  });
+
+  it("deduplicates a media origin that equals the CDN origin", () => {
+    const directives = buildCspDirectives({
+      ...production,
+      mediaOrigin: "https://cdn.motionile.com",
+    });
+
+    expect(directives["media-src"]).toEqual(["'self'", "blob:", "https://cdn.motionile.com"]);
+  });
+
+  it("allows a local storage origin over http in development", () => {
+    const policy = buildContentSecurityPolicy({
+      ...development,
+      mediaOrigin: "http://localhost:9000",
+    });
+
+    expect(policy).toContain("media-src 'self' blob: http://localhost:9000;");
+    expect(policy).toContain("img-src 'self' data: http://localhost:9000;");
+  });
+
   it("never allows unsafe-eval in production", () => {
     expect(buildContentSecurityPolicy(production)).not.toContain("unsafe-eval");
   });
@@ -143,7 +218,8 @@ describe("security headers", () => {
 
   it("restricts powerful browser features", () => {
     expect(PERMISSIONS_POLICY).toContain("camera=()");
-    expect(PERMISSIONS_POLICY).toContain("microphone=(self)");
+    expect(PERMISSIONS_POLICY).toContain("microphone=()");
+    expect(PERMISSIONS_POLICY).not.toContain("microphone=(self)");
     expect(PERMISSIONS_POLICY).toContain("geolocation=()");
     expect(PERMISSIONS_POLICY).toContain(
       'payment=(self "https://checkout.razorpay.com" "https://api.razorpay.com")',
@@ -156,5 +232,63 @@ describe("security headers", () => {
         (header) => header.key === "Strict-Transport-Security",
       ),
     ).toBe(false);
+  });
+});
+
+describe("permissions policy scope", () => {
+  const microphoneDirective = (value: string) => /microphone=\([^)]*\)/.exec(value)?.[0];
+
+  it("denies the microphone by default and allows it only for the voices route", () => {
+    expect(microphoneDirective(PERMISSIONS_POLICY)).toBe("microphone=()");
+    expect(microphoneDirective(VOICES_PERMISSIONS_POLICY)).toBe("microphone=(self)");
+    expect(buildPermissionsPolicy("none")).toBe(PERMISSIONS_POLICY);
+    expect(buildPermissionsPolicy("self")).toBe(VOICES_PERMISSIONS_POLICY);
+  });
+
+  it("differs between the default and the voices policy only by the microphone", () => {
+    expect(VOICES_PERMISSIONS_POLICY.replace("microphone=(self)", "microphone=()")).toBe(
+      PERMISSIONS_POLICY,
+    );
+  });
+
+  it("allows the microphone for exactly one route rule and keeps every other header unchanged", () => {
+    const rules = buildHeaderRules(production);
+    const microphoneAllowed = rules.filter((rule) =>
+      rule.headers.some(
+        (header) =>
+          header.key === "Permissions-Policy" &&
+          microphoneDirective(header.value) !== "microphone=()",
+      ),
+    );
+
+    expect(rules.map((rule) => rule.source)).toEqual([ALL_ROUTES_SOURCE, VOICES_ROUTE_SOURCE]);
+    expect(microphoneAllowed.map((rule) => rule.source)).toEqual([VOICES_ROUTE_SOURCE]);
+    expect(VOICES_ROUTE_SOURCE).toBe("/settings/voices/:path*");
+    expect(rules[1]?.headers).toEqual([
+      { key: "Permissions-Policy", value: VOICES_PERMISSIONS_POLICY },
+    ]);
+    expect(headerValue(rules[0]?.headers ?? [], "Permissions-Policy")).toBe(PERMISSIONS_POLICY);
+  });
+
+  it("never allows the microphone for the whole site or through a wildcard", () => {
+    for (const options of [production, development]) {
+      const [global] = buildHeaderRules(options);
+      const value = headerValue(global?.headers ?? [], "Permissions-Policy") ?? "";
+
+      expect(value).toContain("microphone=()");
+      expect(value).not.toMatch(/microphone=\([^)]*(self|\*)/);
+    }
+    expect(VOICES_PERMISSIONS_POLICY).not.toContain("*");
+    expect(VOICES_PERMISSIONS_POLICY).not.toMatch(/microphone=\([^)]*"/);
+  });
+
+  it("never emits a wildcard in any header", () => {
+    for (const options of [production, development]) {
+      for (const rule of buildHeaderRules(options)) {
+        for (const header of rule.headers) {
+          expect(header.value).not.toContain("*");
+        }
+      }
+    }
   });
 });

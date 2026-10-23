@@ -9,12 +9,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.config import get_settings
-from motionile.core.resources import build_resources
+from motionile.core.resources import Resources, build_resources
 from motionile.core.tasks.registry import Queue, defer_after_commit, task
 from motionile.modules.notifications import Notification, enqueue_notification
 from motionile.modules.users.events import UserPurged
 from motionile.modules.users.exporters import registry
 from motionile.modules.users.models import User, UserContact
+from motionile.modules.users.purge import purge_registry
 
 
 @task(name="users.export", queue=Queue.DEFAULT)
@@ -68,22 +69,31 @@ def defer_export(session: AsyncSession, user_id: UUID) -> None:
     defer_after_commit(session, export_user_data, user_id=str(user_id))
 
 
+PURGE_RETENTION = timedelta(days=30)
+
+
+async def purge_expired_users(resources: Resources) -> int:
+    threshold = resources.clock.now() - PURGE_RETENTION
+    async with resources.database.transaction() as session:
+        users = list(
+            await session.scalars(
+                select(User).where(User.status == "deleted", User.deleted_at <= threshold).with_for_update()
+            )
+        )
+        for user in users:
+            await resources.storage.delete_prefix(f"avatars/{user.id}/")
+            await resources.storage.delete_prefix(f"exports/{user.id}/")
+            await purge_registry.run(resources, session, user.id)
+            await session.delete(user)
+            resources.events.publish_after_commit(session, UserPurged(user_id=user.id))
+    return len(users)
+
+
 @task(name="users.purge", queue=Queue.DEFAULT)
 async def purge_deleted_users() -> None:
     settings = get_settings()
     resources = build_resources(settings, application_name="motionile-user-purge")
     try:
-        threshold = resources.clock.now() - timedelta(days=30)
-        async with resources.database.transaction() as session:
-            users = list(
-                await session.scalars(
-                    select(User).where(User.status == "deleted", User.deleted_at <= threshold).with_for_update()
-                )
-            )
-            for user in users:
-                await resources.storage.delete_prefix(f"avatars/{user.id}/")
-                await resources.storage.delete_prefix(f"exports/{user.id}/")
-                await session.delete(user)
-                resources.events.publish_after_commit(session, UserPurged(user_id=user.id))
+        await purge_expired_users(resources)
     finally:
         await resources.aclose()

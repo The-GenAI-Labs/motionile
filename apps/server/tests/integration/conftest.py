@@ -21,8 +21,10 @@ from tests.integration.billing_support import (
     create_product,
     purge_billing_data,
 )
-from tests.integration.credit_support import new_clock
+from tests.integration.credit_support import new_clock, purge_credit_data
+from tests.integration.media_support import MediaApi, purge_media_data
 from tests.integration.test_auth import signup
+from tests.integration.voices_support import VoicesApi, purge_voices_data, retry_flaky_object_reads
 
 from motionile.core.config import (
     PSYCOPG_SCHEME,
@@ -39,6 +41,7 @@ from motionile.core.db import Database, after_commit
 from motionile.core.ids import new_id
 from motionile.core.redis import RedisKeyBuilder, create_redis_client
 from motionile.core.resources import Resources, build_resources
+from motionile.core.storage.s3 import S3Storage
 from motionile.entrypoints.api import create_app
 from motionile.modules.auth import AuthRuntime
 from motionile.modules.auth import service as auth_module
@@ -46,6 +49,8 @@ from motionile.modules.billing.dependencies import get_billing_services
 from motionile.modules.billing.services.factory import ServiceHooks, build_services
 from motionile.modules.credits import CreditsService
 from motionile.modules.notifications import FakeDelivery, Notification
+from motionile.modules.voices.dependencies import get_clone_service
+from motionile.modules.voices.factory import build_clone_service
 
 POSTGRES_IMAGE = "pgvector/pgvector:0.8.7-pg17-trixie"
 REDIS_IMAGE = "redis:8.10.2-alpine"
@@ -246,3 +251,48 @@ async def billing_api(resources: Resources, monkeypatch: pytest.MonkeyPatch) -> 
             storage=storage,
         )
     await purge_billing_data(resources.database, [primary_id, other_id])
+
+
+MEDIA_PRIMARY_EMAIL = "media-primary@example.com"
+MEDIA_OTHER_EMAIL = "media-other@example.com"
+
+
+@pytest.fixture
+async def media_api(resources: Resources, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[MediaApi]:
+    resources.rate_limiter.enabled = False
+    inbox = FakeDelivery(resources.redis_store)
+
+    def enqueue(fake_resources: Resources, session: AsyncSession, message: Notification) -> None:
+        del fake_resources
+
+        async def deliver() -> None:
+            await inbox.record(message)
+
+        after_commit(session, deliver)
+
+    monkeypatch.setattr(auth_module, "enqueue_notification", enqueue)
+    storage = resources.storage
+    assert isinstance(storage, S3Storage)
+    await storage.ensure_bucket()
+    app = create_app(resources.settings, resources=resources)
+    app.state.auth_runtime = AuthRuntime(resources)
+    async with client_for(app) as primary, client_for(app) as other, client_for(app) as anonymous:
+        primary_id = UUID(await signup(primary, MEDIA_PRIMARY_EMAIL))
+        other_id = UUID(await signup(other, MEDIA_OTHER_EMAIL))
+        yield MediaApi(app, resources, storage, primary, other, anonymous, primary_id, other_id)
+    await purge_media_data(resources.database, [primary_id, other_id])
+    await purge_credit_data(resources.database, [])
+
+
+@pytest.fixture
+async def voices_api(media_api: MediaApi, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[VoicesApi]:
+    retry_flaky_object_reads(monkeypatch)
+    api = VoicesApi(media_api)
+
+    def enqueue(session: AsyncSession, voice_id: UUID, reservation_id: UUID | None) -> None:
+        del session
+        api.enqueued.append((voice_id, reservation_id))
+
+    media_api.app.dependency_overrides[get_clone_service] = lambda: build_clone_service(media_api.resources, enqueue)
+    yield api
+    await purge_voices_data(media_api.database)

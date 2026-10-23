@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Comparison split</title>
+    <link rel="stylesheet" href="https://runtime.motionile.local/v1/base.css" />
+    <style>
+      .intro-title {
+        font-size: calc(var(--mo-text-title) * 1.2);
+        font-weight: 800;
+        line-height: 1.12;
+        letter-spacing: -0.03em;
+        text-align: center;
+        max-width: 22ch;
+      }
+      .intro-sub {
+        margin-top: calc(var(--mo-unit) * 3);
+      }
+      .panel {
+        display: flex;
+        text-align: left;
+        flex-direction: column;
+        gap: calc(var(--mo-unit) * 2);
+        justify-content: center;
+      }
+      .panel-title {
+        margin: 0;
+        font-size: var(--mo-text-subtitle);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .panel-tag {
+        margin: 0;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .rows {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--mo-unit) * 1.4);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .row {
+        display: flex;
+        gap: calc(var(--mo-unit) * 1.6);
+        align-items: center;
+        font-size: var(--mo-text-body);
+        line-height: 1.25;
+        color: var(--mo-text-secondary);
+      }
+      .mark {
+        flex: none;
+        width: calc(var(--mo-unit) * 1.4);
+        height: calc(var(--mo-unit) * 1.4);
+        border-radius: 999px;
+        background: var(--mo-text-muted);
+      }
+      .panel-accent .mark {
+        background: var(--mo-success);
+      }
+      .panel-accent {
+        border-color: var(--mo-accent);
+      }
+    </style>
+    <script src="https://runtime.motionile.local/v1/gsap/gsap.min.js"></script>
+    <script src="https://runtime.motionile.local/v1/motionile.js"></script>
+  </head>
+  <body>
+    <main class="mo-stage">
+      <section class="mo-scene mo-center" data-scene="intro">
+        <h1 class="intro-title" id="intro-title">There are two ways to make an explainer video.</h1>
+        <p class="mo-body intro-sub" id="intro-sub">Pick the one that respects your time.</p>
+      </section>
+      <section class="mo-scene mo-center" data-scene="compare">
+        <div class="mo-split">
+          <div class="mo-card panel" id="manual">
+            <p class="mo-caption panel-tag">The old way</p>
+            <h2 class="panel-title">Editing by hand</h2>
+            <ul class="rows">
+              <li class="row" data-cue="timelines"><span class="mark"></span>Drag clips on timelines</li>
+              <li class="row" data-cue="keyframes"><span class="mark"></span>Set keyframes one by one</li>
+              <li class="row" data-cue="hours"><span class="mark"></span>Spend hours on one minute</li>
+            </ul>
+          </div>
+          <div class="mo-card panel panel-accent" id="narrated">
+            <p class="mo-caption panel-tag">The new way</p>
+            <h2 class="panel-title">Narration first</h2>
+            <ul class="rows">
+              <li class="row" data-cue="write"><span class="mark"></span>Write the idea</li>
+              <li class="row" data-cue="hear"><span class="mark"></span>Hear the voice</li>
+              <li class="row" data-cue="get"><span class="mark"></span>Get the video</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script>
+      Motionile.composition({
+        aspects: ["16:9", "9:16", "1:1"],
+        scenes: [
+          {
+            id: "intro",
+            build(ctx) {
+              const words = ctx.root.querySelector("#intro-title");
+              const sub = ctx.root.querySelector("#intro-sub");
+              ctx.timeline.from(words, { opacity: 0, y: 40, duration: 0.6, ease: "power3.out" }, 0.1);
+              ctx.timeline.from(sub, { opacity: 0, y: 24, duration: 0.5, ease: "power3.out" }, Math.min(ctx.end("video"), ctx.duration - 0.5));
+            },
+          },
+          {
+            id: "compare",
+            build(ctx) {
+              const fromX = ctx.aspect === "9:16" || ctx.aspect === "1:1" ? 0 : 60;
+              const fromY = fromX === 0 ? 50 : 0;
+              ["#manual", "#narrated"].forEach((selector, index) => {
+                const cue = index === 0 ? "editing" : "narration";
+                ctx.timeline.from(
+                  ctx.root.querySelector(selector),
+                  { opacity: 0, x: index === 0 ? -fromX : fromX, y: fromY, duration: 0.6, ease: "power3.out" },
+                  Math.min(ctx.at(cue), ctx.duration - 0.6),
+                );
+              });
+              ctx.root.querySelectorAll(".row").forEach((row) => {
+                ctx.timeline.from(
+                  row,
+                  { opacity: 0, x: -24, duration: 0.4, ease: "power2.out" },
+                  Math.min(ctx.at(row.dataset.cue), ctx.duration - 0.4),
+                );
+              });
+            },
+          },
+        ],
+      });
+    </script>
+  </body>
+</html>

@@ -215,6 +215,8 @@ head -n 1 ~/motionile-secrets/cloudfront-staging-public.pem
 
 Expected result: `-----BEGIN PUBLIC KEY-----`. Store the private key in your password manager.
 
+CloudFront accepts only 2048-bit RSA keys, so do not change the size. Step 19 stores the private key base64-encoded on one line, which fits in a Standard SSM parameter; the API reads it as `CLOUDFRONT_PRIVATE_KEY`. Rotation is in [secrets-rotation.md](secrets-rotation.md#5-cloudfront-signing-key-pair).
+
 ### 10. Create `terraform.tfvars`
 
 This writes `infra/aws/envs/staging/terraform.tfvars` from the example with your values and the two public keys. It contains no secrets, and git ignores it.
@@ -409,6 +411,7 @@ Gather the external values first. [neon-setup.md](neon-setup.md) explains how to
 - **`DATABASE_URL`**: the Neon **pooled** connection string of the staging database (the host contains `-pooler`), pasted exactly as Neon shows it, including `?sslmode=require` and any `channel_binding=require`. The server translates these for asyncpg.
 - **`DATABASE_DIRECT_URL`**: the Neon **direct** connection string (no `-pooler`), also pasted as shown. Migrations and the job queue use it through psycopg.
 - **`TURNSTILE_SECRET_KEY`**: in the Cloudflare dashboard, open Turnstile, add a widget for the host name `<STAGING_DOMAIN>`, and copy its secret key.
+- **`ELEVENLABS_API_KEY`**: in the ElevenLabs dashboard, create an API key named `motionile-staging` for narration, alignment and voice cloning. Add `OPENAI_API_KEY` the same way only if you select OpenAI with `AUDIO_TTS_PROVIDER` or `AUDIO_TRANSCRIBER`.
 
 Create the values file. Generated values come from OpenSSL; the external values are written with single quotes so the shell never expands them:
 
@@ -420,6 +423,7 @@ mkdir -p infra/parameters
     printf 'DATABASE_URL=%s\n' '<NEON_STAGING_POOLED_URL_WITH_SSL_REQUIRE>'
     printf 'DATABASE_DIRECT_URL=%s\n' '<NEON_STAGING_DIRECT_URL>'
     printf 'TURNSTILE_SECRET_KEY=%s\n' '<TURNSTILE_STAGING_SECRET_KEY>'
+    printf 'ELEVENLABS_API_KEY=%s\n' '<ELEVENLABS_STAGING_API_KEY>'
     printf 'REDIS_PASSWORD=%s\n' "$(openssl rand -hex 32)"
     printf 'SECURITY_PAGINATION_SECRET=%s\n' "$(openssl rand -hex 32)"
     printf 'ENCRYPTION_KEYS={"1":"%s"}\n' "$(openssl rand -base64 32)"
@@ -447,7 +451,7 @@ cut -d= -f1 infra/parameters/staging.env
 git status --short infra/parameters
 ```
 
-Expected result: mode `-rw-------`, the seven names `DATABASE_URL`, `DATABASE_DIRECT_URL`, `TURNSTILE_SECRET_KEY`, `REDIS_PASSWORD`, `SECURITY_PAGINATION_SECRET`, `ENCRYPTION_KEYS`, `CLOUDFRONT_PRIVATE_KEY`, and no output from `git status` (the directory is ignored).
+Expected result: mode `-rw-------`, the eight names `DATABASE_URL`, `DATABASE_DIRECT_URL`, `TURNSTILE_SECRET_KEY`, `ELEVENLABS_API_KEY`, `REDIS_PASSWORD`, `SECURITY_PAGINATION_SECRET`, `ENCRYPTION_KEYS`, `CLOUDFRONT_PRIVATE_KEY`, and no output from `git status` (the directory is ignored).
 
 Upload:
 
@@ -464,7 +468,7 @@ aws ssm get-parameters-by-path --region ap-south-1 --path /motionile/staging \
   --query 'Parameters[].[Type,Name]' --output text | sort
 ```
 
-Expected result: 7 `SecureString` lines (the names above) and 22 `String` lines written by OpenTofu, including `CLOUDFRONT_KEY_PAIR_ID`.
+Expected result: 8 `SecureString` lines (the names above) and the `String` lines written by OpenTofu, including `MEDIA_DELIVERY_MODE` (`presigned` until the CDN is enabled, then `cloudfront`) and, once the CDN is enabled, `CLOUDFRONT_KEY_PAIR_ID`.
 
 Copy the contents of `infra/parameters/staging.env` into your password manager, then delete the local file. `ENCRYPTION_KEYS` must never be lost: without it, stored third-party credentials cannot be decrypted.
 

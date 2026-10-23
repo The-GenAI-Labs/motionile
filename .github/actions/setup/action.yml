@@ -5,6 +5,10 @@ inputs:
     description: Install the Python environment for apps/server.
     required: false
     default: "true"
+  render:
+    description: Install the render dependency group, ffmpeg and Chromium for the server project.
+    required: false
+    default: "false"
 runs:
   using: composite
   steps:
@@ -26,3 +30,17 @@ runs:
       if: inputs.python == 'true'
       shell: bash
       run: uv sync --frozen --project apps/server
+    - name: Install ffmpeg
+      if: inputs.python == 'true' && inputs.render == 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes --no-install-recommends ffmpeg
+    - name: Allow the Chromium sandbox on the runner
+      if: inputs.python == 'true' && inputs.render == 'true'
+      shell: bash
+      run: sudo sysctl --ignore --write kernel.apparmor_restrict_unprivileged_userns=0
+    - name: Install Chromium
+      if: inputs.python == 'true' && inputs.render == 'true'
+      shell: bash
+      run: uv run --frozen --no-sync --project apps/server playwright install --with-deps chromium

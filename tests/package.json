@@ -6,9 +6,11 @@
   "scripts": {
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "e2e": "playwright test --project=e2e --project=auth-browser --project=billing-browser",
+    "e2e": "playwright test --project=e2e --project=auth-browser --project=billing-browser --project=media-browser",
     "smoke": "playwright test --project=smoke",
     "security": "playwright test --project=security",
+    "security:cdn": "playwright test --project=security-cdn",
+    "security:render": "playwright test --project=security-render",
     "zap": "bash security/zap/run-baseline.sh",
     "load": "bash load/run-smoke.sh"
   },

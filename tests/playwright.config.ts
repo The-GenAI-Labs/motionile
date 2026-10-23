@@ -16,7 +16,7 @@ export default defineConfig({
       name: "e2e",
       testDir: "./e2e",
       use: { ...devices["Desktop Chrome"], baseURL: webBaseUrl },
-      testIgnore: ["auth/**/*.spec.ts", "billing/**/*.spec.ts"],
+      testIgnore: ["auth/**/*.spec.ts", "billing/**/*.spec.ts", "media/**/*.spec.ts"],
     },
     {
       name: "auth-browser",
@@ -41,6 +41,18 @@ export default defineConfig({
       },
     },
     {
+      name: "media-browser",
+      testDir: "./e2e/media",
+      timeout: 600000,
+      workers: 1,
+      expect: { timeout: 15000 },
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL: process.env["AUTH_WEB_BASE_URL"] ?? "https://localhost:3443",
+        ignoreHTTPSErrors: true,
+      },
+    },
+    {
       name: "smoke",
       testDir: "./e2e",
       testMatch: "smoke.spec.ts",
@@ -49,6 +61,20 @@ export default defineConfig({
     {
       name: "security",
       testDir: "./security/api",
+      testIgnore: ["media-cdn-scope.spec.ts", "media-delivery-render.spec.ts"],
+      use: { baseURL: apiBaseUrl },
+    },
+    {
+      name: "security-cdn",
+      testDir: "./security/api",
+      testMatch: "media-cdn-scope.spec.ts",
+      use: { baseURL: apiBaseUrl },
+    },
+    {
+      name: "security-render",
+      testDir: "./security/api",
+      testMatch: "media-delivery-render.spec.ts",
+      timeout: 900000,
       use: { baseURL: apiBaseUrl },
     },
   ],

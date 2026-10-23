@@ -73,6 +73,40 @@ describe("public env", () => {
   });
 });
 
+describe("media origin", () => {
+  const withOrigin = (value: string | undefined) =>
+    parsePublicEnv({
+      NEXT_PUBLIC_SITE_URL: "https://motionile.com",
+      NEXT_PUBLIC_MEDIA_ORIGIN: value,
+    });
+
+  it("is optional and treats an empty value as unset", () => {
+    expect(withOrigin(undefined).NEXT_PUBLIC_MEDIA_ORIGIN).toBeUndefined();
+    expect(withOrigin("").NEXT_PUBLIC_MEDIA_ORIGIN).toBeUndefined();
+  });
+
+  it("accepts an https origin and a local http origin", () => {
+    expect(withOrigin("https://storage.motionile.com/").NEXT_PUBLIC_MEDIA_ORIGIN).toBe(
+      "https://storage.motionile.com",
+    );
+    expect(withOrigin("http://localhost:9000").NEXT_PUBLIC_MEDIA_ORIGIN).toBe(
+      "http://localhost:9000",
+    );
+  });
+
+  it("rejects insecure remote origins, paths and other schemes", () => {
+    expect(() => withOrigin("http://storage.motionile.com")).toThrow(/NEXT_PUBLIC_MEDIA_ORIGIN/);
+    expect(() => withOrigin("https://storage.motionile.com/bucket")).toThrow(
+      /NEXT_PUBLIC_MEDIA_ORIGIN/,
+    );
+    expect(() => withOrigin("https://storage.motionile.com/?a=1")).toThrow(
+      /NEXT_PUBLIC_MEDIA_ORIGIN/,
+    );
+    expect(() => withOrigin("ftp://storage.motionile.com")).toThrow(/NEXT_PUBLIC_MEDIA_ORIGIN/);
+    expect(() => withOrigin("*")).toThrow(/NEXT_PUBLIC_MEDIA_ORIGIN/);
+  });
+});
+
 describe("providers mode", () => {
   const withMode = (siteUrl: string, mode: string | undefined) =>
     parsePublicEnv({ NEXT_PUBLIC_SITE_URL: siteUrl, NEXT_PUBLIC_PROVIDERS_MODE: mode });

@@ -6,14 +6,22 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import Field
 
 from motionile.core.dependencies import ResourcesDep
-from motionile.core.errors import NotFoundError, problem_responses, request_id_of
+from motionile.core.errors import NotFoundError, UnauthorizedError, problem_responses, request_id_of
 from motionile.core.idempotency import IdempotencyGuard, idempotent
 from motionile.core.ids import new_id
 from motionile.core.ratelimit.limiter import rate_limit
 from motionile.core.schemas import ResponseModel, StrictModel
 from motionile.modules.audit import ActorType, AuditEvent, context_from_request, record
-from motionile.modules.auth import FakeGrant, FakeOAuthProvider, ProviderIdentity, ProviderName
+from motionile.modules.auth import (
+    CurrentPrincipalDep,
+    FakeGrant,
+    FakeOAuthProvider,
+    ProviderIdentity,
+    ProviderName,
+    enforce_csrf,
+)
 from motionile.modules.billing.razorpay.fake_routes import fake_razorpay_router
+from motionile.modules.media import FakeConsentTranscripts
 from motionile.modules.notifications import FakeDelivery, Notification
 
 TEST_IDEMPOTENCY_SCOPE = "test.idempotent"
@@ -145,3 +153,44 @@ async def fake_authorize(
         identity=ProviderIdentity(subject=query.email, email=query.email, email_verified=query.verified),
     )
     return RedirectResponse(await adapter.authorize(query.state, grant), status_code=302)
+
+
+class ConsentTranscriptRequest(StrictModel):
+    text: str = Field(min_length=1, max_length=1000)
+
+
+def consent_transcripts_for(
+    resources: ResourcesDep, principal: CurrentPrincipalDep
+) -> tuple[FakeConsentTranscripts, UUID]:
+    if not resources.settings.is_fake_providers:
+        raise NotFoundError
+    if principal.user_id is None:
+        raise UnauthorizedError(code="unauthenticated")
+    return FakeConsentTranscripts(resources.redis_store), principal.user_id
+
+
+ConsentTranscriptsDep = Annotated[tuple[FakeConsentTranscripts, UUID], Depends(consent_transcripts_for)]
+
+
+@test_support_router.post(
+    "/voices/consent-transcript",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Set the text the fake transcriber returns for the caller's consent recordings",
+    dependencies=[Depends(enforce_csrf)],
+    responses=problem_responses(status.HTTP_401_UNAUTHORIZED, status.HTTP_404_NOT_FOUND),
+)
+async def set_consent_transcript(body: ConsentTranscriptRequest, transcripts: ConsentTranscriptsDep) -> None:
+    store, user_id = transcripts
+    await store.put(user_id, body.text)
+
+
+@test_support_router.delete(
+    "/voices/consent-transcript",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Clear the fake consent transcript of the caller",
+    dependencies=[Depends(enforce_csrf)],
+    responses=problem_responses(status.HTTP_401_UNAUTHORIZED, status.HTTP_404_NOT_FOUND),
+)
+async def clear_consent_transcript(transcripts: ConsentTranscriptsDep) -> None:
+    store, user_id = transcripts
+    await store.clear(user_id)

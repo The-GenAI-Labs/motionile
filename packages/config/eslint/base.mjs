@@ -17,6 +17,7 @@ export const GENERATED_IGNORES = [
   "**/src/generated/**",
   "**/next-env.d.ts",
   "**/tests/fixtures/**",
+  "**/vendor/**",
 ];
 
 export const createBaseConfig = ({ tsconfigRootDir }) =>
@@ -61,5 +62,9 @@ export const createBaseConfig = ({ tsconfigRootDir }) =>
     {
       files: ["**/*.{js,mjs,cjs}"],
       extends: [tseslint.configs.disableTypeChecked],
+    },
+    {
+      files: ["apps/server/src/**/*.js"],
+      languageOptions: { globals: { ...globals.browser } },
     },
   );

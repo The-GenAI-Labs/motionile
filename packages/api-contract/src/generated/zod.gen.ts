@@ -127,6 +127,17 @@ export const zAdminUserListResponse = z.object({
 });
 
 /**
+ * Aspect
+ */
+export const zAspect = z.enum([
+    '16:9',
+    '9:16',
+    '1:1'
+]);
+
+export const zAttributionText = z.string().min(1).max(500);
+
+/**
  * AuditEntryResponse
  */
 export const zAuditEntryResponse = z.object({
@@ -159,11 +170,46 @@ export const zAvatarResponse = z.object({
 });
 
 /**
+ * BedMusicTrackView
+ */
+export const zBedMusicTrackView = z.object({
+    attribution: z.string().nullish(),
+    bpm: z.int().nullish(),
+    durationMs: z.int(),
+    id: z.uuid(),
+    mood: z.string(),
+    title: z.string()
+});
+
+/**
+ * BedMusicTrackList
+ */
+export const zBedMusicTrackList = z.object({
+    items: z.array(zBedMusicTrackView)
+});
+
+/**
  * Body_users_upload_avatar
  */
 export const zBodyUsersUploadAvatar = z.object({
     file: z.string()
 });
+
+/**
+ * Body_voices_add_clone_sample
+ */
+export const zBodyVoicesAddCloneSample = z.object({
+    file: z.string()
+});
+
+/**
+ * Body_voices_replace_consent_recording
+ */
+export const zBodyVoicesReplaceConsentRecording = z.object({
+    file: z.string()
+});
+
+export const zBpm = z.int().gte(30).lte(300);
 
 /**
  * CatalogCategoryResponse
@@ -367,10 +413,67 @@ export const zClawbackPreviewResponse = z.object({
 });
 
 /**
+ * CloneLimitsView
+ */
+export const zCloneLimitsView = z.object({
+    consentMaxSeconds: z.int(),
+    consentMinSeconds: z.int(),
+    maxSampleFiles: z.int(),
+    sampleMaxBytes: z.int(),
+    sampleMaxTotalSeconds: z.int(),
+    sampleMinTotalSeconds: z.int()
+});
+
+/**
+ * CloneSampleView
+ */
+export const zCloneSampleView = z.object({
+    durationMs: z.int(),
+    id: z.uuid(),
+    sizeBytes: z.int()
+});
+
+/**
+ * CloneStartView
+ */
+export const zCloneStartView = z.object({
+    attemptId: z.uuid(),
+    consentSentence: z.string(),
+    expiresAt: z.iso.datetime(),
+    limits: zCloneLimitsView,
+    statementText: z.string(),
+    statementVersion: z.string(),
+    voiceId: z.uuid()
+});
+
+/**
  * CodeRequest
  */
 export const zCodeRequest = z.object({
     code: z.string().regex(/^[0-9]{6}$/)
+});
+
+/**
+ * ConsentRecordingView
+ */
+export const zConsentRecordingView = z.object({
+    durationMs: z.int(),
+    sizeBytes: z.int()
+});
+
+/**
+ * CloneAttemptView
+ */
+export const zCloneAttemptView = z.object({
+    attemptId: z.uuid(),
+    consentRecording: zConsentRecordingView.nullish(),
+    consentSentence: z.string(),
+    expiresAt: z.iso.datetime(),
+    limits: zCloneLimitsView,
+    samples: z.array(zCloneSampleView),
+    statementVersion: z.string(),
+    totalSampleMs: z.int(),
+    voiceId: z.uuid()
 });
 
 /**
@@ -606,6 +709,49 @@ export const zFeatureFlagWriteRequest = z.object({
     rules: z.array(zFlagRule).max(20).optional()
 });
 
+export const zFps = z.int().gte(24).lte(60);
+
+export const zGoldenName = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/);
+
+/**
+ * GoldenRenderRequest
+ */
+export const zGoldenRenderRequest = z.object({
+    aspects: z.array(zAspect).min(1).max(3).optional(),
+    burnInSubtitles: z.boolean().optional().default(false),
+    fps: zFps.nullish(),
+    musicTrackId: z.uuid().nullish(),
+    subtitles: z.boolean().optional().default(true),
+    voiceId: z.uuid()
+});
+
+/**
+ * GoldenSceneView
+ */
+export const zGoldenSceneView = z.object({
+    sceneId: z.string(),
+    text: z.string()
+});
+
+/**
+ * GoldenCompositionView
+ */
+export const zGoldenCompositionView = z.object({
+    description: z.string(),
+    language: z.string(),
+    name: z.string(),
+    sceneIds: z.array(z.string()),
+    scenes: z.array(zGoldenSceneView),
+    title: z.string()
+});
+
+/**
+ * GoldenCatalogView
+ */
+export const zGoldenCatalogView = z.object({
+    items: z.array(zGoldenCompositionView)
+});
+
 export const zHistoryTypeName = z.enum([
     'order',
     'payment',
@@ -635,6 +781,8 @@ export const zHistoryPageResponse = z.object({
     items: z.array(zHistoryItemResponse),
     nextCursor: z.string().nullish()
 });
+
+export const zHttpsUrl = z.string().min(9).max(2000);
 
 /**
  * IdentifierRequest
@@ -722,6 +870,8 @@ export const zLedgerPageResponse = z.object({
     nextCursor: z.string().nullish()
 });
 
+export const zLicenseName = z.string().min(1).max(120);
+
 /**
  * LivenessResponse
  */
@@ -750,6 +900,60 @@ export const zExpiringLotResponse = z.object({
     expiresAt: z.iso.datetime(),
     remaining: z.int(),
     source: zLotSourceName
+});
+
+/**
+ * MediaDeliveryMode
+ */
+export const zMediaDeliveryMode = z.enum(['cloudfront', 'presigned']);
+
+/**
+ * MediaSessionView
+ */
+export const zMediaSessionView = z.object({
+    expiresAt: z.iso.datetime().nullish(),
+    mode: zMediaDeliveryMode
+});
+
+export const zMood = z.string().regex(/^[a-z][a-z0-9-]{1,39}$/);
+
+/**
+ * MusicAttributionView
+ */
+export const zMusicAttributionView = z.object({
+    attributionText: z.string().nullish(),
+    licenseName: z.string(),
+    licenseUrl: z.string(),
+    title: z.string(),
+    trackId: z.uuid()
+});
+
+/**
+ * MusicTrackView
+ */
+export const zMusicTrackView = z.object({
+    attributionText: z.string().nullish(),
+    audioAssetId: z.uuid(),
+    bpm: z.int().nullish(),
+    createdAt: z.iso.datetime(),
+    createdByUserId: z.uuid().nullish(),
+    durationMs: z.int(),
+    id: z.uuid(),
+    isActive: z.boolean(),
+    licenseName: z.string(),
+    licenseUrl: z.string(),
+    mood: z.string(),
+    previewUrl: z.string().nullish(),
+    title: z.string(),
+    updatedAt: z.iso.datetime()
+});
+
+/**
+ * MusicTrackPage
+ */
+export const zMusicTrackPage = z.object({
+    items: z.array(zMusicTrackView),
+    nextCursor: z.string().nullish()
 });
 
 /**
@@ -1121,6 +1325,124 @@ export const zRegisterRequest = z.object({
 });
 
 /**
+ * RenderSource
+ */
+export const zRenderSource = z.enum([
+    'testbed',
+    'job',
+    'mcp'
+]);
+
+/**
+ * RenderStage
+ */
+export const zRenderStage = z.enum([
+    'preparing',
+    'voicing',
+    'mixing',
+    'capturing',
+    'encoding',
+    'finalizing'
+]);
+
+/**
+ * RenderStatus
+ */
+export const zRenderStatus = z.enum([
+    'queued',
+    'preparing',
+    'voicing',
+    'mixing',
+    'capturing',
+    'encoding',
+    'finalizing',
+    'completed',
+    'failed',
+    'cancelled'
+]);
+
+/**
+ * RenderView
+ */
+export const zRenderView = z.object({
+    cancelRequestedAt: z.iso.datetime().nullish(),
+    completedAt: z.iso.datetime().nullish(),
+    createdAt: z.iso.datetime(),
+    durationMs: z.int().nullish(),
+    errorCode: z.string().nullish(),
+    errorMessage: z.string().nullish(),
+    id: z.uuid(),
+    options: z.record(z.string(), z.unknown()),
+    progress: z.int(),
+    source: zRenderSource,
+    stage: zRenderStage.nullish(),
+    stageTimings: z.record(z.string(), z.unknown()),
+    startedAt: z.iso.datetime().nullish(),
+    status: zRenderStatus,
+    updatedAt: z.iso.datetime(),
+    validationReport: z.record(z.string(), z.unknown()).nullish()
+});
+
+/**
+ * RenditionStatus
+ */
+export const zRenditionStatus = z.enum([
+    'pending',
+    'rendering',
+    'ready',
+    'failed'
+]);
+
+/**
+ * RenditionView
+ */
+export const zRenditionView = z.object({
+    aspect: zAspect,
+    attribution: zMusicAttributionView.nullish(),
+    burnedInSubtitles: z.boolean(),
+    durationMs: z.int().nullish(),
+    height: z.int(),
+    id: z.uuid(),
+    posterJpegUrl: z.string().nullish(),
+    posterUrl: z.string().nullish(),
+    status: zRenditionStatus,
+    subtitlesSrtUrl: z.string().nullish(),
+    subtitlesUrl: z.string().nullish(),
+    url: z.string().nullish(),
+    width: z.int()
+});
+
+/**
+ * RenderBedView
+ */
+export const zRenderBedView = z.object({
+    cancelRequestedAt: z.iso.datetime().nullish(),
+    completedAt: z.iso.datetime().nullish(),
+    createdAt: z.iso.datetime(),
+    durationMs: z.int().nullish(),
+    errorCode: z.string().nullish(),
+    errorMessage: z.string().nullish(),
+    id: z.uuid(),
+    options: z.record(z.string(), z.unknown()),
+    progress: z.int(),
+    renditions: z.array(zRenditionView),
+    source: zRenderSource,
+    stage: zRenderStage.nullish(),
+    stageTimings: z.record(z.string(), z.unknown()),
+    startedAt: z.iso.datetime().nullish(),
+    status: zRenderStatus,
+    updatedAt: z.iso.datetime(),
+    validationReport: z.record(z.string(), z.unknown()).nullish()
+});
+
+/**
+ * RenditionListView
+ */
+export const zRenditionListView = z.object({
+    items: z.array(zRenditionView)
+});
+
+/**
  * ReorderItem
  */
 export const zReorderItem = z.object({
@@ -1327,6 +1649,16 @@ export const zSettingUpdateRequest = z.object({
     version: z.int().gte(1)
 });
 
+export const zStatementVersion = z.string().min(1).max(40);
+
+/**
+ * CloneStartRequest
+ */
+export const zCloneStartRequest = z.object({
+    accepted: z.literal(true),
+    statementVersion: zStatementVersion
+});
+
 /**
  * SubcategoryDetailResponse
  */
@@ -1504,6 +1836,34 @@ export const zCurrentSubscriptionResponse = z.object({
     subscription: zSubscriptionResponse.nullable()
 });
 
+export const zTitle = z.string().min(1).max(120);
+
+/**
+ * Body_admin_music_upload_music_track
+ */
+export const zBodyAdminMusicUploadMusicTrack = z.object({
+    activate: z.boolean().optional().default(false),
+    attributionText: zAttributionText.nullish(),
+    bpm: zBpm.nullish(),
+    file: z.string(),
+    licenseName: zLicenseName,
+    licenseUrl: zHttpsUrl,
+    mood: zMood,
+    title: zTitle
+});
+
+/**
+ * MusicUpdateRequest
+ */
+export const zMusicUpdateRequest = z.object({
+    attributionText: zAttributionText.nullish(),
+    bpm: zBpm.nullish(),
+    licenseName: zLicenseName.nullish(),
+    licenseUrl: zHttpsUrl.nullish(),
+    mood: zMood.nullish(),
+    title: zTitle.nullish()
+});
+
 /**
  * TopicDetailResponse
  */
@@ -1675,7 +2035,7 @@ export const zUserPreferencesUpdateRequest = z.object({
     captionsEnabled: z.boolean(),
     defaultAspect: z.string().max(10),
     defaultStyle: z.string().max(80).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/).nullish(),
-    defaultVoiceId: z.null().optional(),
+    defaultVoiceId: z.uuid().nullish(),
     depth: z.string().max(32),
     language: z.string().max(20),
     pace: z.string().max(32)
@@ -1769,6 +2129,113 @@ export const zVerifySubscriptionRequest = z.object({
     razorpayPaymentId: z.string().min(1).max(64).regex(/^[A-Za-z0-9_]+$/),
     razorpaySignature: z.string().min(1).max(128),
     razorpaySubscriptionId: z.string().min(1).max(64).regex(/^[A-Za-z0-9_]+$/)
+});
+
+/**
+ * VoiceKind
+ */
+export const zVoiceKind = z.enum(['builtin', 'cloned']);
+
+export const zVoiceLanguage = z.string().max(35).regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/);
+
+export const zVoiceName = z.string().min(1).max(80);
+
+/**
+ * CloneSubmitRequest
+ */
+export const zCloneSubmitRequest = z.object({
+    language: zVoiceLanguage,
+    name: zVoiceName
+});
+
+/**
+ * VoicePreviewView
+ */
+export const zVoicePreviewView = z.object({
+    expiresAt: z.iso.datetime(),
+    url: z.string()
+});
+
+/**
+ * VoiceStatus
+ */
+export const zVoiceStatus = z.enum([
+    'pending',
+    'ready',
+    'failed',
+    'disabled'
+]);
+
+/**
+ * AdminVoiceView
+ */
+export const zAdminVoiceView = z.object({
+    createdAt: z.iso.datetime(),
+    failureCode: z.string().nullish(),
+    hasPreview: z.boolean(),
+    id: z.uuid(),
+    kind: zVoiceKind,
+    labels: z.record(z.string(), z.string()),
+    language: z.string(),
+    name: z.string(),
+    provider: z.string(),
+    providerVoiceId: z.string().nullish(),
+    status: zVoiceStatus,
+    tags: z.array(z.string()),
+    updatedAt: z.iso.datetime()
+});
+
+/**
+ * AdminVoicePage
+ */
+export const zAdminVoicePage = z.object({
+    items: z.array(zAdminVoiceView),
+    nextCursor: z.string().nullish()
+});
+
+/**
+ * VoiceSyncView
+ */
+export const zVoiceSyncView = z.object({
+    added: z.int(),
+    unchanged: z.int()
+});
+
+export const zVoiceTag = z.string().regex(/^[a-z0-9][a-z0-9 -]{0,29}$/);
+
+/**
+ * VoiceUpdateRequest
+ */
+export const zVoiceUpdateRequest = z.object({
+    language: zVoiceLanguage.nullish(),
+    name: zVoiceName.nullish(),
+    status: z.enum(['ready', 'disabled']).nullish(),
+    tags: z.array(zVoiceTag).max(10).nullish()
+});
+
+/**
+ * VoiceView
+ */
+export const zVoiceView = z.object({
+    createdAt: z.iso.datetime(),
+    failureCode: z.string().nullish(),
+    hasPreview: z.boolean(),
+    id: z.uuid(),
+    kind: zVoiceKind,
+    labels: z.record(z.string(), z.string()),
+    language: z.string(),
+    name: z.string(),
+    status: zVoiceStatus,
+    tags: z.array(z.string()),
+    updatedAt: z.iso.datetime()
+});
+
+/**
+ * VoicePage
+ */
+export const zVoicePage = z.object({
+    items: z.array(zVoiceView),
+    nextCursor: z.string().nullish()
 });
 
 /**
@@ -2353,6 +2820,121 @@ export const zPlatformUpdateFlagPath = z.object({
  */
 export const zPlatformUpdateFlagResponse = zFeatureFlagResponse;
 
+export const zAdminMusicListMusicTracksQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    mood: zMood.nullish(),
+    active: z.boolean().nullish()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminMusicListMusicTracksResponse = zMusicTrackPage;
+
+export const zAdminMusicUploadMusicTrackBody = zBodyAdminMusicUploadMusicTrack;
+
+/**
+ * Successful Response
+ */
+export const zAdminMusicUploadMusicTrackResponse = zMusicTrackView;
+
+export const zAdminMusicGetMusicTrackPath = z.object({
+    track_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminMusicGetMusicTrackResponse = zMusicTrackView;
+
+export const zAdminMusicUpdateMusicTrackBody = zMusicUpdateRequest;
+
+export const zAdminMusicUpdateMusicTrackPath = z.object({
+    track_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminMusicUpdateMusicTrackResponse = zMusicTrackView;
+
+export const zAdminMusicActivateMusicTrackPath = z.object({
+    track_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminMusicActivateMusicTrackResponse = zMusicTrackView;
+
+export const zAdminMusicDeactivateMusicTrackPath = z.object({
+    track_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminMusicDeactivateMusicTrackResponse = zMusicTrackView;
+
+export const zAdminRenderTestbedCreateTestbedRenderBody = z.object({
+    composition: z.string(),
+    options: z.string()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminRenderTestbedCreateTestbedRenderResponse = zRenderView;
+
+/**
+ * Successful Response
+ */
+export const zAdminRenderTestbedListGoldenCompositionsResponse = zGoldenCatalogView;
+
+export const zAdminRenderTestbedCreateGoldenRenderBody = zGoldenRenderRequest;
+
+export const zAdminRenderTestbedCreateGoldenRenderPath = z.object({
+    name: zGoldenName
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminRenderTestbedCreateGoldenRenderResponse = zRenderView;
+
+/**
+ * Successful Response
+ */
+export const zAdminRenderTestbedListTestbedMusicTracksResponse = zBedMusicTrackList;
+
+export const zAdminRenderTestbedGetTestbedRenderPath = z.object({
+    render_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminRenderTestbedGetTestbedRenderResponse = zRenderBedView;
+
+export const zAdminRenderTestbedCancelTestbedRenderPath = z.object({
+    render_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminRenderTestbedCancelTestbedRenderResponse = zRenderView;
+
+export const zAdminRenderTestbedStreamTestbedRenderPath = z.object({
+    render_id: z.uuid()
+});
+
+/**
+ * Server-sent events
+ */
+export const zAdminRenderTestbedStreamTestbedRenderResponse = z.string();
+
 /**
  * Successful Response
  */
@@ -2498,6 +3080,43 @@ export const zAdminUsersUnsuspendUserPath = z.object({
  * Successful Response
  */
 export const zAdminUsersUnsuspendUserResponse = z.void();
+
+export const zAdminVoicesListBuiltinVoicesQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    language: zVoiceLanguage.nullish(),
+    status: zVoiceStatus.nullish()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminVoicesListBuiltinVoicesResponse = zAdminVoicePage;
+
+/**
+ * Successful Response
+ */
+export const zAdminVoicesSyncBuiltinVoicesResponse = zVoiceSyncView;
+
+export const zAdminVoicesUpdateBuiltinVoiceBody = zVoiceUpdateRequest;
+
+export const zAdminVoicesUpdateBuiltinVoicePath = z.object({
+    voice_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminVoicesUpdateBuiltinVoiceResponse = zAdminVoiceView;
+
+export const zAdminVoicesRegenerateBuiltinVoicePreviewPath = z.object({
+    voice_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminVoicesRegenerateBuiltinVoicePreviewResponse = zAdminVoiceView;
 
 /**
  * Successful Response
@@ -2852,6 +3471,29 @@ export const zPlatformEvaluatedFlagsResponse = zEvaluatedFlagsResponse;
 /**
  * Successful Response
  */
+export const zMediaGetSessionResponse = zMediaSessionView;
+
+export const zRendersGetRenderPath = z.object({
+    render_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zRendersGetRenderResponse = zRenderView;
+
+export const zRendersListRenditionsPath = z.object({
+    render_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zRendersListRenditionsResponse = zRenditionListView;
+
+/**
+ * Successful Response
+ */
 export const zPlatformPublicSettingsResponse = zPublicSettingsResponse;
 
 /**
@@ -2938,6 +3580,104 @@ export const zUsersUpdatePreferencesBody = zUserPreferencesUpdateRequest;
  * Successful Response
  */
 export const zUsersUpdatePreferencesResponse = zUserPreferencesResponse;
+
+export const zVoicesListVoicesQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    language: zVoiceLanguage.nullish(),
+    kind: zVoiceKind.nullish()
+});
+
+/**
+ * Successful Response
+ */
+export const zVoicesListVoicesResponse = zVoicePage;
+
+export const zVoicesStartVoiceCloneBody = zCloneStartRequest;
+
+/**
+ * Successful Response
+ */
+export const zVoicesStartVoiceCloneResponse = zCloneStartView;
+
+export const zVoicesGetVoiceCloneAttemptPath = z.object({
+    attempt_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zVoicesGetVoiceCloneAttemptResponse = zCloneAttemptView;
+
+export const zVoicesReplaceConsentRecordingBody = zBodyVoicesReplaceConsentRecording;
+
+export const zVoicesReplaceConsentRecordingPath = z.object({
+    attempt_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zVoicesReplaceConsentRecordingResponse = zCloneAttemptView;
+
+export const zVoicesAddCloneSampleBody = zBodyVoicesAddCloneSample;
+
+export const zVoicesAddCloneSamplePath = z.object({
+    attempt_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zVoicesAddCloneSampleResponse = zCloneAttemptView;
+
+export const zVoicesRemoveCloneSamplePath = z.object({
+    attempt_id: z.uuid(),
+    sample_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zVoicesRemoveCloneSampleResponse = zCloneAttemptView;
+
+export const zVoicesSubmitVoiceCloneBody = zCloneSubmitRequest;
+
+export const zVoicesSubmitVoiceClonePath = z.object({
+    attempt_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zVoicesSubmitVoiceCloneResponse = zVoiceView;
+
+export const zVoicesDeleteVoicePath = z.object({
+    voice_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zVoicesDeleteVoiceResponse = z.void();
+
+export const zVoicesGetVoicePath = z.object({
+    voice_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zVoicesGetVoiceResponse = zVoiceView;
+
+export const zVoicesGetVoicePreviewPath = z.object({
+    voice_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zVoicesGetVoicePreviewResponse = zVoicePreviewView;
 
 export const zWebhooksReceiveRazorpayWebhookHeaders = z.object({
     'X-Razorpay-Signature': z.string().max(256).nullish(),

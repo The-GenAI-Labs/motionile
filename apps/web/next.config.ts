@@ -4,17 +4,18 @@ import type { NextConfig } from "next";
 import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } from "next/constants";
 
 import { readPublicEnv } from "./src/config/env-schema";
-import { buildSecurityHeaders } from "./src/config/security-headers";
+import { buildHeaderRules } from "./src/config/security-headers";
 
 const PHASES_REQUIRING_ENV = new Set([PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD]);
 
-const createSecurityHeaders = (phase: string) => {
+const createHeaderRules = (phase: string) => {
   const publicEnv = readPublicEnv();
-  return buildSecurityHeaders({
+  return buildHeaderRules({
     isDevelopment: phase === PHASE_DEVELOPMENT_SERVER,
     siteUrl: publicEnv.NEXT_PUBLIC_SITE_URL,
     apiUrl: publicEnv.NEXT_PUBLIC_API_URL,
     cdnUrl: publicEnv.NEXT_PUBLIC_CDN_URL,
+    mediaOrigin: publicEnv.NEXT_PUBLIC_MEDIA_ORIGIN,
   });
 };
 
@@ -35,7 +36,7 @@ const buildNextConfig = (phase: string): NextConfig => ({
   },
   outputFileTracingRoot: fileURLToPath(new URL("../../", import.meta.url)),
   headers() {
-    return Promise.resolve([{ source: "/:path*", headers: createSecurityHeaders(phase) }]);
+    return Promise.resolve(createHeaderRules(phase));
   },
 });
 

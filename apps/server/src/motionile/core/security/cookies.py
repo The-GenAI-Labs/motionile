@@ -3,12 +3,15 @@ from datetime import datetime
 
 from starlette.responses import Response
 
+from motionile.core.config import MediaDeliveryMode, Settings
+
 ACCESS_COOKIE = "__Secure-mo_at"
 REFRESH_COOKIE = "__Secure-mo_rt"
 TICKET_COOKIE = "__Secure-mo_vt"
 CSRF_COOKIE = "mo_csrf"
 HINT_COOKIE = "mo_auth"
 OAUTH_COOKIE = "__Secure-mo_oauth"
+MEDIA_COOKIES = ("CloudFront-Policy", "CloudFront-Signature", "CloudFront-Key-Pair-Id")
 ACCESS_SECONDS = 900
 TICKET_SECONDS = 600
 
@@ -24,8 +27,18 @@ class SessionCookies:
 
 
 class CookieManager:
-    def __init__(self, domain: str | None) -> None:
+    def __init__(self, domain: str | None, *, media_domain: str | None = None, clears_media: bool = False) -> None:
         self.domain = domain
+        self.media_domain = media_domain
+        self.clears_media = clears_media
+
+    @classmethod
+    def for_settings(cls, settings: Settings) -> "CookieManager":
+        return cls(
+            settings.auth.cookie_domain,
+            media_domain=settings.media_cookie_domain,
+            clears_media=settings.media.delivery_mode is MediaDeliveryMode.CLOUDFRONT,
+        )
 
     def set_session(self, response: Response, tokens: SessionCookies) -> None:
         response.set_cookie(
@@ -86,3 +99,10 @@ class CookieManager:
         response.delete_cookie(HINT_COOKIE, domain=self.domain, secure=True, samesite="lax")
         self.clear_ticket(response)
         self.clear_oauth(response)
+        self.clear_media(response)
+
+    def clear_media(self, response: Response) -> None:
+        if not self.clears_media:
+            return
+        for name in MEDIA_COOKIES:
+            response.delete_cookie(name, domain=self.media_domain, secure=True, httponly=True, samesite="lax")

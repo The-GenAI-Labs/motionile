@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code walkthrough</title>
+    <link rel="stylesheet" href="https://runtime.motionile.local/v1/base.css" />
+    <style>
+      .editor {
+        position: relative;
+        padding: 0;
+        white-space: normal;
+        overflow: hidden;
+      }
+      .editor-body {
+        position: relative;
+        padding: calc(var(--mo-unit) * 2.4) 0;
+      }
+      .highlight {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        background: var(--mo-elevated);
+        border-left: calc(var(--mo-unit) * 0.6) solid var(--mo-accent);
+      }
+      .line {
+        position: relative;
+        padding: 0 calc(var(--mo-unit) * 3);
+        white-space: pre;
+        line-height: 1.7;
+      }
+      .line-number {
+        display: inline-block;
+        width: 2ch;
+        margin-right: 2ch;
+        color: var(--mo-text-secondary);
+        text-align: right;
+      }
+      .result {
+        display: flex;
+        gap: calc(var(--mo-unit) * 3);
+        align-items: center;
+      }
+      .value {
+        min-width: calc(var(--mo-unit) * 16);
+        padding: calc(var(--mo-unit) * 1.2) calc(var(--mo-unit) * 2.4);
+        border: 2px solid var(--mo-border);
+        border-radius: calc(var(--mo-unit) * 1.6);
+        background: var(--mo-surface);
+        font-family: var(--mo-font-mono);
+        font-size: var(--mo-text-display);
+        font-weight: 700;
+        line-height: 1.2;
+        text-align: center;
+      }
+      .label {
+        margin-bottom: calc(var(--mo-unit) * 3);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+    </style>
+    <script src="https://runtime.motionile.local/v1/gsap/gsap.min.js"></script>
+    <script src="https://runtime.motionile.local/v1/motionile.js"></script>
+  </head>
+  <body>
+    <main class="mo-stage">
+      <section class="mo-scene mo-center" data-scene="code">
+        <p class="mo-caption label">script.js</p>
+        <div class="mo-code editor">
+          <div class="editor-body" id="editor-body">
+            <div class="highlight" id="highlight"></div>
+            <div class="line" data-line="0"><span class="line-number">1</span>const nums = [1, 2, 3];</div>
+            <div class="line" data-line="1"><span class="line-number">2</span>const twice = nums.map((n) =&gt; n * 2);</div>
+            <div class="line" data-line="2"><span class="line-number">3</span>console.log(twice);</div>
+          </div>
+        </div>
+      </section>
+      <section class="mo-scene mo-center" data-scene="output">
+        <p class="mo-caption label">Output</p>
+        <div class="result">
+          <div class="value" data-value="two">2</div>
+          <div class="value" data-value="four">4</div>
+          <div class="value" data-value="six">6</div>
+        </div>
+      </section>
+    </main>
+    <script>
+      const ACTIVE_OPACITY = 1;
+      const IDLE_OPACITY = 0.7;
+      const CUES = ["create", "map", "print"];
+
+      Motionile.composition({
+        aspects: ["16:9", "9:16", "1:1"],
+        scenes: [
+          {
+            id: "code",
+            build(ctx) {
+              const lines = Array.from(ctx.root.querySelectorAll(".line"));
+              const highlight = ctx.root.querySelector("#highlight");
+              const body = ctx.root.querySelector("#editor-body");
+              const bodyTop = body.getBoundingClientRect().top;
+              const metrics = lines.map((line) => {
+                const box = line.getBoundingClientRect();
+                return { top: box.top - bodyTop, height: box.height };
+              });
+              gsap.set(highlight, { y: metrics[0].top, height: metrics[0].height, opacity: 0 });
+              gsap.set(lines, { opacity: IDLE_OPACITY });
+              ctx.timeline.from(ctx.root.querySelector(".editor"), { opacity: 0, y: 40, duration: 0.5, ease: "power3.out" }, 0);
+              CUES.forEach((cue, index) => {
+                const start = Math.min(ctx.at(cue), ctx.duration - 0.45);
+                if (index === 0) {
+                  ctx.timeline.to(highlight, { opacity: 1, duration: 0.3 }, start);
+                } else {
+                  ctx.timeline.to(
+                    highlight,
+                    { y: metrics[index].top, height: metrics[index].height, duration: 0.4, ease: "power2.inOut" },
+                    start,
+                  );
+                  ctx.timeline.to(lines[index - 1], { opacity: IDLE_OPACITY, duration: 0.3 }, start);
+                }
+                ctx.timeline.to(lines[index], { opacity: ACTIVE_OPACITY, duration: 0.3 }, start);
+              });
+            },
+          },
+          {
+            id: "output",
+            build(ctx) {
+              ["two", "four", "six"].forEach((cue) => {
+                const value = ctx.root.querySelector(`[data-value="${cue}"]`);
+                ctx.timeline.from(
+                  value,
+                  { opacity: 0, scale: 0.8, y: 24, duration: 0.4, ease: "back.out(1.7)" },
+                  Math.min(ctx.at(cue), ctx.duration - 0.4),
+                );
+              });
+            },
+          },
+        ],
+      });
+    </script>
+  </body>
+</html>

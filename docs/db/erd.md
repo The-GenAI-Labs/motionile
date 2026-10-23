@@ -126,9 +126,15 @@ erDiagram
     assets |o--o{ voices : "previews"
     voices ||--o| voice_consents : "is consented by"
     users ||--o{ voice_consents : "gives"
-    assets ||--o{ voice_consents : "is sample for"
-    jobs ||--o{ renditions : "renders as"
+    assets ||--o{ voice_consents : "records consent in"
+    users ||--o{ renders : "owns"
+    assets ||--o{ renders : "is composition of"
+    renders ||--o{ renditions : "renders as"
     assets |o--o{ renditions : "stores"
+    assets ||--o{ tts_cache : "holds audio of"
+    assets ||--o{ music_tracks : "holds audio of"
+    users |o--o{ music_tracks : "uploads"
+    jobs |o--o| renders : "is rendered by"
     jobs ||--o{ share_links : "is shared by"
     renditions ||--o{ share_links : "is served by"
 
@@ -166,13 +172,31 @@ erDiagram
         uuid id PK
         uuid voice_id FK
         uuid user_id FK
-        uuid sample_asset_id FK
+        uuid consent_asset_id FK
+    }
+    renders {
+        uuid id PK
+        uuid owner_user_id FK
+        uuid composition_asset_id FK
+        text source
+        text status
     }
     renditions {
         uuid id PK
-        uuid job_id FK
+        uuid render_id FK
         uuid asset_id FK
         text aspect
+    }
+    tts_cache {
+        uuid id PK
+        uuid audio_asset_id FK
+        bytea content_hash
+    }
+    music_tracks {
+        uuid id PK
+        uuid audio_asset_id FK
+        uuid created_by_user_id FK
+        text license_name
     }
     share_links {
         uuid id PK
@@ -185,6 +209,7 @@ erDiagram
     }
     jobs {
         uuid id PK
+        uuid render_id FK
     }
 ```
 

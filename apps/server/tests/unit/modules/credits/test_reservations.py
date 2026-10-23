@@ -347,3 +347,26 @@ async def test_stale_reservation_listing_is_keyset_paginated(harness: Harness) -
 
     assert first + second + third == ids
     assert isinstance(first[0], UUID)
+
+
+async def test_the_active_reservation_is_found_by_owner_and_reference(harness: Harness) -> None:
+    await harness.grant(100)
+    ref_id = new_id()
+    reservation = await harness.reserve(30, ref_id=ref_id)
+
+    found = await harness.service.active_reservation(harness.session, harness.user_id, "job", ref_id)
+
+    assert found is not None
+    assert (found.id, found.amount, found.ref_type, found.ref_id) == (reservation.id, 30, "job", ref_id)
+    assert found.expires_at == reservation.expires_at
+
+
+async def test_the_active_reservation_is_hidden_from_other_owners_and_after_settlement(harness: Harness) -> None:
+    await harness.grant(100)
+    ref_id = new_id()
+    reservation = await harness.reserve(30, ref_id=ref_id)
+
+    assert await harness.service.active_reservation(harness.session, new_id(), "job", ref_id) is None
+    assert await harness.service.active_reservation(harness.session, harness.user_id, "other", ref_id) is None
+    await harness.service.release(harness.session, reservation.id, "release:lookup")
+    assert await harness.service.active_reservation(harness.session, harness.user_id, "job", ref_id) is None

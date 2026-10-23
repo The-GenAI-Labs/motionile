@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from datetime import timedelta
+from urllib.parse import urlsplit
 
 import httpx
 import pytest
@@ -81,3 +82,21 @@ async def test_presigned_urls_work_and_expire_scope(storage: S3Storage) -> None:
     assert downloaded.content == b"via presign"
     assert downloaded.headers["content-disposition"] == 'attachment; filename="report.txt"'
     assert tampered.status_code == 403
+
+
+async def test_presigned_urls_are_signed_for_the_public_endpoint_and_still_work(settings: Settings) -> None:
+    internal = urlsplit(settings.storage.endpoint_url or "")
+    public_endpoint = f"http://localhost:{internal.port}"
+    public_settings = settings.storage.model_copy(update={"public_endpoint_url": public_endpoint})
+    storage = S3Storage.from_settings(public_settings)
+    await storage.ensure_bucket()
+    await storage.put("tests/public.txt", chunks_of(b"public host"), content_type="text/plain")
+
+    url = await storage.presigned_get_url("tests/public.txt", expires_in=timedelta(minutes=5))
+    async with httpx.AsyncClient() as http:
+        downloaded = await http.get(url)
+
+    assert urlsplit(url).netloc == f"localhost:{internal.port}"
+    assert downloaded.status_code == 200
+    assert downloaded.content == b"public host"
+    assert storage.client.meta.endpoint_url == settings.storage.endpoint_url

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Flow diagram</title>
+    <link rel="stylesheet" href="https://runtime.motionile.local/v1/base.css" />
+    <style>
+      .diagram {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+      .node-box {
+        fill: var(--mo-surface);
+        stroke: var(--mo-border);
+        stroke-width: 3;
+      }
+      .node-label {
+        fill: var(--mo-text);
+        font-family: var(--mo-font);
+        font-size: var(--mo-text-subtitle);
+        font-weight: 700;
+        text-anchor: middle;
+        dominant-baseline: central;
+      }
+      .node-step {
+        fill: var(--mo-text-muted);
+        font-family: var(--mo-font-mono);
+        font-size: var(--mo-text-small);
+        text-anchor: middle;
+        dominant-baseline: central;
+      }
+      .edge {
+        fill: none;
+        stroke: var(--mo-accent);
+        stroke-width: 5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      #pipeline-stage {
+        width: 100%;
+        height: 100%;
+      }
+      .summary {
+        font-size: calc(var(--mo-text-title) * 1.15);
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+        text-align: center;
+      }
+      .summary-muted {
+        color: var(--mo-text-secondary);
+      }
+    </style>
+    <script src="https://runtime.motionile.local/v1/gsap/gsap.min.js"></script>
+    <script src="https://runtime.motionile.local/v1/gsap/DrawSVGPlugin.min.js"></script>
+    <script src="https://runtime.motionile.local/v1/motionile.js"></script>
+  </head>
+  <body>
+    <main class="mo-stage">
+      <section class="mo-scene" data-scene="pipeline">
+        <div id="pipeline-stage"></div>
+      </section>
+      <section class="mo-scene mo-center" data-scene="summary">
+        <p class="summary">
+          <span>One question in,</span><br />
+          <span class="summary-muted">one finished video out.</span>
+        </p>
+      </section>
+    </main>
+    <script>
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const NODES = [
+        { label: "Topic", cue: "topic" },
+        { label: "Script", cue: "script" },
+        { label: "Voice", cue: "voice" },
+        { label: "Video", cue: "video" },
+      ];
+
+      const svgElement = (name, attributes) => {
+        const element = document.createElementNS(SVG_NS, name);
+        Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+        return element;
+      };
+
+      const layoutFor = (ctx) => {
+        const { width, height } = ctx.safeArea;
+        const horizontal = ctx.aspect === "16:9";
+        const boxWidth = horizontal ? 340 : Math.min(560, width * 0.7);
+        const boxHeight = horizontal ? 190 : 150;
+        const centers = NODES.map((_, index) => {
+          if (horizontal) {
+            const gap = (width - boxWidth * NODES.length) / (NODES.length - 1);
+            return { x: boxWidth / 2 + index * (boxWidth + gap), y: height / 2 };
+          }
+          const gap = (height - boxHeight * NODES.length) / (NODES.length - 1);
+          return { x: width / 2, y: boxHeight / 2 + index * (boxHeight + gap) };
+        });
+        return { width, height, boxWidth, boxHeight, centers, horizontal };
+      };
+
+      const edgePath = (from, to, layout) => {
+        const { boxWidth, boxHeight, horizontal } = layout;
+        const inset = 18;
+        if (horizontal) {
+          const startX = from.x + boxWidth / 2 + inset;
+          const endX = to.x - boxWidth / 2 - inset;
+          return `M ${startX} ${from.y} L ${endX} ${to.y} M ${endX - 22} ${to.y - 18} L ${endX} ${to.y} L ${endX - 22} ${to.y + 18}`;
+        }
+        const startY = from.y + boxHeight / 2 + inset;
+        const endY = to.y - boxHeight / 2 - inset;
+        return `M ${from.x} ${startY} L ${to.x} ${endY} M ${to.x - 18} ${endY - 22} L ${to.x} ${endY} L ${to.x + 18} ${endY - 22}`;
+      };
+
+      const buildDiagram = (ctx, host) => {
+        const layout = layoutFor(ctx);
+        const svg = svgElement("svg", {
+          class: "diagram",
+          viewBox: `0 0 ${layout.width} ${layout.height}`,
+        });
+        const nodes = NODES.map((node, index) => {
+          const center = layout.centers[index];
+          const group = svgElement("g", {});
+          group.append(
+            svgElement("rect", {
+              class: "node-box",
+              x: center.x - layout.boxWidth / 2,
+              y: center.y - layout.boxHeight / 2,
+              width: layout.boxWidth,
+              height: layout.boxHeight,
+              rx: 28,
+            }),
+          );
+          const step = svgElement("text", { class: "node-step", x: center.x, y: center.y - layout.boxHeight * 0.28 });
+          step.textContent = `0${index + 1}`;
+          const label = svgElement("text", { class: "node-label", x: center.x, y: center.y + layout.boxHeight * 0.14 });
+          label.textContent = node.label;
+          group.append(step, label);
+          svg.append(group);
+          return group;
+        });
+        const edges = NODES.slice(1).map((_, index) => {
+          const edge = svgElement("path", {
+            class: "edge",
+            d: edgePath(layout.centers[index], layout.centers[index + 1], layout),
+          });
+          svg.append(edge);
+          return edge;
+        });
+        host.append(svg);
+        return { nodes, edges };
+      };
+
+      Motionile.composition({
+        aspects: ["16:9", "9:16", "1:1"],
+        scenes: [
+          {
+            id: "pipeline",
+            build(ctx) {
+              const { nodes, edges } = buildDiagram(ctx, ctx.root.querySelector("#pipeline-stage"));
+              const cueTimes = NODES.map((node) => Math.min(ctx.at(node.cue), ctx.duration - 0.5));
+              nodes.forEach((node, index) => {
+                ctx.timeline.from(
+                  node,
+                  { opacity: 0, scale: 0.9, transformOrigin: "50% 50%", duration: 0.45, ease: "back.out(1.6)" },
+                  cueTimes[index],
+                );
+              });
+              edges.forEach((edge, index) => {
+                const start = Math.max(cueTimes[index] + 0.2, cueTimes[index + 1] - 0.7);
+                ctx.timeline.from(
+                  edge,
+                  { drawSVG: "0%", duration: 0.5, ease: "power2.inOut" },
+                  Math.min(start, ctx.duration - 0.5),
+                );
+              });
+            },
+          },
+          {
+            id: "summary",
+            build(ctx) {
+              ctx.timeline.from(
+                ctx.root.querySelectorAll(".summary span"),
+                { opacity: 0, y: 36, duration: 0.5, stagger: 0.35, ease: "power3.out" },
+                0.1,
+              );
+            },
+          },
+        ],
+      });
+    </script>
+  </body>
+</html>

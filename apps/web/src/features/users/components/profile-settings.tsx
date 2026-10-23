@@ -101,6 +101,7 @@ export function ProfileSettings() {
       depth: preferences.data.depth,
       defaultAspect: preferences.data.defaultAspect,
       captionsEnabled: preferences.data.captionsEnabled,
+      defaultVoiceId: preferences.data.defaultVoiceId,
       [field]: value,
     });
   };

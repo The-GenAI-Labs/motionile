@@ -1,0 +1,10 @@
+{
+  "language": "en",
+  "scenes": [
+    {
+      "sceneId": "pipeline",
+      "text": "A topic becomes a script. The script becomes a voice. The voice drives the animation, and the animation becomes your video."
+    },
+    { "sceneId": "summary", "text": "One question in, one finished video out." }
+  ]
+}

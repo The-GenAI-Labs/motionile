@@ -52,8 +52,18 @@ BILLING_TABLES = {
     "credit_ledger",
     "usage_records",
 }
-APPLICATION_TABLES = EARLIER_TABLES | BILLING_TABLES
-HEAD_REVISION = "0005"
+MEDIA_TABLES = {
+    "assets",
+    "renders",
+    "renditions",
+    "tts_cache",
+    "music_tracks",
+    "voices",
+    "voice_consents",
+}
+MEDIA_PERMISSIONS = {"render.testbed", "voices.manage", "music.manage"}
+APPLICATION_TABLES = EARLIER_TABLES | BILLING_TABLES | MEDIA_TABLES
+HEAD_REVISION = "0006"
 
 
 @pytest.fixture
@@ -183,7 +193,7 @@ def test_billing_revision_downgrades_cleanly_and_reapplies(scratch_database_url:
     command.downgrade(config, "0004")
 
     assert current_revision(engine) == "0004"
-    assert application_tables(engine) == APPLICATION_TABLES - BILLING_TABLES
+    assert application_tables(engine) == APPLICATION_TABLES - BILLING_TABLES - MEDIA_TABLES
     assert billing_permissions(engine) == set()
     assert database_functions(engine) == {"forbid_append_only_mutation"}
 
@@ -191,6 +201,40 @@ def test_billing_revision_downgrades_cleanly_and_reapplies(scratch_database_url:
 
     assert application_tables(engine) == APPLICATION_TABLES
     assert len(billing_permissions(engine)) == 5
+    assert schema_drift(engine) == []
+
+
+def media_permissions(engine: Engine) -> set[str]:
+    query = text("SELECT key FROM permissions WHERE key IN ('render.testbed', 'voices.manage', 'music.manage')")
+    with engine.connect() as connection:
+        return set(connection.execute(query).scalars())
+
+
+def default_voice_foreign_keys(engine: Engine) -> set[str]:
+    query = text("SELECT conname FROM pg_constraint WHERE conname = 'fk_user_preferences_default_voice_id_voices'")
+    with engine.connect() as connection:
+        return set(connection.execute(query).scalars())
+
+
+def test_media_revision_downgrades_cleanly_and_reapplies(scratch_database_url: str, engine: Engine) -> None:
+    config = alembic_config_for(scratch_database_url)
+    command.upgrade(config, "head")
+    assert media_permissions(engine) == MEDIA_PERMISSIONS
+    assert default_voice_foreign_keys(engine) == {"fk_user_preferences_default_voice_id_voices"}
+
+    command.downgrade(config, "0005")
+
+    assert current_revision(engine) == "0005"
+    assert application_tables(engine) == APPLICATION_TABLES - MEDIA_TABLES
+    assert media_permissions(engine) == set()
+    assert default_voice_foreign_keys(engine) == set()
+    assert len(billing_permissions(engine)) == 5
+
+    command.upgrade(config, "head")
+
+    assert application_tables(engine) == APPLICATION_TABLES
+    assert media_permissions(engine) == MEDIA_PERMISSIONS
+    assert default_voice_foreign_keys(engine) == {"fk_user_preferences_default_voice_id_voices"}
     assert schema_drift(engine) == []
 
 

@@ -57,3 +57,30 @@ export const titleCase = (value: string): string =>
     .filter((word) => word !== "")
     .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
     .join(" ");
+
+const SECONDS_PER_MINUTE = 60;
+const MS_PER_SECOND = 1_000;
+
+export const formatDurationMs = (milliseconds: number): string => {
+  const totalSeconds = Math.max(0, Math.round(milliseconds / MS_PER_SECOND));
+  const minutes = Math.floor(totalSeconds / SECONDS_PER_MINUTE);
+  const seconds = totalSeconds % SECONDS_PER_MINUTE;
+  return `${String(minutes)}:${String(seconds).padStart(2, "0")}`;
+};
+
+const MS_PER_MINUTE = 60_000;
+
+export const formatClockMs = (milliseconds: number): string => {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / MS_PER_SECOND));
+  const minutes = Math.floor(totalSeconds / SECONDS_PER_MINUTE);
+  const seconds = totalSeconds % SECONDS_PER_MINUTE;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
+export const formatTimestampMs = (milliseconds: number): string => {
+  const total = Math.max(0, Math.round(milliseconds));
+  const minutes = Math.floor(total / MS_PER_MINUTE);
+  const seconds = Math.floor((total % MS_PER_MINUTE) / MS_PER_SECOND);
+  const rest = total % MS_PER_SECOND;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(rest).padStart(3, "0")}`;
+};

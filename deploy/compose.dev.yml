@@ -5,10 +5,12 @@ x-server-build: &server-build
 
 x-dev-storage: &dev-storage
   STORAGE_ENDPOINT_URL: http://minio:9000
+  STORAGE_PUBLIC_ENDPOINT_URL: http://localhost:9000
   STORAGE_BUCKET: motionile-local
   STORAGE_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-motionile}
   STORAGE_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-motionile-dev-secret}
   NOTIFICATIONS_SMTP_HOST: mailpit
+  MEDIA_DELIVERY_MODE: presigned
 
 services:
   proxy:
@@ -43,6 +45,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
 
   mcp:
     build: *server-build
@@ -55,6 +59,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
 
   worker-default:
     build: *server-build
@@ -63,6 +69,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
 
   worker-render:
     build:
@@ -73,6 +81,23 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
+
+  storage-init:
+    build: *server-build
+    image: motionile-api:local
+    command:
+      - python
+      - -m
+      - motionile.scripts.ensure_storage
+    environment: *dev-storage
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_started
+    networks:
+      - backend
 
   migrate:
     build: *server-build

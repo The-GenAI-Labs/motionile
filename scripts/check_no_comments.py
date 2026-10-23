@@ -17,7 +17,9 @@ PYTHON_DIRECTIVES = (
     re.compile(r"^pragma: no cover$"),
 )
 
-EXCLUDED_PARTS = frozenset({"node_modules", ".venv", ".next", ".turbo", ".terraform", "fixtures", "generated"})
+EXCLUDED_PARTS = frozenset(
+    {"node_modules", ".venv", ".next", ".turbo", ".terraform", "fixtures", "generated", "vendor"}
+)
 EXCLUDED_NAMES = frozenset({"uv.lock", "pnpm-lock.yaml", ".terraform.lock.hcl"})
 HEREDOC_START = re.compile(r"<<-?([A-Za-z_][A-Za-z0-9_]*)\s*$")
 TEMPLATE_DIRECTIVES = frozenset({"#cloud-config"})

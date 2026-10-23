@@ -16,8 +16,10 @@ TASK_MODULES: tuple[str, ...] = (
     "motionile.modules.billing.tasks",
     "motionile.modules.catalog.tasks",
     "motionile.modules.credits.tasks",
+    "motionile.modules.media.tasks",
     "motionile.modules.notifications.tasks",
     "motionile.modules.users.tasks",
+    "motionile.modules.voices.tasks",
 )
 
 logger = structlog.get_logger(__name__)

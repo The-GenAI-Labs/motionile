@@ -1,0 +1,348 @@
+{
+  "forbidden_element__iframe.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "<iframe"
+    ]
+  },
+  "forbidden_element__object.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "<object"
+    ]
+  },
+  "forbidden_element__embed.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "<embed"
+    ]
+  },
+  "forbidden_element__form.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "<form"
+    ]
+  },
+  "forbidden_element__base.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "<base"
+    ]
+  },
+  "forbidden_element__meta_refresh.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "http-equiv"
+    ]
+  },
+  "forbidden_element__link_icon.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "rel=\"icon\""
+    ]
+  },
+  "forbidden_element__link_preload.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "preload"
+    ]
+  },
+  "forbidden_element__audio.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "<audio"
+    ]
+  },
+  "forbidden_element__video.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "<video"
+    ]
+  },
+  "forbidden_element__portal.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "<portal"
+    ]
+  },
+  "forbidden_element__applet.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "<applet"
+    ]
+  },
+  "forbidden_element__noscript.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "<noscript"
+    ]
+  },
+  "forbidden_element__script_importmap.html": {
+    "code": "forbidden_element",
+    "absent": [
+      "importmap"
+    ]
+  },
+  "forbidden_attribute__onclick.html": {
+    "code": "forbidden_attribute",
+    "absent": [
+      "onclick"
+    ]
+  },
+  "forbidden_attribute__onerror.html": {
+    "code": "forbidden_attribute",
+    "absent": [
+      "onerror"
+    ]
+  },
+  "forbidden_attribute__svg_onload.html": {
+    "code": "forbidden_attribute",
+    "absent": [
+      "onload"
+    ]
+  },
+  "forbidden_attribute__body_onload.html": {
+    "code": "forbidden_attribute",
+    "absent": [
+      "onload"
+    ]
+  },
+  "forbidden_attribute__srcdoc.html": {
+    "code": "forbidden_attribute",
+    "absent": [
+      "srcdoc"
+    ]
+  },
+  "forbidden_attribute__formaction.html": {
+    "code": "forbidden_attribute",
+    "absent": [
+      "formaction"
+    ]
+  },
+  "forbidden_attribute__ping.html": {
+    "code": "forbidden_attribute",
+    "absent": [
+      "ping="
+    ]
+  },
+  "forbidden_attribute__link_target.html": {
+    "code": "forbidden_attribute",
+    "absent": [
+      "target="
+    ]
+  },
+  "forbidden_attribute__animate_href.html": {
+    "code": "forbidden_attribute",
+    "absent": [
+      "attributename"
+    ]
+  },
+  "forbidden_url__img_http.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__img_protocol_relative.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__img_userinfo.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__img_backslash.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__img_traversal.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "secret"
+    ]
+  },
+  "forbidden_url__img_file.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "file:"
+    ]
+  },
+  "forbidden_url__script_src.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__link_stylesheet.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__anchor_javascript.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "javascript"
+    ]
+  },
+  "forbidden_url__anchor_javascript_obfuscated.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "script:"
+    ]
+  },
+  "forbidden_url__svg_use.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__svg_xlink.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__srcset.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__style_url.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__style_import.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__style_import_string.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__style_image_set.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__style_escaped_function.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__style_custom_property.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__style_nested_rule.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__style_font_face.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__inline_style.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__svg_fill_url.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "forbidden_url__svg_style_element.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  },
+  "invalid_data_uri__html.html": {
+    "code": "invalid_data_uri",
+    "absent": [
+      "text/html"
+    ]
+  },
+  "invalid_data_uri__javascript.html": {
+    "code": "invalid_data_uri",
+    "absent": [
+      "text/javascript"
+    ]
+  },
+  "invalid_data_uri__bad_base64.html": {
+    "code": "invalid_data_uri",
+    "absent": [
+      "!!!"
+    ]
+  },
+  "invalid_data_uri__raster_without_base64.html": {
+    "code": "invalid_data_uri",
+    "absent": [
+      "image/png,"
+    ]
+  },
+  "invalid_data_uri__css.html": {
+    "code": "invalid_data_uri",
+    "absent": [
+      "text/plain"
+    ]
+  },
+  "invalid_data_uri__script_src.html": {
+    "code": "invalid_data_uri",
+    "absent": [
+      "data:text"
+    ]
+  },
+  "composition_multiple__two_calls.html": {
+    "code": "composition_multiple",
+    "absent": []
+  },
+  "forbidden_url__style_image_set_var.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "image-set"
+    ]
+  },
+  "forbidden_url__style_cross_fade_env.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "cross-fade"
+    ]
+  },
+  "forbidden_url__style_nested_image_set_attr.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "image-set"
+    ]
+  },
+  "forbidden_url__style_custom_property_string.html": {
+    "code": "forbidden_url",
+    "absent": [
+      "evil.test"
+    ]
+  }
+}

@@ -4,6 +4,15 @@ from typing import cast
 
 type SettingValue = bool | int | str | list[str]
 
+VOICE_CONSENT_STATEMENT = (
+    "I confirm that the voice I am submitting is my own. "
+    "I consent to Motionile creating a synthetic copy of my voice through its voice provider "
+    "so that it can narrate videos made with my account. "
+    "I will not use this voice to impersonate any other person, and I will not submit recordings of anyone else. "
+    "I understand that I can delete this voice at any time, which removes the copy from the provider "
+    "and my recordings from Motionile."
+)
+
 
 @dataclass(frozen=True)
 class SettingDefinition:
@@ -98,6 +107,34 @@ SETTING_DEFINITIONS = (
         "Whether new subscription credits roll over instead of expiring at the end of the billing period",
         False,
     ),
+    SettingDefinition(
+        "voices.max_cloned_per_user",
+        {"type": "integer", "minimum": 0, "maximum": 20},
+        3,
+        "Maximum number of cloned voices a user can keep",
+        False,
+    ),
+    SettingDefinition(
+        "voices.clone_credit_cost",
+        {"type": "integer", "minimum": 0, "maximum": 100000},
+        0,
+        "Credits reserved when a voice clone is submitted",
+        False,
+    ),
+    SettingDefinition(
+        "voices.consent_statement",
+        {"type": "string", "minLength": 50, "maxLength": 4000},
+        VOICE_CONSENT_STATEMENT,
+        "Consent statement a user accepts before cloning a voice",
+        True,
+    ),
+    SettingDefinition(
+        "voices.consent_statement_version",
+        {"type": "string", "minLength": 1, "maxLength": 40, "pattern": r"^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+        "2026-10-19",
+        "Version label of the voice consent statement; change it whenever the statement changes",
+        True,
+    ),
 )
 
 SETTINGS = {item.key: item for item in SETTING_DEFINITIONS}
@@ -146,5 +183,14 @@ def validate_setting(key: str, value: object) -> SettingValue:  # noqa: PLR0912
     if expected == "boolean" and isinstance(value, bool):
         return value
     if expected == "string" and isinstance(value, str):
+        minimum_length = schema.get("minLength")
+        maximum_length = schema.get("maxLength")
+        if isinstance(minimum_length, int) and len(value) < minimum_length:
+            raise ValueError("Setting is too short")
+        if isinstance(maximum_length, int) and len(value) > maximum_length:
+            raise ValueError("Setting is too long")
+        string_pattern = schema.get("pattern")
+        if isinstance(string_pattern, str) and re.fullmatch(string_pattern, value) is None:
+            raise ValueError("Setting has an invalid format")
         return value
     raise ValueError("Setting value has the wrong type")

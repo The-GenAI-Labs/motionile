@@ -44,6 +44,7 @@ from motionile.modules.credits.domain import (
     ReminderBatch,
     ReservationRecord,
     ReservationResult,
+    ReservationView,
     ReserveCommand,
     UsageEntry,
     UsageRow,
@@ -387,6 +388,21 @@ class CreditsService:
         if result is None:
             raise ReservationNotActiveError
         return result
+
+    async def active_reservation(
+        self, session: AsyncSession, user_id: UUID, ref_type: str, ref_id: UUID
+    ) -> ReservationView | None:
+        record = await self._store(session).active_reservation_of(user_id, ref_type, ref_id)
+        if record is None:
+            return None
+        return ReservationView(
+            id=record.id,
+            user_id=record.user_id,
+            amount=record.amount,
+            ref_type=record.ref_type,
+            ref_id=record.ref_id,
+            expires_at=record.expires_at,
+        )
 
     async def release_stale(self, session: AsyncSession, reservation_id: UUID) -> ReleaseResult | None:
         return await self._release(session, reservation_id, f"reservation:{reservation_id}:ttl", TTL_RELEASE)

@@ -14,18 +14,19 @@ Placeholders:
 
 ## Schedule
 
-| Secret                                                                      | Where it lives                                                                                   | Rotate every | Downtime                                |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------ | --------------------------------------- |
-| Neon `motionile` role password                                              | SSM `DATABASE_URL`, `DATABASE_DIRECT_URL`                                                        | 180 days     | Minutes, between reset and redeploy     |
-| `REDIS_PASSWORD`                                                            | SSM                                                                                              | 365 days     | Seconds, while containers are recreated |
-| JWT signing key (from Phase 4)                                              | SSM, parameter added to `deploy/parameters.csv` in Phase 4                                       | 180 days     | None with the overlap procedure         |
-| `ENCRYPTION_KEYS`                                                           | SSM                                                                                              | 365 days     | None                                    |
-| CloudFront signing key pair (from Phase 9)                                  | Public key in OpenTofu, private key in SSM `CLOUDFRONT_PRIVATE_KEY`                              | 365 days     | None with the overlap procedure         |
-| SSH deploy key                                                              | `ci_ssh_public_key`, `/home/deploy/.ssh/authorized_keys`, GitHub secret `DEPLOY_SSH_PRIVATE_KEY` | 180 days     | None                                    |
-| `TURNSTILE_SECRET_KEY`                                                      | SSM and Cloudflare                                                                               | 365 days     | None if done within 2 hours             |
-| `SECURITY_PAGINATION_SECRET`                                                | SSM                                                                                              | 365 days     | None; open cursors become invalid       |
-| Razorpay API key (`BILLING_RAZORPAY_KEY_ID`, `BILLING_RAZORPAY_KEY_SECRET`) | SSM and the Razorpay dashboard                                                                   | 365 days     | Minutes of failed checkouts at most     |
-| Razorpay webhook secret (`BILLING_RAZORPAY_WEBHOOK_SECRET`)                 | SSM and the Razorpay dashboard                                                                   | 365 days     | None with the two-webhook procedure     |
+| Secret                                                                      | Where it lives                                                                                   | Rotate every | Downtime                                       |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------ | ---------------------------------------------- |
+| Neon `motionile` role password                                              | SSM `DATABASE_URL`, `DATABASE_DIRECT_URL`                                                        | 180 days     | Minutes, between reset and redeploy            |
+| `REDIS_PASSWORD`                                                            | SSM                                                                                              | 365 days     | Seconds, while containers are recreated        |
+| JWT signing key (from Phase 4)                                              | SSM, parameter added to `deploy/parameters.csv` in Phase 4                                       | 180 days     | None with the overlap procedure                |
+| `ENCRYPTION_KEYS`                                                           | SSM                                                                                              | 365 days     | None                                           |
+| CloudFront signing key pair                                                 | Public key in OpenTofu, private key in SSM `CLOUDFRONT_PRIVATE_KEY`                              | 365 days     | None with the overlap procedure                |
+| SSH deploy key                                                              | `ci_ssh_public_key`, `/home/deploy/.ssh/authorized_keys`, GitHub secret `DEPLOY_SSH_PRIVATE_KEY` | 180 days     | None                                           |
+| `TURNSTILE_SECRET_KEY`                                                      | SSM and Cloudflare                                                                               | 365 days     | None if done within 2 hours                    |
+| `SECURITY_PAGINATION_SECRET`                                                | SSM                                                                                              | 365 days     | None; open cursors become invalid              |
+| Razorpay API key (`BILLING_RAZORPAY_KEY_ID`, `BILLING_RAZORPAY_KEY_SECRET`) | SSM and the Razorpay dashboard                                                                   | 365 days     | Minutes of failed checkouts at most            |
+| Razorpay webhook secret (`BILLING_RAZORPAY_WEBHOOK_SECRET`)                 | SSM and the Razorpay dashboard                                                                   | 365 days     | None with the two-webhook procedure            |
+| Speech provider keys (`ELEVENLABS_API_KEY`, `OPENAI_API_KEY`)               | SSM and the provider dashboards                                                                  | 180 days     | None; both providers allow several active keys |
 
 Rotate any secret immediately when it may have leaked, when someone with access leaves, or when a laptop holding a copy is lost. After each rotation, update the password manager entry and record the date in the operations log.
 
@@ -208,7 +209,9 @@ Delete the old private key file and update the password manager.
 
 ## 5. CloudFront signing key pair
 
-Signed cookies (`/media/*`) and signed URLs (`/share/*`) are issued from Phase 9 with `CLOUDFRONT_PRIVATE_KEY` and `CLOUDFRONT_KEY_PAIR_ID`. CloudFront accepts any public key in the distribution's trusted key group, so a rotation adds the new key to the group, switches signing, waits, then removes the old key.
+Signed cookies (`/media/*`) and signed URLs (`/share/*`) are issued with `CLOUDFRONT_PRIVATE_KEY` and `CLOUDFRONT_KEY_PAIR_ID` when `MEDIA_DELIVERY_MODE` is `cloudfront`. CloudFront accepts any public key in the distribution's trusted key group (at most five), so a rotation adds the new key to the group, switches signing, waits until nothing signed with the old key can still be valid, then removes the old key. During the rotation the group holds two keys.
+
+The private key must be a 2048-bit RSA key, the only size CloudFront accepts. The SSM value is the PEM base64-encoded on one line (about 2.3 KB, inside the 4 KB Standard parameter limit), because `render-env.sh` cannot store newlines.
 
 `infra/aws/modules/cdn` trusts every key in the `cloudfront_public_keys` map (label to PEM) and writes the ID of the key labelled by `cloudfront_active_key` to `CLOUDFRONT_KEY_PAIR_ID` and the `cloudfront_public_key_id` output. CloudFront public keys are immutable, so a rotation always adds a new label rather than editing a key.
 
@@ -232,13 +235,13 @@ Signed cookies (`/media/*`) and signed URLs (`/share/*`) are issued from Phase 9
 
    On macOS use `base64 -i cloudfront-<ENV>-<YYYYMM>-private.pem | tr -d '\n'` instead of `base64 -w0 ...`. Then upload ([Upload owner parameters](#upload-owner-parameters)) and redeploy ([Redeploy with the current tag](#redeploy-with-the-current-tag)).
 
-   Verify: a media page on the web app plays video; the `CloudFront-Key-Pair-Id` cookie equals `tofu output -raw cloudfront_public_key_id`.
+   Verify: after signing in on the web app, `GET /v1/media/session` answers with `CloudFront-Policy`, `CloudFront-Signature` and `CloudFront-Key-Pair-Id` cookies, the `CloudFront-Key-Pair-Id` value equals `tofu output -raw cloudfront_public_key_id`, and a rendition on the web app plays and seeks.
 
-4. Wait for the longest lifetime of a signed cookie or signed URL issued with the old key (set by the media and sharing modules in Phases 8 and 9; record it here when they ship).
+4. Wait for the longest lifetime of anything signed with the old key: `MEDIA_COOKIE_TTL_SECONDS` for cookies (default and maximum 3600 seconds) and `MEDIA_SIGNED_URL_TTL_SECONDS` for signed and presigned URLs (default 900, at most 3600). Use the values in SSM if they are set. A browser holding an old cookie keeps playing until it expires, because the old public key is still in the group; the player refreshes the cookie through `GET /v1/media/session` before expiry and receives one signed with the new key.
 5. Remove the old label from `cloudfront_public_keys` and apply. Expected result: the plan removes one public key and updates the key group.
 6. Store the new private key in the password manager and delete local copies of both private keys.
 
-Until Phase 9 nothing signs with the key, so a rotation before then only needs steps 1, 2, 3 (without waiting) and 5.
+If the private key leaked, skip the wait: do steps 1 to 3, then step 5 immediately. Every cookie and URL signed with the old key stops working at once, and users get new cookies on their next page load.
 
 ## 6. SSH deploy key
 
@@ -379,3 +382,34 @@ Single-webhook variant (only if a second webhook cannot be created). There is a 
 
 1. Upload the new secret to SSM first, then edit the existing webhook's secret in the Razorpay dashboard, then redeploy immediately. Deliveries between the edit and the end of the redeploy get `401` and are redelivered by Razorpay.
 2. Verify as in step 4 and keep an eye on **Reconciliation** the next morning; the settlement check will list any payment whose events were lost.
+
+## 10. Speech provider API keys
+
+`ELEVENLABS_API_KEY` and `OPENAI_API_KEY` pay for narration, alignment and consent transcription. Each environment has its own key so that staging usage and limits never touch production. Both are SecureString parameters (`owner`). The server refuses to start in a deployed environment without the key of every provider selected by `AUDIO_TTS_PROVIDER` and `AUDIO_TRANSCRIBER`; the other key may be absent.
+
+Keep the new values in the password manager under `Motionile / Speech providers / <ENV>` before touching anything. Both providers accept several active keys, so rotation has no gap.
+
+1. Create the new key at the provider. In the ElevenLabs dashboard open **Developers**, then **API Keys**, create a key named `motionile-<ENV>-<YYYYMM>` and, when the dashboard offers it, restrict it to text-to-speech, speech-to-text and voice management with a monthly character quota. In the OpenAI dashboard open **API keys**, create a key named `motionile-<ENV>-<YYYYMM>` in the project of this environment and restrict its permissions to the audio endpoints when the project allows it.
+2. Write only the rotated name to the rotation file and upload ([Upload owner parameters](#upload-owner-parameters)):
+
+   ```bash
+   umask 077
+   printf 'ELEVENLABS_API_KEY=%s\n' '<NEW_ELEVENLABS_KEY>' > infra/parameters/<ENV>-rotation.env
+   ```
+
+3. Redeploy with Option B ([Redeploy with the current tag](#redeploy-with-the-current-tag)). Compose recreates every service whose environment changed, which includes `api`, `worker-default` and `worker-render`.
+4. Verify with a synthesized render: sign in to the admin console as a user with `render.testbed`, open **Render test bed**, render a golden composition with a built-in voice and text that is not cached yet, and confirm the render finishes. A cached narration does not call the provider, so use fresh text. In CloudWatch Logs Insights confirm no authentication failures after the redeploy time:
+
+   ```text
+   fields @timestamp, event, provider, error
+   | filter event like /provider/ and error like /401|403|unauthorized/
+   | sort @timestamp desc
+   | limit 20
+   ```
+
+   Expected result: no rows after the redeploy.
+
+5. Revoke the old key at the provider and update the password manager.
+6. Delete the rotation file: `rm infra/parameters/<ENV>-rotation.env`.
+
+Rotate immediately if a key appears in a log, a screenshot or a repository. After the provider has revoked the key, review its usage page for calls you did not make and compare with `usage_records` in the admin console.

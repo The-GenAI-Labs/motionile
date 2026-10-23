@@ -359,3 +359,56 @@ aws cloudwatch set-alarm-state --region ap-south-1 \
 ```
 
 Expected result: within a minute an email "ALARM: motionile-<ENV>-task-failures" arrives with reason `Alarm test`. At the next evaluation (up to 15 minutes for this alarm) the alarm returns to `OK` and an OK email follows. Do not test `motionile-<ENV>-system-status-recovery` this way: its action recovers the instance.
+
+## 7. Check the render sandbox
+
+`worker-render` starts Chromium with its own sandbox enabled and never with `--no-sandbox` ([ADR 0026](../adr/0026-render-sandbox-design.md)). Run this check after the first deployment of Phase 8, after a Docker Engine upgrade, and whenever renders fail with `browser_crash` and a `No usable sandbox` message in the logs. On the instance as `deploy`:
+
+```bash
+/srv/motionile/bundle/scripts/compose.sh exec -T worker-render id
+/srv/motionile/bundle/scripts/compose.sh exec -T worker-render grep -E '^(Seccomp|NoNewPrivs|CapEff)' /proc/self/status
+/srv/motionile/bundle/scripts/compose.sh exec -T worker-render python - <<'PY'
+import asyncio
+from playwright.async_api import async_playwright
+
+async def main():
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(chromium_sandbox=True)
+        page = await browser.new_page()
+        await page.set_content("<p>sandboxed</p>")
+        print(await page.inner_text("p"))
+        await browser.close()
+
+asyncio.run(main())
+PY
+```
+
+Expected result:
+
+- `uid=10001(app) gid=10001(app)`.
+- `Seccomp:	2`, `NoNewPrivs:	1` and `CapEff:	0000000000000000`.
+- The last command prints `sandboxed`. `chromium_sandbox=True` matters: without it Playwright adds `--no-sandbox` itself and the check proves nothing.
+
+If the launch fails with `No usable sandbox` or `Operation not permitted` on `clone`:
+
+1. Confirm the container really uses the Playwright profile: `compose.sh config | grep -A3 security_opt` must list `seccomp=` followed by the profile content, not `unconfined`.
+2. Confirm the container runs under Docker's default AppArmor profile (as `ssm-user`):
+
+   ```bash
+   docker inspect --format '{{.AppArmorProfile}}' "$(docker ps --quiet --filter name=worker-render)"
+   sudo sysctl kernel.apparmor_restrict_unprivileged_userns
+   ```
+
+   Expected result: `docker-default` and a value of `1` or `0`. An empty profile means AppArmor is off for the container and is not the cause.
+
+3. Upgrade Docker Engine if it is older than the current stable release (`apt-cache policy docker-ce`, then `sudo apt-get install --only-upgrade docker-ce docker-ce-cli containerd.io`), recreate the service ([Logs, status and restarts](#3-logs-status-and-restarts-on-the-instance)) and run the check again.
+4. Only if the check still fails with the restriction set to `1`, relax it host-wide, run the check again, and record the change in the operations log. This lets every process on the instance create user namespaces, so remove it as soon as step 3 or a Docker fix makes it unnecessary:
+
+   ```bash
+   sudo sysctl --write kernel.apparmor_restrict_unprivileged_userns=0
+   echo 'kernel.apparmor_restrict_unprivileged_userns = 0' | sudo tee /etc/sysctl.d/60-motionile-userns.conf
+   ```
+
+   To undo it: `sudo rm /etc/sysctl.d/60-motionile-userns.conf && sudo sysctl --write kernel.apparmor_restrict_unprivileged_userns=1`.
+
+Never work around a failing check with `--no-sandbox`, `privileged: true`, `apparmor=unconfined` or `seccomp=unconfined`; each of them removes a layer that the sandbox design depends on.

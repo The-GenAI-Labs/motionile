@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>CSS animation scene</title>
+    <link rel="stylesheet" href="https://runtime.motionile.local/v1/base.css" />
+    <style>
+      .headline {
+        margin: 0;
+        max-width: 24ch;
+        font-size: calc(var(--mo-text-title) * 0.95);
+        font-weight: 700;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        text-align: center;
+      }
+      .orbit {
+        position: relative;
+        width: calc(var(--mo-unit) * 26);
+        height: calc(var(--mo-unit) * 26);
+        margin-bottom: calc(var(--mo-unit) * 5);
+        flex: none;
+      }
+      .pulse {
+        position: absolute;
+        inset: 0;
+        border: calc(var(--mo-unit) * 0.5) solid var(--mo-accent);
+        border-radius: 999px;
+        animation: pulse 2s ease-out infinite both;
+      }
+      .pulse:nth-child(2) {
+        animation-delay: 0.66s;
+      }
+      .pulse:nth-child(3) {
+        animation-delay: 1.33s;
+      }
+      .spinner {
+        position: absolute;
+        inset: 18%;
+        border: calc(var(--mo-unit) * 0.6) solid var(--mo-border);
+        border-radius: 999px;
+        animation: spin 3s linear infinite;
+      }
+      .spinner::after {
+        content: "";
+        position: absolute;
+        top: calc(var(--mo-unit) * -1.6);
+        left: calc(50% - var(--mo-unit) * 1.6);
+        width: calc(var(--mo-unit) * 3.2);
+        height: calc(var(--mo-unit) * 3.2);
+        border-radius: 999px;
+        background: var(--mo-accent);
+      }
+      .chart {
+        display: flex;
+        align-items: flex-end;
+        gap: calc(var(--mo-unit) * 2.4);
+        height: calc(var(--mo-unit) * 30);
+        margin-bottom: calc(var(--mo-unit) * 5);
+      }
+      .bar {
+        width: calc(var(--mo-unit) * 8);
+        height: 100%;
+        border-radius: calc(var(--mo-unit) * 1.2) calc(var(--mo-unit) * 1.2) 0 0;
+        background: var(--mo-accent);
+        transform: scaleY(0.08);
+        transform-origin: bottom center;
+        transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .bar[data-grown] {
+        transform: scaleY(var(--level));
+      }
+      @keyframes pulse {
+        from {
+          transform: scale(0.45);
+          opacity: 0.9;
+        }
+        to {
+          transform: scale(1.1);
+          opacity: 0;
+        }
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+    <script src="https://runtime.motionile.local/v1/gsap/gsap.min.js"></script>
+    <script src="https://runtime.motionile.local/v1/motionile.js"></script>
+  </head>
+  <body>
+    <main class="mo-stage">
+      <section class="mo-scene mo-center" data-scene="orbit">
+        <div class="orbit">
+          <div class="pulse"></div>
+          <div class="pulse"></div>
+          <div class="pulse"></div>
+          <div class="spinner"></div>
+        </div>
+        <h1 class="headline" id="orbit-headline">Plain CSS animations run on the frozen clock.</h1>
+      </section>
+      <section class="mo-scene mo-center" data-scene="bars">
+        <div class="chart" id="chart">
+          <div class="bar" style="--level: 0.45"></div>
+          <div class="bar" style="--level: 0.7"></div>
+          <div class="bar" style="--level: 0.55"></div>
+          <div class="bar" style="--level: 0.9"></div>
+          <div class="bar" style="--level: 1"></div>
+        </div>
+        <h1 class="headline" id="bars-headline">Transitions and delays land on the same frame.</h1>
+      </section>
+    </main>
+    <script>
+      const sceneStartSeconds = (ctx) => window.__narration.scenes[ctx.index].startMs / 1000;
+
+      Motionile.composition({
+        aspects: ["16:9", "9:16", "1:1"],
+        scenes: [
+          {
+            id: "orbit",
+            build(ctx) {
+              ctx.timeline.from(
+                ctx.root.querySelector("#orbit-headline"),
+                { opacity: 0, y: 36, duration: 0.6, ease: "power3.out" },
+                0.2,
+              );
+            },
+          },
+          {
+            id: "bars",
+            build(ctx) {
+              const offset = sceneStartSeconds(ctx);
+              const bars = Array.from(ctx.root.querySelectorAll(".bar"));
+              bars.forEach((bar, index) => {
+                bar.style.transitionDelay = `${offset + 0.3 + index * 0.18}s`;
+              });
+              ctx.root.querySelector("#chart").getBoundingClientRect();
+              bars.forEach((bar) => bar.setAttribute("data-grown", ""));
+              ctx.timeline.from(
+                ctx.root.querySelector("#bars-headline"),
+                { opacity: 0, y: 36, duration: 0.6, ease: "power3.out" },
+                0.4,
+              );
+            },
+          },
+        ],
+      });
+    </script>
+  </body>
+</html>

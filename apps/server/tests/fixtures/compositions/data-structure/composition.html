@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Data structure</title>
+    <link rel="stylesheet" href="https://runtime.motionile.local/v1/base.css" />
+    <style>
+      .stack {
+        width: 100%;
+        align-items: center;
+      }
+      .target {
+        display: flex;
+        gap: calc(var(--mo-unit) * 2);
+        align-items: baseline;
+      }
+      .target-value {
+        font-family: var(--mo-font-mono);
+        font-size: var(--mo-text-title);
+        font-weight: 700;
+      }
+      .track {
+        position: relative;
+        width: 100%;
+        padding-bottom: calc(var(--mo-unit) * 9);
+      }
+      .cells {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: calc(var(--mo-unit) * 1.2);
+      }
+      .cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: calc(var(--mo-unit) * 0.8);
+      }
+      .cell-box {
+        position: relative;
+        display: flex;
+        width: 100%;
+        aspect-ratio: 1;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--mo-border);
+        border-radius: calc(var(--mo-unit) * 1.4);
+        background: var(--mo-surface);
+        font-family: var(--mo-font-mono);
+        font-size: var(--mo-text-subtitle);
+        font-weight: 700;
+      }
+      .cell-index {
+        font-family: var(--mo-font-mono);
+        font-size: var(--mo-text-small);
+        color: var(--mo-text-secondary);
+      }
+      .pointer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: calc(var(--mo-unit) * 0.4);
+        font-size: var(--mo-text-small);
+        font-weight: 700;
+      }
+      .pointer-arrow {
+        width: 0;
+        height: 0;
+        border-left: calc(var(--mo-unit) * 1.2) solid transparent;
+        border-right: calc(var(--mo-unit) * 1.2) solid transparent;
+        border-bottom: calc(var(--mo-unit) * 1.8) solid var(--mo-accent);
+      }
+      .ring {
+        position: absolute;
+        inset: calc(var(--mo-unit) * -0.6);
+        border: 4px solid var(--mo-accent);
+        border-radius: calc(var(--mo-unit) * 1.8);
+        pointer-events: none;
+      }
+      .note-area {
+        position: relative;
+        width: 100%;
+        min-height: calc(var(--mo-text-subtitle) * 1.6);
+      }
+      .note {
+        position: absolute;
+        inset: 0;
+        margin: 0;
+        text-align: center;
+        font-size: var(--mo-text-subtitle);
+        font-weight: 600;
+        line-height: 1.25;
+      }
+    </style>
+    <script src="https://runtime.motionile.local/v1/gsap/gsap.min.js"></script>
+    <script src="https://runtime.motionile.local/v1/motionile.js"></script>
+  </head>
+  <body>
+    <main class="mo-stage">
+      <section class="mo-scene mo-center" data-scene="array">
+        <div class="mo-stack stack">
+          <div class="target">
+            <p class="mo-body">Target</p>
+            <p class="target-value">24</p>
+          </div>
+          <div class="track"><div class="cells"></div></div>
+        </div>
+      </section>
+      <section class="mo-scene mo-center" data-scene="search">
+        <div class="mo-stack stack">
+          <div class="track">
+            <div class="cells"></div>
+            <div class="pointer">
+              <div class="pointer-arrow"></div>
+              <span>mid</span>
+            </div>
+          </div>
+          <div class="note-area">
+            <p class="note" data-note="small">17 is too small</p>
+            <p class="note" data-note="big">31 is too big</p>
+            <p class="note" data-note="found">Found 24 at index 4</p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script>
+      const VALUES = [3, 8, 12, 17, 24, 31, 40];
+      const DIMMED_OPACITY = 0.55;
+
+      const fillCells = (root) => {
+        const cells = root.querySelector(".cells");
+        return VALUES.map((value, index) => {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          const box = document.createElement("div");
+          box.className = "cell-box";
+          box.textContent = String(value);
+          const label = document.createElement("span");
+          label.className = "cell-index";
+          label.textContent = String(index);
+          cell.append(box, label);
+          cells.append(cell);
+          return cell;
+        });
+      };
+
+      const centerOf = (cell, track) => {
+        const box = cell.getBoundingClientRect();
+        return box.left + box.width / 2 - track.getBoundingClientRect().left;
+      };
+
+      Motionile.composition({
+        aspects: ["16:9", "9:16", "1:1"],
+        scenes: [
+          {
+            id: "array",
+            build(ctx) {
+              const cells = fillCells(ctx.root);
+              ctx.timeline.from(
+                ctx.root.querySelector(".target"),
+                { opacity: 0, y: 24, duration: 0.5, ease: "power3.out" },
+                Math.min(ctx.at("searching"), ctx.duration - 0.5),
+              );
+              ctx.timeline.from(
+                cells,
+                { opacity: 0, y: 40, duration: 0.4, stagger: 0.12, ease: "power3.out" },
+                Math.min(ctx.at("list"), ctx.duration - 1.3),
+              );
+            },
+          },
+          {
+            id: "search",
+            build(ctx) {
+              const cells = fillCells(ctx.root);
+              const track = ctx.root.querySelector(".track");
+              const pointer = ctx.root.querySelector(".pointer");
+              const notes = Object.fromEntries(
+                Array.from(ctx.root.querySelectorAll(".note")).map((note) => [note.dataset.note, note]),
+              );
+              const boxes = cells.map((cell) => cell.querySelector(".cell-box"));
+              const pointerX = (index) => centerOf(cells[index], track) - pointer.offsetWidth / 2;
+              gsap.set(notes.small, { opacity: 0 });
+              gsap.set(notes.big, { opacity: 0 });
+              gsap.set(notes.found, { opacity: 0 });
+              const ring = document.createElement("div");
+              ring.className = "ring";
+              boxes[4].append(ring);
+              gsap.set(ring, { opacity: 0 });
+              gsap.set(pointer, { x: pointerX(3), opacity: 0 });
+              const last = ctx.duration - 0.5;
+              const at = (target, occurrence = 0) => Math.min(ctx.at(target, occurrence), last);
+
+              ctx.timeline.to(pointer, { opacity: 1, duration: 0.4 }, at("middle"));
+              ctx.timeline.to(notes.small, { opacity: 1, duration: 0.4 }, at("seventeen"));
+              ctx.timeline.to(boxes.slice(0, 4), { opacity: DIMMED_OPACITY, duration: 0.4 }, at("keep"));
+              ctx.timeline.to(notes.small, { opacity: 0, duration: 0.3 }, at("check", 1) - 0.1);
+              ctx.timeline.to(pointer, { x: pointerX(5), duration: 0.5, ease: "power2.inOut" }, at("check", 1));
+              ctx.timeline.to(notes.big, { opacity: 1, duration: 0.4 }, at("thirty-one"));
+              ctx.timeline.to(boxes.slice(5), { opacity: DIMMED_OPACITY, duration: 0.4 }, at("big") + 0.2);
+              ctx.timeline.to(notes.big, { opacity: 0, duration: 0.3 }, at("answer") - 0.1);
+              ctx.timeline.to(pointer, { x: pointerX(4), duration: 0.5, ease: "power2.inOut" }, at("answer"));
+              ctx.timeline.to(notes.found, { opacity: 1, duration: 0.4 }, at("twenty-four"));
+              ctx.timeline.to(ring, { opacity: 1, duration: 0.4 }, at("twenty-four"));
+            },
+          },
+        ],
+      });
+    </script>
+  </body>
+</html>

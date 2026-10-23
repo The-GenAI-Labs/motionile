@@ -78,6 +78,6 @@ class UserPreference(TimestampMixin, Base):
     pace: Mapped[str] = mapped_column(server_default="normal")
     language: Mapped[str] = mapped_column(server_default="en")
     depth: Mapped[str] = mapped_column(server_default="standard")
-    default_voice_id: Mapped[UUID | None]
+    default_voice_id: Mapped[UUID | None] = mapped_column(ForeignKey("voices.id", ondelete="SET NULL"))
     default_aspect: Mapped[str] = mapped_column(server_default="16:9")
     captions_enabled: Mapped[bool] = mapped_column(server_default=text("true"))

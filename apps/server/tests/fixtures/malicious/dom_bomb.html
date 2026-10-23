@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hostile composition</title>
+    <link rel="stylesheet" href="https://runtime.motionile.local/v1/base.css" />
+    <script src="https://runtime.motionile.local/v1/gsap/gsap.min.js"></script>
+    <script src="https://runtime.motionile.local/v1/motionile.js"></script>
+  </head>
+  <body>
+    <main class="mo-stage">
+      <section class="mo-scene mo-center" data-scene="main">
+        <p class="mo-title">Hello world</p>
+      </section>
+    </main>
+    <script>
+      const sink = document.createElement("div");
+      document.body.append(sink);
+      for (let index = 0; index < 300000; index += 1) {
+        sink.append(document.createElement("span"));
+      }
+      while (true) {}
+      Motionile.composition({
+        aspects: ["16:9"],
+        scenes: [{ id: "main", build(ctx) {} }],
+      });
+    </script>
+  </body>
+</html>

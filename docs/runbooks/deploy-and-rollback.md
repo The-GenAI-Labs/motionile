@@ -51,6 +51,8 @@ GitHub records a deployment for the environment, with `WEB_URL` as its link.
 9. **If step 7 or 8 fails, it rolls back automatically**: it writes the previous tag (the one that was in `current-tag`) back to `images.env`, pulls it and starts the services again with `--wait`, then exits with status 1. Migrations are not reverted. If there is no previous tag, it leaves the services as they are.
 10. On success, moves the old tag into `previous-tag`, writes the new tag into `current-tag`, and prunes images unused for more than 24 hours.
 
+`worker-render` has no health check, so a deployment cannot prove that Chromium's sandbox works on the host. After the first deployment that contains it, and after every Docker Engine upgrade, run [Check the render sandbox](access-and-operations.md#7-check-the-render-sandbox).
+
 The HTTPS health check and the Playwright smoke test (steps 10 and 11 of `_deploy.yml`) run after `deploy.sh` has finished. If they fail, the job fails but nothing rolls back on its own; decide whether to roll back by hand (see below).
 
 ## Watch a deployment

@@ -8,19 +8,24 @@ from tests.fakes.settings import deployed_settings as deployed
 from motionile.core.config import (
     LOCAL_DATABASE_URL,
     AppEnv,
+    AppRole,
     AppSettings,
     AuthSettings,
     BillingSettings,
     CatalogSettings,
     CorsSettings,
     DatabaseSettings,
+    ElevenLabsSettings,
     EncryptionSettings,
     LogLevel,
+    MediaDeliveryMode,
+    MediaSettings,
     ProvidersMode,
     RateLimitSettings,
     RedisSettings,
     SecuritySettings,
     Settings,
+    StorageSettings,
     for_asyncpg,
     get_settings,
     with_driver,
@@ -358,3 +363,77 @@ def test_deployed_environments_require_each_razorpay_credential(missing: str) ->
 
 def test_deployed_environments_accept_complete_billing_configuration() -> None:
     assert deployed().billing_deployment_problems() == []
+
+
+def render_worker_settings(**overrides: object) -> Settings:
+    return Settings(
+        app=AppSettings(env=AppEnv.PRODUCTION, providers_mode=ProvidersMode.LIVE, role=AppRole.RENDER_WORKER),
+        elevenlabs=ElevenLabsSettings(api_key=STRONG_SECRET),
+        media=MediaSettings(delivery_mode=MediaDeliveryMode.PRESIGNED),
+        database=DatabaseSettings(url="postgresql://app@db.internal/motionile"),
+        redis=RedisSettings(url="rediss://:secret@redis.internal:6379/0"),
+        encryption=EncryptionSettings(keys={1: ENCRYPTION_KEY}),
+        storage=StorageSettings(bucket="motionile-production"),
+        rate_limit=RateLimitSettings(enabled=False),
+    ).model_copy(update=overrides)
+
+
+def test_a_render_worker_needs_no_auth_billing_turnstile_or_cdn_signing_secrets() -> None:
+    settings = render_worker_settings()
+
+    assert settings.deployment_problems() == []
+    assert settings.app.role is AppRole.RENDER_WORKER
+
+
+def test_a_service_process_still_requires_those_secrets() -> None:
+    with pytest.raises(ValidationError) as raised:
+        Settings(
+            app=AppSettings(env=AppEnv.PRODUCTION, providers_mode=ProvidersMode.LIVE),
+            database=DatabaseSettings(url="postgresql://app@db.internal/motionile"),
+            redis=RedisSettings(url="rediss://:secret@redis.internal:6379/0"),
+            encryption=EncryptionSettings(keys={1: ENCRYPTION_KEY}),
+            storage=StorageSettings(bucket="motionile-production"),
+            media=MediaSettings(delivery_mode=MediaDeliveryMode.PRESIGNED),
+            elevenlabs=ElevenLabsSettings(api_key=STRONG_SECRET),
+        )
+
+    message = str(raised.value)
+    for problem in (
+        "TURNSTILE_SECRET_KEY must be set",
+        "AUTH_JWT_KEYS must be set",
+        "BILLING_RAZORPAY_KEY_ID must be set",
+    ):
+        assert problem in message
+
+
+def test_a_render_worker_keeps_the_storage_encryption_and_provider_requirements() -> None:
+    with pytest.raises(ValidationError) as raised:
+        Settings(app=AppSettings(env=AppEnv.PRODUCTION, role=AppRole.RENDER_WORKER))
+
+    message = str(raised.value)
+    for problem in (
+        "PROVIDERS_MODE must be live",
+        "DATABASE_URL must be set",
+        "REDIS_URL must be set",
+        "ENCRYPTION_KEYS must be set",
+        "STORAGE_BUCKET must be set",
+        "ELEVENLABS_API_KEY must be set",
+        "MEDIA_DELIVERY_MODE must be set",
+    ):
+        assert problem in message
+    assert "TURNSTILE_SECRET_KEY" not in message
+    assert "AUTH_JWT_KEYS" not in message
+
+
+def test_a_render_worker_in_cloudfront_mode_does_not_need_the_signing_key_but_the_service_does() -> None:
+    media = {
+        "MEDIA_DELIVERY_MODE": "cloudfront",
+        "CDN_DOMAIN": "cdn.motionile.com",
+        "CLOUDFRONT_KEY_PAIR_ID": "K1",
+        "MEDIA_COOKIE_DOMAIN": ".motionile.com",
+    }
+    worker = render_worker_settings(media=MediaSettings.model_validate(media))
+    service = deployed().model_copy(update={"media": MediaSettings.model_validate(media)})
+
+    assert worker.media_deployment_problems() == []
+    assert service.media_deployment_problems() == ["CLOUDFRONT_PRIVATE_KEY must be set"]

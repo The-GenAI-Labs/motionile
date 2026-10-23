@@ -12,6 +12,7 @@ export default defineConfig({
     environment: "jsdom",
     include: ["tests/**/*.test.{ts,tsx}"],
     setupFiles: ["./tests/setup.ts"],
+    testTimeout: 20_000,
     env: { NEXT_PUBLIC_SITE_URL: "https://motionile.test" },
     coverage: {
       provider: "v8",

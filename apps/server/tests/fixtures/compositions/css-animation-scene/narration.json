@@ -1,0 +1,7 @@
+{
+  "language": "en",
+  "scenes": [
+    { "sceneId": "orbit", "text": "Plain CSS animations run on the frozen clock, so they look the same on every render." },
+    { "sceneId": "bars", "text": "Transitions and delays land on exactly the same frame, every single time." }
+  ]
+}

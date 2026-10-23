@@ -45,3 +45,6 @@ BillingProductsManageDep = Annotated[Principal, Depends(RequirePermission("billi
 BillingRefundsCreateDep = Annotated[Principal, Depends(RequirePermission("billing.refunds.create"))]
 BillingCreditsAdjustDep = Annotated[Principal, Depends(RequirePermission("billing.credits.adjust"))]
 BillingWebhooksManageDep = Annotated[Principal, Depends(RequirePermission("billing.webhooks.manage"))]
+RenderTestbedDep = Annotated[Principal, Depends(RequirePermission("render.testbed"))]
+VoicesManageDep = Annotated[Principal, Depends(RequirePermission("voices.manage"))]
+MusicManageDep = Annotated[Principal, Depends(RequirePermission("music.manage"))]

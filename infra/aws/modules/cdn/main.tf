@@ -92,7 +92,7 @@ resource "aws_cloudfront_response_headers_policy" "media" {
     }
 
     access_control_expose_headers {
-      items = ["Content-Length", "Content-Range", "ETag"]
+      items = ["Accept-Ranges", "Content-Length", "Content-Range", "ETag"]
     }
   }
 

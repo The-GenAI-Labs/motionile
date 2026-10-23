@@ -63,6 +63,15 @@ def test_skips_excluded_directories(tmp_path: Path) -> None:
     assert collect_violations([path]) == []
 
 
+def test_skips_vendored_directories(tmp_path: Path) -> None:
+    vendored = tmp_path / "vendor" / "gsap"
+    vendored.mkdir(parents=True)
+    path = vendored / "library.css"
+    path.write_text("/* upstream license banner */\n", encoding="utf-8")
+
+    assert collect_violations([path]) == []
+
+
 def test_main_reports_violations_for_given_paths(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     path = tmp_path / "module.py"
     path.write_text("VALUE = 1  # remark\n", encoding="utf-8")

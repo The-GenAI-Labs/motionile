@@ -84,7 +84,7 @@ def policies(
 
 
 def cookie_manager(runtime: AuthRuntimeDep) -> CookieManager:
-    return CookieManager(runtime.resources.settings.auth.cookie_domain)
+    return CookieManager.for_settings(runtime.resources.settings)
 
 
 CookieManagerDep = Annotated[CookieManager, Depends(cookie_manager)]
@@ -475,7 +475,7 @@ async def set_password(
     principal: CurrentPrincipalDep,
     service: AuthServiceDep,
 ) -> None:
-    cookies = CookieManager(service.resources.settings.auth.cookie_domain)
+    cookies = CookieManager.for_settings(service.resources.settings)
     await service.reset_password(ticket, body.code, body.new_password.get_secret_value(), principal)
     cookies.clear_ticket(response)
 
@@ -514,7 +514,7 @@ async def oauth_start(
     service: AuthServiceDep,
     query: Annotated[OAuthStartQuery, Query()],
 ) -> RedirectResponse:
-    cookies = CookieManager(service.resources.settings.auth.cookie_domain)
+    cookies = CookieManager.for_settings(service.resources.settings)
     if query.intent == "link" and principal and principal.session_id:
         service.runtime.csrf.verify(
             principal.session_id, request.cookies.get(CSRF_COOKIE), request.headers.get("X-CSRF-Token")
@@ -543,7 +543,7 @@ async def oauth_start_authenticated(
     service: AuthServiceDep,
 ) -> OAuthStartResponse:
     location, browser = await OAuthService(service).start(provider, body.next, body.intent, principal)
-    CookieManager(service.resources.settings.auth.cookie_domain).set_oauth(response, browser)
+    CookieManager.for_settings(service.resources.settings).set_oauth(response, browser)
     return OAuthStartResponse(url=location)
 
 
@@ -564,7 +564,7 @@ async def oauth_callback(
     service: AuthServiceDep,
     query: Annotated[OAuthCallbackQuery, Query()],
 ) -> RedirectResponse:
-    cookies = CookieManager(service.resources.settings.auth.cookie_domain)
+    cookies = CookieManager.for_settings(service.resources.settings)
     try:
         location, tokens = await OAuthService(service).callback(
             provider, query.state, query.code, request.cookies.get(OAUTH_COOKIE), principal

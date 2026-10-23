@@ -7,6 +7,7 @@
 coverage
 htmlcov
 tests
+!tests/fixtures/compositions
 evals
 node_modules
 package.json

@@ -8,6 +8,7 @@ from motionile.core.errors import PROBLEM_MEDIA_TYPE
 
 JSON_MEDIA_TYPE = "application/json"
 ERROR_STATUS_PREFIXES = ("4", "5")
+COMPONENT_SCHEMAS_EXTENSION = "x-component-schemas"
 
 
 def operation_id(route: APIRoute) -> str:
@@ -32,6 +33,16 @@ def problem_media_types(schema: dict[str, Any]) -> dict[str, Any]:
     return schema
 
 
+def hoist_component_schemas(schema: dict[str, Any]) -> dict[str, Any]:
+    paths = cast("dict[str, dict[str, dict[str, Any]]]", schema.get("paths", {}))
+    components = cast("dict[str, dict[str, Any]]", schema.setdefault("components", {}))
+    schemas = components.setdefault("schemas", {})
+    for operations in paths.values():
+        for operation in operations.values():
+            schemas.update(operation.pop(COMPONENT_SCHEMAS_EXTENSION, {}))
+    return schema
+
+
 def install_openapi(app: FastAPI) -> None:
     def build() -> dict[str, Any]:
         if app.openapi_schema is None:
@@ -41,7 +52,7 @@ def install_openapi(app: FastAPI) -> None:
                 routes=app.routes,
                 description=app.description,
             )
-            app.openapi_schema = problem_media_types(schema)
+            app.openapi_schema = hoist_component_schemas(problem_media_types(schema))
         return app.openapi_schema
 
     app.openapi = build

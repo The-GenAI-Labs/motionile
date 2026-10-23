@@ -22,6 +22,15 @@ export const isLoopbackUrl = (url: string): boolean => {
   return LOOPBACK_HOSTNAMES.has(hostname) || hostname.endsWith(".localhost");
 };
 
+const isOriginOnly = (value: string): boolean => new URL(value).origin === value;
+
+const isSecureOrLoopback = (value: string): boolean =>
+  new URL(value).protocol === "https:" || isLoopbackUrl(value);
+
+export const mediaOriginSchema = httpUrlSchema
+  .refine(isOriginOnly, "must be an origin without a path, query or fragment")
+  .refine(isSecureOrLoopback, "must use https unless it is a local address");
+
 export const publicEnvSchema = z
   .object({
     NEXT_PUBLIC_SITE_URL: httpUrlSchema,
@@ -29,6 +38,7 @@ export const publicEnvSchema = z
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
     NEXT_PUBLIC_JWKS_URL: z.preprocess(emptyToUndefined, httpUrlSchema.optional()),
     NEXT_PUBLIC_CDN_URL: z.preprocess(emptyToUndefined, httpUrlSchema.optional()),
+    NEXT_PUBLIC_MEDIA_ORIGIN: z.preprocess(emptyToUndefined, mediaOriginSchema.optional()),
     NEXT_PUBLIC_PROVIDERS_MODE: z.preprocess(
       emptyToUndefined,
       z.enum(PROVIDERS_MODES).default("live"),
@@ -61,6 +71,7 @@ export const readPublicEnv = (): PublicEnv =>
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_CDN_URL: process.env.NEXT_PUBLIC_CDN_URL,
+    NEXT_PUBLIC_MEDIA_ORIGIN: process.env.NEXT_PUBLIC_MEDIA_ORIGIN,
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
     NEXT_PUBLIC_JWKS_URL: process.env.NEXT_PUBLIC_JWKS_URL,
     NEXT_PUBLIC_PROVIDERS_MODE: process.env.NEXT_PUBLIC_PROVIDERS_MODE,

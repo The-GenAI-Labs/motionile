@@ -33,5 +33,5 @@ async def verification_required_response(request: Request, error: Exception) -> 
             challenge=error.challenge,
         )
     )
-    CookieManager(request.app.state.resources.settings.auth.cookie_domain).set_ticket(response, error.ticket)
+    CookieManager.for_settings(request.app.state.resources.settings).set_ticket(response, error.ticket)
     return response

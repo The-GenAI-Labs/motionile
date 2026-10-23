@@ -5,9 +5,6 @@ import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 
 import { createDataTableColumnHelper } from "@/components/shared/data-table";
-import { PagedTable } from "@/components/shared/paged-table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   BOOLEAN_OPTIONS,
   booleanFromValue,
@@ -16,7 +13,10 @@ import {
   SelectFilter,
   TextFilter,
   valueFromBoolean,
-} from "@/features/admin-billing/components/filter-fields";
+} from "@/components/shared/filter-fields";
+import { PagedTable } from "@/components/shared/paged-table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { adminBillingErrorMessage } from "@/features/admin-billing/errors";
 import {
   toProductFilters,

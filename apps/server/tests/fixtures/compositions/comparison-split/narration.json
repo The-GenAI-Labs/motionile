@@ -1,0 +1,10 @@
+{
+  "language": "en",
+  "scenes": [
+    { "sceneId": "intro", "text": "There are two ways to make an explainer video." },
+    {
+      "sceneId": "compare",
+      "text": "Editing by hand means timelines, keyframes and hours of work. Narration first means you write the idea, hear the voice and get the video."
+    }
+  ]
+}

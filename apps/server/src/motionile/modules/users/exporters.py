@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from typing import Any, Protocol, cast
 from uuid import UUID
 
@@ -7,26 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.modules.audit import AuditLogEntry
 from motionile.modules.auth import Session
+from motionile.modules.users.exports import registry
 from motionile.modules.users.models import User, UserContact, UserPreference
-
-type UserExporter = Callable[[AsyncSession, UUID], Awaitable[object]]
 
 
 class TableBacked(Protocol):
     __table__: Table
-
-
-class ExportRegistry:
-    def __init__(self) -> None:
-        self._exporters: dict[str, UserExporter] = {}
-
-    def register(self, name: str, exporter: UserExporter) -> None:
-        if name in self._exporters:
-            raise ValueError(f"exporter {name!r} already exists")
-        self._exporters[name] = exporter
-
-    async def export(self, session: AsyncSession, user_id: UUID) -> dict[str, object]:
-        return {name: await exporter(session, user_id) for name, exporter in self._exporters.items()}
 
 
 def serialize(row: object) -> dict[str, Any]:
@@ -66,7 +51,6 @@ async def export_audit(session: AsyncSession, user_id: UUID) -> object:
     return [serialize(row) for row in rows]
 
 
-registry = ExportRegistry()
 registry.register("profile", export_profile)
 registry.register("contacts", export_contacts)
 registry.register("preferences", export_preferences)

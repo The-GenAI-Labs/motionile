@@ -12,6 +12,7 @@ TURNSTILE_EXPECTED_HOSTNAMES,infra,yes,Comma-separated host names Turnstile toke
 STORAGE_BUCKET,infra,yes,Private media bucket
 STORAGE_REGION,infra,yes,Region of the media bucket
 STORAGE_FORCE_PATH_STYLE,infra,yes,false for AWS S3
+STORAGE_PUBLIC_ENDPOINT_URL,owner,no,Browser-reachable storage origin used to sign presigned URLs when it differs from the internal endpoint; leave unset on AWS
 BACKUP_BUCKET,infra,yes,Bucket for Redis backups
 IMAGE_REPOSITORY_API,infra,yes,ECR repository URL of motionile-api
 IMAGE_REPOSITORY_WORKER,infra,yes,ECR repository URL of motionile-worker
@@ -20,7 +21,7 @@ CLOUDWATCH_LOG_GROUP,infra,yes,Log group the awslogs driver writes container log
 SES_CONFIGURATION_SET,infra,yes,SES configuration set used for every message
 EMAIL_FROM_DOMAIN,infra,yes,Verified SES sending domain
 DATABASE_STATEMENT_CACHE_SIZE,infra,yes,0 behind a transaction-mode pooler such as Neon's
-CLOUDFRONT_KEY_PAIR_ID,infra,no,ID of the CloudFront public key; present once the CDN is enabled
+CLOUDFRONT_KEY_PAIR_ID,infra,no,ID of the CloudFront public key; present once the CDN is enabled; used from Phase 8 and required when MEDIA_DELIVERY_MODE=cloudfront
 DATABASE_URL,owner,yes,"Pooled PostgreSQL URL used by the application, postgresql://..."
 DATABASE_DIRECT_URL,owner,yes,"Direct PostgreSQL URL used by migrations and workers, postgresql://..."
 REDIS_PASSWORD,owner,yes,Password of the Compose Redis service
@@ -28,7 +29,7 @@ SECURITY_PAGINATION_SECRET,owner,yes,At least 32 random characters that sign pag
 CATALOG_REVALIDATION_SECRET,owner,yes,At least 32 random characters shared by catalog revalidation tasks and the web endpoint
 ENCRYPTION_KEYS,owner,yes,"JSON map of key version to base64 32-byte AES-GCM key, for example {""1"":""<base64>""}"
 TURNSTILE_SECRET_KEY,owner,yes,Cloudflare Turnstile secret key of this environment
-CLOUDFRONT_PRIVATE_KEY,owner,no,PEM private key that signs CloudFront cookies and URLs; used from Phase 9
+CLOUDFRONT_PRIVATE_KEY,owner,no,PEM RSA private key stored base64-encoded that signs CloudFront cookies and URLs; used from Phase 8 and required when MEDIA_DELIVERY_MODE=cloudfront
 AUTH_JWT_KEYS,owner,yes,JSON map of key ID to base64 32-byte Ed25519 private seed
 AUTH_JWT_CURRENT_KID,owner,yes,ID of the active signing key
 AUTH_JWT_ISSUER,owner,yes,HTTPS API issuer
@@ -65,3 +66,47 @@ BILLING_RESERVATION_TTL_SECONDS,owner,no,Seconds an active credit reservation is
 BILLING_WEBHOOK_MAX_ATTEMPTS,owner,no,Processing attempts per webhook event before it stays failed; defaults to 10
 BILLING_RECONCILIATION_PENDING_AFTER_SECONDS,owner,no,Age in seconds after which a pending order is reconciled with Razorpay; defaults to 1800
 BILLING_REPORT_STORAGE_PREFIX,owner,no,Object key prefix of reconciliation reports; defaults to billing/reconciliation
+MEDIA_DELIVERY_MODE,infra,yes,cloudfront behind the CDN or presigned for storage URLs without CloudFront
+MEDIA_COOKIE_DOMAIN,owner,no,Domain of the CloudFront signed cookies; defaults to AUTH_COOKIE_DOMAIN
+MEDIA_COOKIE_TTL_SECONDS,owner,no,Lifetime of the CloudFront signed cookies in seconds; defaults to 3600 and may not exceed 3600
+MEDIA_SIGNED_URL_TTL_SECONDS,owner,no,Lifetime of presigned and signed media URLs in seconds; defaults to 900 and may not exceed 3600
+AUDIO_TTS_PROVIDER,owner,no,Speech synthesis provider: elevenlabs or openai; defaults to elevenlabs
+AUDIO_TRANSCRIBER,owner,no,Transcription provider for alignment and consent checks: elevenlabs or openai; defaults to elevenlabs
+ELEVENLABS_API_KEY,owner,yes,ElevenLabs API key; required while ElevenLabs is the TTS provider or the transcriber
+ELEVENLABS_API_BASE_URL,owner,no,HTTPS origin of the ElevenLabs API; defaults to https://api.elevenlabs.io
+ELEVENLABS_TTS_MODEL,owner,no,ElevenLabs synthesis model; defaults to eleven_multilingual_v2
+ELEVENLABS_STT_MODEL,owner,no,ElevenLabs transcription model; defaults to scribe_v1
+ELEVENLABS_OUTPUT_FORMAT,owner,no,ElevenLabs audio output format; defaults to mp3_44100_128
+ELEVENLABS_COST_MICROS_PER_1K_CHARS,owner,no,Micro-dollars recorded per 1000 synthesized characters; defaults to 180000
+OPENAI_API_KEY,owner,no,OpenAI API key; required only while OpenAI is the TTS provider or the transcriber
+OPENAI_API_BASE_URL,owner,no,HTTPS origin of the OpenAI API; defaults to https://api.openai.com
+OPENAI_TTS_MODEL,owner,no,OpenAI synthesis model; defaults to gpt-4o-mini-tts
+OPENAI_TRANSCRIBE_MODEL,owner,no,OpenAI transcription model; defaults to whisper-1
+OPENAI_COST_MICROS_PER_1K_CHARS,owner,no,Micro-dollars recorded per 1000 synthesized characters; defaults to 15000
+RENDER_FPS,owner,no,Render frame rate from 24 to 60; defaults to 30
+RENDER_X264_CRF,owner,no,x264 constant rate factor from 0 to 51; defaults to 20
+RENDER_X264_PRESET,owner,no,x264 speed preset; defaults to veryfast
+RENDER_PARALLEL_PAGES,owner,no,Browser pages capturing chunks in parallel from 1 to 8; defaults to the CPU count capped at 8
+RENDER_CHUNK_SECONDS,owner,no,Seconds of video per capture chunk from 1 to 30; defaults to 5
+RENDER_SCENE_PADDING_MS,owner,no,Silence between narrated scenes in milliseconds; defaults to 400
+RENDER_TAIL_MS,owner,no,Milliseconds the final frame is held after the narration; defaults to 1000
+RENDER_MAX_DURATION_MS,owner,no,Maximum narration duration in milliseconds up to 120000; defaults to 120000
+RENDER_POSTER_MS,owner,no,Poster frame time in milliseconds; defaults to 2000
+RENDER_PAGE_LOAD_TIMEOUT_SECONDS,owner,no,Seconds the sandbox waits for a composition to load; defaults to 15
+RENDER_READY_TIMEOUT_SECONDS,owner,no,Seconds the sandbox waits for the composition ready signal; defaults to 15
+RENDER_FRAME_TIMEOUT_SECONDS,owner,no,Seconds the sandbox waits for one frame; defaults to 10
+RENDER_STAGE_TIMEOUT_SECONDS,owner,no,Wall-clock limit per render stage in seconds; defaults to 1800
+RENDER_STALL_SECONDS,owner,no,Seconds without a progress update before a render counts as stalled; defaults to 900
+RENDER_MIN_FREE_DISK_MB,owner,no,Free disk space in megabytes required before capture; defaults to 2048
+RENDER_BROWSER_MEMORY_MB,owner,no,JavaScript heap limit of the render browser in megabytes; defaults to 768
+RENDER_WORK_DIRECTORY,owner,no,Parent directory of per-render temporary directories; defaults to the system temporary directory
+RENDER_GOLDEN_DIRECTORY,owner,no,Directory of the golden compositions; defaults to /app/golden in the worker image
+RENDER_FFMPEG_PATH,owner,no,ffmpeg executable; defaults to ffmpeg
+RENDER_FFPROBE_PATH,owner,no,ffprobe executable; defaults to ffprobe
+VOICES_CONSENT_MATCH_THRESHOLD,owner,no,Minimum similarity from 0.5 to 1 between the consent sentence and its transcript; defaults to 0.85
+VOICES_SAMPLE_MIN_TOTAL_SECONDS,owner,no,Minimum combined voice sample duration in seconds; defaults to 30
+VOICES_SAMPLE_MAX_TOTAL_SECONDS,owner,no,Maximum combined voice sample duration in seconds; defaults to 300
+VOICES_SAMPLE_MAX_BYTES,owner,no,Maximum size in bytes of one uploaded voice file; defaults to 26214400
+VOICES_CONSENT_MIN_SECONDS,owner,no,Minimum consent recording duration in seconds; defaults to 3
+VOICES_CONSENT_MAX_SECONDS,owner,no,Maximum consent recording duration in seconds; defaults to 30
+VOICES_ATTEMPT_TTL_SECONDS,owner,no,Lifetime of a voice clone attempt in seconds; defaults to 3600 and may not exceed 3600

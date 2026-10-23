@@ -1,0 +1,10 @@
+{
+  "language": "en",
+  "scenes": [
+    {
+      "sceneId": "code",
+      "text": "First we create a small list of numbers. Then map doubles every single value in that list. Finally we print the result to the console."
+    },
+    { "sceneId": "output", "text": "The output is two, four, six. Each number is doubled." }
+  ]
+}

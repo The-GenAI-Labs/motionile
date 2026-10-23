@@ -350,6 +350,12 @@ jobs:
           API_BASE_URL: http://127.0.0.1:8000
           AUTH_WEB_BASE_URL: https://localhost:3443
         run: pnpm --filter @motionile/tests run e2e
+      - name: Playwright security suite for completed render delivery
+        env:
+          CI: "true"
+          API_BASE_URL: http://127.0.0.1:8000
+          WEB_BASE_URL: http://127.0.0.1:3000
+        run: pnpm --filter @motionile/tests run security:render
       - name: Stack logs
         if: failure()
         run: |
@@ -384,6 +390,31 @@ jobs:
           API_BASE_URL: http://127.0.0.1:8000
           WEB_BASE_URL: http://127.0.0.1:3000
         run: pnpm --filter @motionile/tests run security
+      - name: Playwright security suite for CloudFront signed cookies
+        env:
+          CI: "true"
+          API_BASE_URL: http://127.0.0.1:8000
+          WEB_BASE_URL: http://127.0.0.1:3000
+          CDN_DOMAIN: cdn.motionile.test
+          MEDIA_COOKIE_DOMAIN: motionile.test
+          MEDIA_COOKIE_TTL_SECONDS: "1800"
+          CLOUDFRONT_KEY_PAIR_ID: K2MOTIONILECITEST
+        run: |
+          key_file="$(mktemp)"
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$key_file"
+          CLOUDFRONT_PRIVATE_KEY="$(base64 -w0 "$key_file")"
+          CLOUDFRONT_TEST_PUBLIC_KEY="$(openssl pkey -in "$key_file" -pubout | base64 -w0)"
+          rm -f "$key_file"
+          echo "::add-mask::$CLOUDFRONT_PRIVATE_KEY"
+          export CLOUDFRONT_PRIVATE_KEY CLOUDFRONT_TEST_PUBLIC_KEY
+          docker compose -f deploy/compose.yml -f deploy/compose.dev.yml -f deploy/compose.cloudfront-test.yml up --detach --no-build --no-deps --force-recreate --wait --wait-timeout 180 api
+          curl --silent --fail --retry 30 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/health/ready
+          pnpm --filter @motionile/tests run security:cdn
+      - name: Restore presigned media delivery
+        if: always()
+        run: |
+          docker compose -f deploy/compose.yml -f deploy/compose.dev.yml up --detach --no-build --no-deps --force-recreate --wait --wait-timeout 180 api
+          curl --silent --fail --retry 30 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/health/ready
       - name: ZAP baseline against the web app
         run: bash tests/security/zap/run-baseline.sh http://127.0.0.1:3000 zap-web
       - name: ZAP baseline against the API

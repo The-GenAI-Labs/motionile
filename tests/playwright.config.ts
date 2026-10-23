@@ -49,6 +49,20 @@ export default defineConfig({
     {
       name: "security",
       testDir: "./security/api",
+      testIgnore: ["media-cdn-scope.spec.ts", "media-delivery-render.spec.ts"],
+      use: { baseURL: apiBaseUrl },
+    },
+    {
+      name: "security-cdn",
+      testDir: "./security/api",
+      testMatch: "media-cdn-scope.spec.ts",
+      use: { baseURL: apiBaseUrl },
+    },
+    {
+      name: "security-render",
+      testDir: "./security/api",
+      testMatch: "media-delivery-render.spec.ts",
+      timeout: 900000,
       use: { baseURL: apiBaseUrl },
     },
   ],

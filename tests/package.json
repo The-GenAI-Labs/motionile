@@ -9,6 +9,8 @@
     "e2e": "playwright test --project=e2e --project=auth-browser --project=billing-browser",
     "smoke": "playwright test --project=smoke",
     "security": "playwright test --project=security",
+    "security:cdn": "playwright test --project=security-cdn",
+    "security:render": "playwright test --project=security-render",
     "zap": "bash security/zap/run-baseline.sh",
     "load": "bash load/run-smoke.sh"
   },

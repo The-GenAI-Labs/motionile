@@ -13,6 +13,11 @@ export interface SessionUser {
 interface Inbox {
   messages: { template: string; code: string | null }[];
 }
+export interface UploadPart {
+  name: string;
+  mimeType: string;
+  buffer: Buffer;
+}
 export class AuthApi {
   readonly cookies = new Map<string, string>();
   readonly email = "auth-" + randomUUID() + "@example.com";
@@ -31,15 +36,40 @@ export class AuthApi {
       method,
       ...(data ? { data } : {}),
       maxRedirects: 0,
-      headers: {
-        Origin: ALLOWED_ORIGIN,
-        "X-Forwarded-For": this.ip,
-        "X-Turnstile-Token": "fake-pass",
-        "X-CSRF-Token": this.cookies.get("mo_csrf") ?? "",
-        Cookie: [...this.cookies].map(([name, value]) => name + "=" + value).join("; "),
-        ...extra,
-      },
+      headers: this.headers(extra),
     });
+    this.remember(response);
+    return response;
+  }
+
+  async sendMultipart(
+    method: string,
+    path: string,
+    parts: Record<string, UploadPart>,
+    extra: Record<string, string> = {},
+  ): Promise<APIResponse> {
+    const response = await this.request.fetch(new URL(path, this.baseUrl).toString(), {
+      method,
+      multipart: parts,
+      maxRedirects: 0,
+      headers: this.headers(extra),
+    });
+    this.remember(response);
+    return response;
+  }
+
+  private headers(extra: Record<string, string>): Record<string, string> {
+    return {
+      Origin: ALLOWED_ORIGIN,
+      "X-Forwarded-For": this.ip,
+      "X-Turnstile-Token": "fake-pass",
+      "X-CSRF-Token": this.cookies.get("mo_csrf") ?? "",
+      Cookie: [...this.cookies].map(([name, value]) => name + "=" + value).join("; "),
+      ...extra,
+    };
+  }
+
+  private remember(response: APIResponse): void {
     for (const header of response.headersArray()) {
       if (header.name.toLowerCase() !== "set-cookie") continue;
       const pair = header.value.split(";", 1)[0] ?? "";
@@ -48,8 +78,8 @@ export class AuthApi {
       if (/max-age=0(?:;|$)/i.test(header.value)) this.cookies.delete(name);
       else this.cookies.set(name, pair.slice(index + 1));
     }
-    return response;
   }
+
   async code(
     template: string,
     destination = this.email,

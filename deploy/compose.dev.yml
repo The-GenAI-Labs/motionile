@@ -45,6 +45,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
 
   mcp:
     build: *server-build
@@ -57,6 +59,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
 
   worker-default:
     build: *server-build
@@ -65,6 +69,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
 
   worker-render:
     build:
@@ -75,6 +81,23 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
+
+  storage-init:
+    build: *server-build
+    image: motionile-api:local
+    command:
+      - python
+      - -m
+      - motionile.scripts.ensure_storage
+    environment: *dev-storage
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_started
+    networks:
+      - backend
 
   migrate:
     build: *server-build

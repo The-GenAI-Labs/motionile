@@ -332,13 +332,14 @@ jobs:
           python: "false"
       - uses: ./.github/actions/start-stack
         with:
-          services: api mcp worker-default worker-render
+          services: api mcp worker-default worker-generation worker-render
           browser-auth: "true"
-      - name: Confirm both workers keep running
+      - name: Confirm the workers keep running
         run: |
           sleep 15
           docker compose -f deploy/compose.yml -f deploy/compose.dev.yml ps --status running --services | tee running.txt
           grep -qx worker-default running.txt
+          grep -qx worker-generation running.txt
           grep -qx worker-render running.txt
           curl --silent --fail http://127.0.0.1:8001/health/live
       - name: Install Chromium
@@ -383,7 +384,7 @@ jobs:
           python: "false"
       - uses: ./.github/actions/start-stack
         with:
-          services: api mcp worker-default
+          services: api mcp worker-default worker-generation
       - name: Playwright security suite
         env:
           CI: "true"

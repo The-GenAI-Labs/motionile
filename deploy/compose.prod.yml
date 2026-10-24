@@ -17,6 +17,10 @@ x-render-worker-required-environment: &render-worker-required-environment
 
 x-required-environment: &required-environment
   <<: *render-worker-required-environment
+  AI_ANTHROPIC_API_KEY: ${AI_ANTHROPIC_API_KEY:?set AI_ANTHROPIC_API_KEY}
+  AI_LANGFUSE_PUBLIC_KEY: ${AI_LANGFUSE_PUBLIC_KEY:?set AI_LANGFUSE_PUBLIC_KEY}
+  AI_LANGFUSE_SECRET_KEY: ${AI_LANGFUSE_SECRET_KEY:?set AI_LANGFUSE_SECRET_KEY}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY}
   CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?set CORS_ALLOWED_ORIGINS}
   RATE_LIMIT_ENABLED: "true"
   SECURITY_PAGINATION_SECRET: ${SECURITY_PAGINATION_SECRET:?set SECURITY_PAGINATION_SECRET}
@@ -60,6 +64,11 @@ services:
     logging: *logging
 
   worker-default:
+    image: ${MOTIONILE_API_IMAGE:?set MOTIONILE_API_IMAGE}
+    environment: *required-environment
+    logging: *logging
+
+  worker-generation:
     image: ${MOTIONILE_API_IMAGE:?set MOTIONILE_API_IMAGE}
     environment: *required-environment
     logging: *logging

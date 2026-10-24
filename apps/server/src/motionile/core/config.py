@@ -30,6 +30,7 @@ RAZORPAY_API_BASE_URL = "https://api.razorpay.com"
 REPORT_PREFIX_PATTERN = r"^[a-z0-9][a-z0-9_-]*(/[a-z0-9][a-z0-9_-]*)*$"
 ELEVENLABS_API_BASE_URL = "https://api.elevenlabs.io"
 OPENAI_API_BASE_URL = "https://api.openai.com"
+LANGFUSE_DEFAULT_HOST = "https://cloud.langfuse.com"
 MAX_RENDER_PAGES = 8
 HOST_LABEL = r"[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?"
 HOST_NAME_PATTERN = re.compile(rf"^(?=.{{1,253}}$){HOST_LABEL}(\.{HOST_LABEL})*$")
@@ -607,6 +608,29 @@ class VoicesSettings(GroupSettings):
         return self
 
 
+class AiSettings(GroupSettings):
+    model_config = SettingsConfigDict(env_prefix="AI_", env_ignore_empty=True, hide_input_in_errors=True)
+
+    anthropic_api_key: OptionalSecret = None
+    langfuse_public_key: OptionalSecret = None
+    langfuse_secret_key: OptionalSecret = None
+    langfuse_host: str = LANGFUSE_DEFAULT_HOST
+    langfuse_project_id: OptionalText = None
+    embedding_model: str = Field(
+        default="text-embedding-3-small", min_length=1, max_length=100, validation_alias="EMBEDDING_MODEL"
+    )
+    embedding_dimensions: int = Field(default=1_536, ge=64, le=4_096, validation_alias="EMBEDDING_DIMENSIONS")
+
+    @field_validator("langfuse_host")
+    @classmethod
+    def validate_langfuse_host(cls, value: str) -> str:
+        return require_https_origin(value)
+
+    @property
+    def tracing_enabled(self) -> bool:
+        return self.langfuse_public_key is not None and self.langfuse_secret_key is not None
+
+
 class NotificationSettings(GroupSettings):
     model_config = SettingsConfigDict(env_prefix="NOTIFICATIONS_")
 
@@ -662,6 +686,7 @@ class Settings(BaseModel):
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     media: MediaSettings = Field(default_factory=MediaSettings)
     voices: VoicesSettings = Field(default_factory=VoicesSettings)
+    ai: AiSettings = Field(default_factory=AiSettings)
     process_environment: ProcessEnvironment = Field(default_factory=ProcessEnvironment)
 
     @model_validator(mode="after")
@@ -694,7 +719,18 @@ class Settings(BaseModel):
             problems.extend(self.service_deployment_problems())
         problems.extend(self.audio_deployment_problems())
         problems.extend(self.media_deployment_problems())
+        if self.app.role is AppRole.SERVICE:
+            problems.extend(self.ai_deployment_problems())
         return problems
+
+    def ai_deployment_problems(self) -> list[str]:
+        required = {
+            "AI_ANTHROPIC_API_KEY": self.ai.anthropic_api_key,
+            "OPENAI_API_KEY": self.openai.api_key,
+            "AI_LANGFUSE_PUBLIC_KEY": self.ai.langfuse_public_key,
+            "AI_LANGFUSE_SECRET_KEY": self.ai.langfuse_secret_key,
+        }
+        return [f"{name} must be set" for name, value in required.items() if value is None]
 
     def service_deployment_problems(self) -> list[str]:
         problems: list[str] = []

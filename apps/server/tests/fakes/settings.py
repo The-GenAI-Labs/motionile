@@ -3,6 +3,7 @@ import base64
 from pydantic import SecretStr
 
 from motionile.core.config import (
+    AiSettings,
     AppEnv,
     AppSettings,
     AuthSettings,
@@ -15,6 +16,7 @@ from motionile.core.config import (
     MediaDeliveryMode,
     MediaSettings,
     NotificationSettings,
+    OpenAISettings,
     ProvidersMode,
     RateLimitSettings,
     RedisSettings,
@@ -72,6 +74,12 @@ def deployed_settings(env: AppEnv = AppEnv.PRODUCTION) -> Settings:
             whatsapp_phone_number_id="1234",
         ),
         elevenlabs=ElevenLabsSettings(api_key=STRONG_SECRET),
+        openai=OpenAISettings(api_key=STRONG_SECRET),
+        ai=AiSettings(
+            anthropic_api_key=STRONG_SECRET,
+            langfuse_public_key=SecretStr("pk-lf-test"),
+            langfuse_secret_key=SecretStr("sk-lf-test"),
+        ),
         media=MediaSettings(delivery_mode=MediaDeliveryMode.PRESIGNED),
         database=DatabaseSettings(url="postgresql://app@db.internal/motionile"),
         redis=RedisSettings(url="rediss://:secret@redis.internal:6379/0"),

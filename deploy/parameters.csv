@@ -78,11 +78,18 @@ ELEVENLABS_TTS_MODEL,owner,no,ElevenLabs synthesis model; defaults to eleven_mul
 ELEVENLABS_STT_MODEL,owner,no,ElevenLabs transcription model; defaults to scribe_v1
 ELEVENLABS_OUTPUT_FORMAT,owner,no,ElevenLabs audio output format; defaults to mp3_44100_128
 ELEVENLABS_COST_MICROS_PER_1K_CHARS,owner,no,Micro-dollars recorded per 1000 synthesized characters; defaults to 180000
-OPENAI_API_KEY,owner,no,OpenAI API key; required only while OpenAI is the TTS provider or the transcriber
+OPENAI_API_KEY,owner,yes,OpenAI API key; used for skill embeddings and while OpenAI is the TTS provider or the transcriber
 OPENAI_API_BASE_URL,owner,no,HTTPS origin of the OpenAI API; defaults to https://api.openai.com
 OPENAI_TTS_MODEL,owner,no,OpenAI synthesis model; defaults to gpt-4o-mini-tts
 OPENAI_TRANSCRIBE_MODEL,owner,no,OpenAI transcription model; defaults to whisper-1
 OPENAI_COST_MICROS_PER_1K_CHARS,owner,no,Micro-dollars recorded per 1000 synthesized characters; defaults to 15000
+AI_ANTHROPIC_API_KEY,owner,yes,Anthropic API key for the generation pipeline models
+AI_LANGFUSE_PUBLIC_KEY,owner,yes,Langfuse public key for pipeline traces
+AI_LANGFUSE_SECRET_KEY,owner,yes,Langfuse secret key for pipeline traces
+AI_LANGFUSE_HOST,owner,no,HTTPS origin of Langfuse; defaults to https://cloud.langfuse.com
+AI_LANGFUSE_PROJECT_ID,owner,no,Langfuse project ID used to build trace links in the admin console
+EMBEDDING_MODEL,owner,no,Embedding model for skill routing; defaults to text-embedding-3-small
+EMBEDDING_DIMENSIONS,owner,no,Embedding vector size read by the migration; defaults to 1536
 RENDER_FPS,owner,no,Render frame rate from 24 to 60; defaults to 30
 RENDER_X264_CRF,owner,no,x264 constant rate factor from 0 to 51; defaults to 20
 RENDER_X264_PRESET,owner,no,x264 speed preset; defaults to veryfast

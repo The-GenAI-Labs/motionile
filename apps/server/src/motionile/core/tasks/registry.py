@@ -30,6 +30,7 @@ class Queue(StrEnum):
     DEFAULT = "default"
     BILLING = "billing"
     PUBLISHING = "publishing"
+    GENERATION = "generation"
     RENDER = "render"
 
 

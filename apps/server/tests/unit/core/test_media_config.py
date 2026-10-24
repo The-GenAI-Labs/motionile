@@ -606,9 +606,14 @@ def test_deployed_environments_reject_unset_audio_and_media_settings(env: AppEnv
         Settings(app=AppSettings(env=env))
 
     message = str(raised.value)
-    for problem in ("ELEVENLABS_API_KEY must be set", "MEDIA_DELIVERY_MODE must be set"):
+    for problem in (
+        "ELEVENLABS_API_KEY must be set",
+        "MEDIA_DELIVERY_MODE must be set",
+        "AI_ANTHROPIC_API_KEY must be set",
+        "AI_LANGFUSE_PUBLIC_KEY must be set",
+        "AI_LANGFUSE_SECRET_KEY must be set",
+    ):
         assert problem in message
-    assert "OPENAI_API_KEY" not in message
     assert "CDN_DOMAIN" not in message
 
 

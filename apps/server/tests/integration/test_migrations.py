@@ -62,8 +62,24 @@ MEDIA_TABLES = {
     "voice_consents",
 }
 MEDIA_PERMISSIONS = {"render.testbed", "voices.manage", "music.manage"}
-APPLICATION_TABLES = EARLIER_TABLES | BILLING_TABLES | MEDIA_TABLES
-HEAD_REVISION = "0006"
+GENERATION_TABLES = {
+    "jobs",
+    "storyboards",
+    "scenes",
+    "job_events",
+    "share_links",
+    "prompt_templates",
+    "prompt_versions",
+    "eval_runs",
+    "skills",
+    "skill_versions",
+    "skill_files",
+    "skill_embeddings",
+}
+GENERATION_PERMISSIONS = {"prompts.manage", "skills.manage", "jobs.read_all", "evals.run"}
+CHECKPOINT_TABLES = {"checkpoints", "checkpoint_blobs", "checkpoint_writes", "checkpoint_migrations"}
+APPLICATION_TABLES = EARLIER_TABLES | BILLING_TABLES | MEDIA_TABLES | GENERATION_TABLES
+HEAD_REVISION = "0007"
 
 
 @pytest.fixture
@@ -193,7 +209,7 @@ def test_billing_revision_downgrades_cleanly_and_reapplies(scratch_database_url:
     command.downgrade(config, "0004")
 
     assert current_revision(engine) == "0004"
-    assert application_tables(engine) == APPLICATION_TABLES - BILLING_TABLES - MEDIA_TABLES
+    assert application_tables(engine) == APPLICATION_TABLES - BILLING_TABLES - MEDIA_TABLES - GENERATION_TABLES
     assert billing_permissions(engine) == set()
     assert database_functions(engine) == {"forbid_append_only_mutation"}
 
@@ -225,7 +241,7 @@ def test_media_revision_downgrades_cleanly_and_reapplies(scratch_database_url: s
     command.downgrade(config, "0005")
 
     assert current_revision(engine) == "0005"
-    assert application_tables(engine) == APPLICATION_TABLES - MEDIA_TABLES
+    assert application_tables(engine) == APPLICATION_TABLES - MEDIA_TABLES - GENERATION_TABLES
     assert media_permissions(engine) == set()
     assert default_voice_foreign_keys(engine) == set()
     assert len(billing_permissions(engine)) == 5
@@ -235,6 +251,58 @@ def test_media_revision_downgrades_cleanly_and_reapplies(scratch_database_url: s
     assert application_tables(engine) == APPLICATION_TABLES
     assert media_permissions(engine) == MEDIA_PERMISSIONS
     assert default_voice_foreign_keys(engine) == {"fk_user_preferences_default_voice_id_voices"}
+    assert schema_drift(engine) == []
+
+
+def generation_permissions(engine: Engine) -> set[str]:
+    query = text(
+        "SELECT key FROM permissions WHERE key IN ('prompts.manage', 'skills.manage', 'jobs.read_all', 'evals.run')"
+    )
+    with engine.connect() as connection:
+        return set(connection.execute(query).scalars())
+
+
+def checkpoint_tables(engine: Engine) -> set[str]:
+    query = text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'langgraph'")
+    with engine.connect() as connection:
+        return set(connection.execute(query).scalars())
+
+
+def checkpoint_versions(engine: Engine) -> list[int]:
+    with engine.connect() as connection:
+        return list(connection.execute(text("SELECT v FROM langgraph.checkpoint_migrations ORDER BY v")).scalars())
+
+
+def usage_job_foreign_keys(engine: Engine) -> set[str]:
+    query = text("SELECT conname FROM pg_constraint WHERE conname = 'fk_usage_records_job_id_jobs'")
+    with engine.connect() as connection:
+        return set(connection.execute(query).scalars())
+
+
+def test_generation_revision_downgrades_cleanly_and_reapplies(scratch_database_url: str, engine: Engine) -> None:
+    config = alembic_config_for(scratch_database_url)
+    command.upgrade(config, "head")
+    assert generation_permissions(engine) == GENERATION_PERMISSIONS
+    assert checkpoint_tables(engine) == CHECKPOINT_TABLES
+    assert checkpoint_versions(engine) == list(range(10))
+    assert usage_job_foreign_keys(engine) == {"fk_usage_records_job_id_jobs"}
+
+    command.downgrade(config, "0006")
+
+    assert current_revision(engine) == "0006"
+    assert application_tables(engine) == APPLICATION_TABLES - GENERATION_TABLES
+    assert generation_permissions(engine) == set()
+    assert checkpoint_tables(engine) == set()
+    assert usage_job_foreign_keys(engine) == set()
+    assert media_permissions(engine) == MEDIA_PERMISSIONS
+    assert database_functions(engine) == {"forbid_append_only_mutation", "forbid_used_product_financial_change"}
+
+    command.upgrade(config, "head")
+
+    assert application_tables(engine) == APPLICATION_TABLES
+    assert generation_permissions(engine) == GENERATION_PERMISSIONS
+    assert checkpoint_tables(engine) == CHECKPOINT_TABLES
+    assert usage_job_foreign_keys(engine) == {"fk_usage_records_job_id_jobs"}
     assert schema_drift(engine) == []
 
 

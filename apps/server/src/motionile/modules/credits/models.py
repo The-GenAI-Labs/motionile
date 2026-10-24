@@ -166,7 +166,7 @@ class UsageRecord(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     )
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
-    job_id: Mapped[UUID | None]
+    job_id: Mapped[UUID | None] = mapped_column(ForeignKey("jobs.id", ondelete="SET NULL"))
     publication_id: Mapped[UUID | None]
     stage: Mapped[str]
     provider: Mapped[str]

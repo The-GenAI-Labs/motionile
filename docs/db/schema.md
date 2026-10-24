@@ -17,13 +17,13 @@ Read [`conventions.md`](conventions.md) first; this file assumes it. Diagrams li
 
 ## Shared database objects
 
-| Object                                   | Kind      | Phase | Purpose                                                                                                                                                                                                                                                                                                                                        |
-| ---------------------------------------- | --------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vector`, `citext`, `pgcrypto`           | extension | 1     | Embeddings, case-insensitive text, `digest()` for backfills                                                                                                                                                                                                                                                                                    |
-| procrastinate schema                     | tables    | 1     | Background jobs, in `public` (procrastinate's default)                                                                                                                                                                                                                                                                                         |
-| `forbid_append_only_mutation()`          | function  | 2     | Trigger function attached to every append-only table. Raises on `UPDATE` and `DELETE` issued directly by application code. Allows changes made by a referential action (`pg_trigger_depth() > 1`, for `ON DELETE SET NULL` or `CASCADE`) and deletes made by the retention job, which sets `motionile.allow_purge = 'on'` for its transaction. |
-| `forbid_used_product_financial_change()` | function  | 7     | Trigger function on `products`. Raises when a financial column changes while an order or subscription references the product.                                                                                                                                                                                                                  |
-| `langgraph`                              | schema    | 9     | LangGraph Postgres checkpointer tables, owned and migrated by the library's `setup()` and called from an Alembic migration                                                                                                                                                                                                                     |
+| Object                                   | Kind      | Phase | Purpose                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------- | --------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vector`, `citext`, `pgcrypto`           | extension | 1     | Embeddings, case-insensitive text, `digest()` for backfills                                                                                                                                                                                                                                                                                                                               |
+| procrastinate schema                     | tables    | 1     | Background jobs, in `public` (procrastinate's default)                                                                                                                                                                                                                                                                                                                                    |
+| `forbid_append_only_mutation()`          | function  | 2     | Trigger function attached to every append-only table. Raises on `UPDATE` and `DELETE` issued directly by application code. Allows changes made by a referential action (`pg_trigger_depth() > 1`, for `ON DELETE SET NULL` or `CASCADE`) and deletes made by the retention job, which sets `motionile.allow_purge = 'on'` for its transaction.                                            |
+| `forbid_used_product_financial_change()` | function  | 7     | Trigger function on `products`. Raises when a financial column changes while an order or subscription references the product.                                                                                                                                                                                                                                                             |
+| `langgraph`                              | schema    | 9     | LangGraph Postgres checkpointer tables (`checkpoints`, `checkpoint_blobs`, `checkpoint_writes`, `checkpoint_migrations`). The Alembic migration of Phase 9 creates the schema and applies the library's migrations 0 to 9 verbatim (without `CONCURRENTLY`, which cannot run in a transaction), recording them in `checkpoint_migrations`; the library's `setup()` applies any later one. |
 
 ## Domains and phases
 
@@ -35,12 +35,13 @@ Read [`conventions.md`](conventions.md) first; this file assumes it. Diagrams li
 | Catalog                  | `categories`, `topics`, `catalog_slug_history`                                                                                                                                                                               | 6     |
 | Billing and credits      | `products`, `billing_customers`, `orders`, `payments`, `subscriptions`, `refunds`, `webhook_events`, `billing_reconciliation_runs`, `credit_wallets`, `credit_lots`, `credit_reservations`, `credit_ledger`, `usage_records` | 7     |
 | Media and voices         | `assets`, `renders`, `renditions`, `tts_cache`, `music_tracks`, `voices`, `voice_consents`                                                                                                                                   | 8     |
-| Generation               | `jobs`, `storyboards`, `scenes`, `job_events`, `share_links`, `prompt_templates`, `prompt_versions`                                                                                                                          | 9     |
-| Skills, memory and RAG   | `skills`, `skill_versions`, `skill_files`, `skill_embeddings`, `job_skills`, `memories`, `rag_sources`, `rag_chunks`                                                                                                         | 10    |
+| Generation               | `jobs`, `storyboards`, `scenes`, `job_events`, `share_links`, `prompt_templates`, `prompt_versions`, `eval_runs`                                                                                                             | 9     |
+| Skills                   | `skills`, `skill_versions`, `skill_files`, `skill_embeddings` (only system skills exist in this phase)                                                                                                                       | 9     |
+| Memory and RAG           | `job_skills`, `memories`, `rag_sources`, `rag_chunks`                                                                                                                                                                        | 10    |
 | Publishing               | `platform_specs`, `connected_accounts`, `account_credentials`, `publications`, `publication_targets`                                                                                                                         | 11    |
 | Integrations             | `api_keys`, `mcp_clients`, `mcp_grants`                                                                                                                                                                                      | 12    |
 
-`share_links` moves from the media phase to Phase 9 because it belongs to a finished job; `renditions` stays in Phase 8 and references `renders` ([ADR 0021](../adr/0021-renders-as-an-aggregate.md)); `job_skills` is an addition explained under its table.
+`share_links` moves from the media phase to Phase 9 and from the `media` module to the `generation` module because it joins `jobs` and `renditions`; `eval_runs` is an addition explained under its table; the `skills` tables move from Phase 10 to Phase 9 for system skills, and user-owned skills, `job_skills`, memory and RAG stay in Phase 10; `renditions` stays in Phase 8 and references `renders` ([ADR 0021](../adr/0021-renders-as-an-aggregate.md)); `job_skills` is an addition explained under its table.
 
 ---
 
@@ -1288,6 +1289,7 @@ Module `generation` · Phase 9 · Mutable
 | `user_id`             | `uuid`        | no   | -          |                                                                                                                                                                |
 | `source`              | `text`        | no   | -          | `catalog`, `query`, `mcp`                                                                                                                                      |
 | `topic_id`            | `uuid`        | yes  | -          | Catalog topic, when `source = 'catalog'`                                                                                                                       |
+| `parent_job_id`       | `uuid`        | yes  | -          | The job this one revises ([ADR 0032](../adr/0032-revisions-as-child-jobs.md)); added by Phase 9                                                                |
 | `query`               | `text`        | no   | -          | Prompt text; for catalog jobs a copy of the topic title, so the job survives topic deletion. Required in all cases (refines "query" from optional to required) |
 | `options`             | `jsonb`       | no   | `'{}'`     | Validated by `JobOptions`: duration, aspects, voice, style, language, captions                                                                                 |
 | `status`              | `text`        | no   | `'queued'` | See `state-machines.md`                                                                                                                                        |
@@ -1302,47 +1304,57 @@ Module `generation` · Phase 9 · Mutable
 | `completed_at`        | `timestamptz` | yes  | -          | Set for `completed`, `failed`, `cancelled`                                                                                                                     |
 | `render_id`           | `uuid`        | yes  | -          | The render that produced this job's renditions; set when rendering starts                                                                                      |
 | `idempotency_key`     | `text`        | yes  | -          | From the create request                                                                                                                                        |
+| `reports`             | `jsonb`       | no   | `'{}'`     | Validation and review reports of the last composition check; added by Phase 9                                                                                  |
 | `created_at`          | `timestamptz` | no   | `now()`    |                                                                                                                                                                |
 | `updated_at`          | `timestamptz` | no   | `now()`    |                                                                                                                                                                |
 
 - `pk_jobs` primary key (`id`).
 - `fk_jobs_user_id_users` → `users.id` **ON DELETE CASCADE**.
 - `fk_jobs_topic_id_topics` → `topics.id` **ON DELETE SET NULL**.
+- `fk_jobs_parent_job_id_jobs` → `jobs.id` **ON DELETE SET NULL**: deleting the original never blocks or removes its revisions.
 - `fk_jobs_render_id_renders` → `renders.id` **ON DELETE SET NULL**.
 - `uq_jobs_user_id_idempotency_key` unique (`user_id`, `idempotency_key`) (nulls distinct: jobs without a key never collide).
 - `ck_jobs_source`: `source IN ('catalog', 'query', 'mcp')`.
 - `ck_jobs_status`: `status IN ('queued', 'planning', 'awaiting_approval', 'voicing', 'generating', 'validating', 'rendering', 'completed', 'failed', 'cancelled')`.
 - `ck_jobs_query_length`: `char_length(query) BETWEEN 1 AND 2000`.
 - `ck_jobs_options_object`: `jsonb_typeof(options) = 'object'`.
+- `ck_jobs_reports_object`: `jsonb_typeof(reports) = 'object'`.
 - `ck_jobs_credits_non_negative`: `credits_estimated >= 0 AND credits_reserved >= 0 AND (credits_charged IS NULL OR credits_charged >= 0)`.
 - `ck_jobs_terminal_has_completed_at`: `(status IN ('completed', 'failed', 'cancelled')) = (completed_at IS NOT NULL)`.
 - `ck_jobs_failed_has_error`: `status <> 'failed' OR error_code IS NOT NULL`.
+- `ck_jobs_error_code_format`: `error_code IS NULL OR error_code ~ '^[a-z][a-z0-9_]{1,59}$'`; `ck_jobs_error_message_length`: `error_message IS NULL OR char_length(error_message) <= 2000`.
+- `ck_jobs_not_own_parent`: `parent_job_id IS NULL OR parent_job_id <> id`.
 - `ix_jobs_user_id_created_at_id` (`user_id`, `created_at`, `id`): library and job list; supports the foreign key.
 - `ix_jobs_user_id_active` (`user_id`) `WHERE status NOT IN ('completed', 'failed', 'cancelled')`: concurrent-job limit (at most 2).
 - `ix_jobs_status_updated_at` (`status`, `updated_at`) `WHERE status NOT IN ('completed', 'failed', 'cancelled', 'awaiting_approval')`: sweeper for stuck jobs.
 - `ix_jobs_topic_id` (`topic_id`): supports the foreign key.
+- `ix_jobs_parent_job_id` (`parent_job_id`): revisions of a job; supports the foreign key.
 - `ix_jobs_render_id` (`render_id`): supports the foreign key.
+
+The credit reservation of a job is found through `credit_reservations` with `ref_type = 'job'` and `ref_id` equal to the job ID, so `jobs` has no reservation column. `credits_reserved` is a display copy of the reserved amount.
 
 ### `storyboards`
 
 Module `generation` · Phase 9 · Mutable
 
-| Column        | Type          | Null | Default | Notes                                |
-| ------------- | ------------- | ---- | ------- | ------------------------------------ |
-| `id`          | `uuid`        | no   | -       | UUIDv7                               |
-| `job_id`      | `uuid`        | no   | -       |                                      |
-| `version`     | `integer`     | no   | -       | Each user edit creates a new version |
-| `content`     | `jsonb`       | no   | -       | Validated by `StoryboardContent`     |
-| `approved_at` | `timestamptz` | yes  | -       |                                      |
-| `approved_by` | `uuid`        | yes  | -       |                                      |
-| `created_at`  | `timestamptz` | no   | `now()` |                                      |
-| `updated_at`  | `timestamptz` | no   | `now()` |                                      |
+| Column        | Type          | Null | Default     | Notes                                                                                   |
+| ------------- | ------------- | ---- | ----------- | --------------------------------------------------------------------------------------- |
+| `id`          | `uuid`        | no   | -           | UUIDv7                                                                                  |
+| `job_id`      | `uuid`        | no   | -           |                                                                                         |
+| `version`     | `integer`     | no   | -           | Each user edit creates a new version                                                    |
+| `origin`      | `text`        | no   | `'planner'` | Who produced the version: `planner`, `critic`, `regeneration`, `user`; added by Phase 9 |
+| `content`     | `jsonb`       | no   | -           | Validated by `StoryboardContent`                                                        |
+| `approved_at` | `timestamptz` | yes  | -           |                                                                                         |
+| `approved_by` | `uuid`        | yes  | -           |                                                                                         |
+| `created_at`  | `timestamptz` | no   | `now()`     |                                                                                         |
+| `updated_at`  | `timestamptz` | no   | `now()`     |                                                                                         |
 
 - `pk_storyboards` primary key (`id`).
 - `fk_storyboards_job_id_jobs` → `jobs.id` **ON DELETE CASCADE**.
 - `fk_storyboards_approved_by_users` → `users.id` **ON DELETE SET NULL**.
 - `uq_storyboards_job_id_version` unique (`job_id`, `version`): latest storyboard of a job; supports the foreign key.
 - `ck_storyboards_version_positive`: `version >= 1`.
+- `ck_storyboards_origin`: `origin IN ('planner', 'critic', 'regeneration', 'user')`.
 - `ck_storyboards_content_object`: `jsonb_typeof(content) = 'object'`.
 - `ck_storyboards_approval_consistent`: `approved_by IS NULL OR approved_at IS NOT NULL`.
 - `ix_storyboards_approved_by` (`approved_by`): supports the foreign key.
@@ -1351,35 +1363,46 @@ Module `generation` · Phase 9 · Mutable
 
 Module `generation` · Phase 9 · Mutable
 
-| Column               | Type          | Null | Default     | Notes                                                   |
-| -------------------- | ------------- | ---- | ----------- | ------------------------------------------------------- |
-| `id`                 | `uuid`        | no   | -           | UUIDv7                                                  |
-| `storyboard_id`      | `uuid`        | no   | -           |                                                         |
-| `position`           | `integer`     | no   | -           | Zero-based order                                        |
-| `narration`          | `text`        | no   | -           | At most 2000 characters                                 |
-| `visual_brief`       | `text`        | no   | -           | At most 4000 characters                                 |
-| `target_duration_ms` | `integer`     | no   | -           | 1 to 120 seconds                                        |
-| `actual_duration_ms` | `integer`     | yes  | -           | From TTS                                                |
-| `audio_asset_id`     | `uuid`        | yes  | -           |                                                         |
-| `word_timestamps`    | `jsonb`       | yes  | -           | Array of `{word, startMs, endMs}`                       |
-| `html_asset_id`      | `uuid`        | yes  | -           |                                                         |
-| `status`             | `text`        | no   | `'pending'` | `pending`, `voiced`, `generated`, `validated`, `failed` |
-| `repair_attempts`    | `smallint`    | no   | `0`         | At most 2                                               |
-| `error_code`         | `text`        | yes  | -           | Added to report why a scene failed validation           |
-| `created_at`         | `timestamptz` | no   | `now()`     |                                                         |
-| `updated_at`         | `timestamptz` | no   | `now()`     |                                                         |
+Scene rows are created for the approved storyboard version when voicing starts; storyboard versions before approval live only in `storyboards.content`.
+
+| Column               | Type          | Null | Default     | Notes                                                                            |
+| -------------------- | ------------- | ---- | ----------- | -------------------------------------------------------------------------------- |
+| `id`                 | `uuid`        | no   | -           | UUIDv7                                                                           |
+| `storyboard_id`      | `uuid`        | no   | -           |                                                                                  |
+| `scene_key`          | `text`        | no   | -           | The storyboard scene identifier (`^[a-z][a-z0-9-]{0,31}$`); added by Phase 9     |
+| `position`           | `integer`     | no   | -           | Zero-based order                                                                 |
+| `narration`          | `text`        | no   | -           | At most 2000 characters                                                          |
+| `visual_brief`       | `text`        | no   | -           | At most 4000 characters                                                          |
+| `target_duration_ms` | `integer`     | no   | -           | 1 to 120 seconds                                                                 |
+| `actual_duration_ms` | `integer`     | yes  | -           | From TTS                                                                         |
+| `audio_asset_id`     | `uuid`        | yes  | -           |                                                                                  |
+| `word_timestamps`    | `jsonb`       | yes  | -           | Array of `{word, startMs, endMs}`                                                |
+| `html_asset_id`      | `uuid`        | yes  | -           |                                                                                  |
+| `module`             | `jsonb`       | yes  | -           | The current scene module (`scene-module@1`); added by Phase 9                    |
+| `status`             | `text`        | no   | `'pending'` | `pending`, `voiced`, `generated`, `validated`, `failed`; see `state-machines.md` |
+| `repair_attempts`    | `smallint`    | no   | `0`         | At most 3 (the `ai.max_repairs` setting allows 0 to 3)                           |
+| `is_fallback`        | `boolean`     | no   | `false`     | The module was replaced by the fallback scene; added by Phase 9                  |
+| `attempt_log`        | `jsonb`       | no   | `'[]'`      | Array of per-attempt summaries (kind, issue codes, usage); added by Phase 9      |
+| `error_code`         | `text`        | yes  | -           | Added to report why a scene failed validation                                    |
+| `created_at`         | `timestamptz` | no   | `now()`     |                                                                                  |
+| `updated_at`         | `timestamptz` | no   | `now()`     |                                                                                  |
 
 - `pk_scenes` primary key (`id`).
 - `fk_scenes_storyboard_id_storyboards` → `storyboards.id` **ON DELETE CASCADE**.
 - `fk_scenes_audio_asset_id_assets` → `assets.id` **ON DELETE SET NULL**.
 - `fk_scenes_html_asset_id_assets` → `assets.id` **ON DELETE SET NULL**.
 - `uq_scenes_storyboard_id_position` unique (`storyboard_id`, `position`) **DEFERRABLE INITIALLY IMMEDIATE**: reordering runs `SET CONSTRAINTS uq_scenes_storyboard_id_position DEFERRED` and swaps positions in one transaction. Because it is deferrable it cannot be an `ON CONFLICT` arbiter. Supports the foreign key.
+- `uq_scenes_storyboard_id_scene_key` unique (`storyboard_id`, `scene_key`): a scene is addressed by its storyboard identifier; not deferrable, so it is the `ON CONFLICT` arbiter for idempotent scene creation.
+- `ck_scenes_scene_key_format`: `scene_key ~ '^[a-z][a-z0-9-]{0,31}$'`.
 - `ck_scenes_position_non_negative`: `position >= 0`.
 - `ck_scenes_target_duration_ms_range`: `target_duration_ms BETWEEN 1000 AND 120000`.
 - `ck_scenes_actual_duration_ms_non_negative`: `actual_duration_ms IS NULL OR actual_duration_ms >= 0`.
 - `ck_scenes_status`: `status IN ('pending', 'voiced', 'generated', 'validated', 'failed')`.
-- `ck_scenes_repair_attempts_range`: `repair_attempts BETWEEN 0 AND 2`.
+- `ck_scenes_repair_attempts_range`: `repair_attempts BETWEEN 0 AND 3`.
 - `ck_scenes_word_timestamps_array`: `word_timestamps IS NULL OR jsonb_typeof(word_timestamps) = 'array'`.
+- `ck_scenes_module_object`: `module IS NULL OR jsonb_typeof(module) = 'object'`.
+- `ck_scenes_attempt_log_array`: `jsonb_typeof(attempt_log) = 'array'`.
+- `ck_scenes_error_code_format`: `error_code IS NULL OR error_code ~ '^[a-z][a-z0-9_]{1,59}$'`.
 - `ck_scenes_narration_length`, `ck_scenes_visual_brief_length` enforce the limits above.
 - `ix_scenes_audio_asset_id` (`audio_asset_id`), `ix_scenes_html_asset_id` (`html_asset_id`): support foreign keys.
 
@@ -1404,6 +1427,7 @@ Progress events, replayed to SSE clients that reconnect with `Last-Event-ID`.
 - `ck_job_events_payload_object`: `jsonb_typeof(payload) = 'object'`.
 - Trigger `trg_job_events_append_only` → `forbid_append_only_mutation()`.
 - `ix_job_events_job_id_id` (`job_id`, `id`): replay after a given event ID (UUIDv7 order is time order); supports the foreign key.
+- `ix_job_events_created_at` (`created_at`): retention purge after 90 days; added by Phase 9.
 
 ### `job_skills`
 
@@ -1426,7 +1450,7 @@ Added because a generation must be reproducible: it records exactly which skill 
 
 ### `share_links`
 
-Module `media` · Phase 9 · Mutable
+Module `generation` (moved from `media`) · Phase 9 · Mutable
 
 | Column         | Type          | Null | Default | Notes                                                         |
 | -------------- | ------------- | ---- | ------- | ------------------------------------------------------------- |
@@ -1451,7 +1475,7 @@ Module `media` · Phase 9 · Mutable
 
 ### `prompt_templates`
 
-Module `generation` (`engine.ai.prompts` reads through the module) · Phase 9 · Mutable
+Module `prompts` (`engine.ai.prompts` reads through the module) · Phase 9 · Mutable
 
 | Column              | Type          | Null | Default | Notes                            |
 | ------------------- | ------------- | ---- | ------- | -------------------------------- |
@@ -1470,7 +1494,7 @@ Module `generation` (`engine.ai.prompts` reads through the module) · Phase 9 ·
 
 ### `prompt_versions`
 
-Module `generation` · Phase 9 · Mutable (only `eval_status` changes) · Never returned by any API
+Module `prompts` · Phase 9 · Mutable (only `eval_status` and `eval_report` change) · Never returned by any API
 
 | Column        | Type          | Null | Default     | Notes                                               |
 | ------------- | ------------- | ---- | ----------- | --------------------------------------------------- |
@@ -1497,17 +1521,58 @@ Module `generation` · Phase 9 · Mutable (only `eval_status` changes) · Never 
 - `ck_prompt_versions_checksum_length`: `octet_length(checksum) = 32`.
 - `ck_prompt_versions_variables_array`: `jsonb_typeof(variables) = 'array'`.
 - `ck_prompt_versions_canary_length`: `char_length(canary) BETWEEN 16 AND 64`.
+- `ck_prompt_versions_eval_report_object`: `eval_report IS NULL OR jsonb_typeof(eval_report) = 'object'`.
 - `ix_prompt_versions_created_by` (`created_by`): supports the foreign key.
+
+### `eval_runs`
+
+Module `prompts` · Phase 9 · Mutable until finished · **Addition** ([ADR 0033](../adr/0033-eval-gated-prompt-activation.md))
+
+One row per evaluation run. Activating a prompt version requires a finished, passing run whose `prompt_version_ids` cover it.
+
+| Column                | Type          | Null | Default     | Notes                                                                                     |
+| --------------------- | ------------- | ---- | ----------- | ----------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`        | no   | -           | UUIDv7                                                                                    |
+| `suite`               | `text`        | no   | -           | Suite name such as `planner` or `scene-generation`                                        |
+| `dataset_version`     | `text`        | no   | -           | Version label of the dataset the run used                                                 |
+| `prompt_version_ids`  | `uuid[]`      | no   | `'{}'`      | Prompt versions under test; no foreign key, so a removed version never blocks the history |
+| `model_configuration` | `jsonb`       | no   | `'{}'`      | Models and parameters used; the ORM attribute is `models_used`                            |
+| `scores`              | `jsonb`       | no   | `'{}'`      | Metric name to value                                                                      |
+| `passed`              | `boolean`     | yes  | -           | Null until the run is `finished`                                                          |
+| `status`              | `text`        | no   | `'running'` | `running`, `finished`, `errored`; see `state-machines.md`                                 |
+| `error_code`          | `text`        | yes  | -           | Set exactly when `errored`                                                                |
+| `trigger`             | `text`        | no   | -           | `ci`, `nightly`, `admin`                                                                  |
+| `created_by`          | `uuid`        | yes  | -           | The admin who started an `admin` run                                                      |
+| `started_at`          | `timestamptz` | no   | `now()`     |                                                                                           |
+| `finished_at`         | `timestamptz` | yes  | -           | Set exactly when the run leaves `running`                                                 |
+| `created_at`          | `timestamptz` | no   | `now()`     |                                                                                           |
+| `updated_at`          | `timestamptz` | no   | `now()`     |                                                                                           |
+
+- `pk_eval_runs` primary key (`id`).
+- `fk_eval_runs_created_by_users` → `users.id` **ON DELETE SET NULL**.
+- `ck_eval_runs_status`: `status IN ('running', 'finished', 'errored')`.
+- `ck_eval_runs_trigger`: `trigger IN ('ci', 'nightly', 'admin')`.
+- `ck_eval_runs_suite_format`: `suite ~ '^[a-z][a-z0-9_.-]{0,59}$'`.
+- `ck_eval_runs_dataset_version_format`: `dataset_version ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$'`.
+- `ck_eval_runs_prompt_version_ids_size`: `cardinality(prompt_version_ids) <= 100`.
+- `ck_eval_runs_model_configuration_object`, `ck_eval_runs_scores_object`: `jsonb_typeof(...) = 'object'`.
+- `ck_eval_runs_finished_consistent`: `(status = 'running') = (finished_at IS NULL)`.
+- `ck_eval_runs_passed_consistent`: `(status = 'finished') = (passed IS NOT NULL)`.
+- `ck_eval_runs_errored_has_error`: `(status = 'errored') = (error_code IS NOT NULL)`.
+- `ck_eval_runs_error_code_format`: `error_code IS NULL OR error_code ~ '^[a-z][a-z0-9_]{1,59}$'`.
+- `ix_eval_runs_suite_created_at` (`suite`, `created_at`): latest runs of a suite.
+- `ix_eval_runs_created_by` (`created_by`): supports the foreign key.
+- `ix_eval_runs_prompt_version_ids` GIN (`prompt_version_ids`): "runs covering this version" with `prompt_version_ids @> ARRAY[:id]`.
 
 ---
 
 ## Skills, memory and RAG
 
-Embedding columns are `vector(D)` where `D` is `EMBEDDING_DIMENSIONS` (default 1536), read when the migration runs. Each embedding has a `model` column; changing the model means re-embedding every row, tracked by `model`. Vector indexes are HNSW with `vector_cosine_ops` (`m = 16`, `ef_construction = 64`).
+The `skills` tables are created in Phase 9 and only system skills exist until Phase 10 adds user-owned skills; `memories`, `rag_sources` and `rag_chunks` belong to Phase 10. Embedding columns are `vector(D)` where `D` is `EMBEDDING_DIMENSIONS` (default 1536), read when the migration runs. Each embedding has a `model` column; changing the model means re-embedding every row, tracked by `model`. Vector indexes are HNSW with `vector_cosine_ops` (`m = 16`, `ef_construction = 64`).
 
 ### `skills`
 
-Module `skills` · Phase 10 · Mutable · **Soft delete**
+Module `skills` · Phase 9 · Mutable · **Soft delete**
 
 | Column               | Type          | Null | Default   | Notes                                                                     |
 | -------------------- | ------------- | ---- | --------- | ------------------------------------------------------------------------- |
@@ -1531,6 +1596,7 @@ Module `skills` · Phase 10 · Mutable · **Soft delete**
 - `ck_skills_status`: `status IN ('draft', 'active', 'archived')`.
 - `ck_skills_ownership`: `(visibility = 'system') = (owner_user_id IS NULL)`.
 - `ck_skills_slug_format`: `slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND char_length(slug) <= 64`.
+- `ck_skills_name_length`: `char_length(name) BETWEEN 1 AND 64`.
 - `ck_skills_description_length`: `char_length(description) BETWEEN 1 AND 1024`.
 - `ix_skills_owner_user_id_slug` unique (`owner_user_id`, `slug`) **NULLS NOT DISTINCT** `WHERE deleted_at IS NULL`: slugs are unique per owner, and among system skills, ignoring deleted ones.
 - `ix_skills_owner_user_id_created_at` (`owner_user_id`, `created_at`) `WHERE deleted_at IS NULL`: a user's skills list; supports the foreign key together with `ix_skills_owner_user_id`.
@@ -1539,7 +1605,7 @@ Module `skills` · Phase 10 · Mutable · **Soft delete**
 
 ### `skill_versions`
 
-Module `skills` · Phase 10 · Mutable (only scan fields change)
+Module `skills` · Phase 9 · Mutable (only scan fields change)
 
 | Column        | Type          | Null | Default     | Notes                                                      |
 | ------------- | ------------- | ---- | ----------- | ---------------------------------------------------------- |
@@ -1571,7 +1637,7 @@ Module `skills` · Phase 10 · Mutable (only scan fields change)
 
 ### `skill_files`
 
-Module `skills` · Phase 10 · Mutable
+Module `skills` · Phase 9 · Mutable
 
 | Column             | Type          | Null | Default | Notes                                  |
 | ------------------ | ------------- | ---- | ------- | -------------------------------------- |
@@ -1596,7 +1662,7 @@ Module `skills` · Phase 10 · Mutable
 
 ### `skill_embeddings`
 
-Module `skills` · Phase 10 · Mutable (replaced on re-embedding)
+Module `skills` · Phase 9 · Mutable (replaced on re-embedding)
 
 | Column             | Type          | Null | Default | Notes       |
 | ------------------ | ------------- | ---- | ------- | ----------- |

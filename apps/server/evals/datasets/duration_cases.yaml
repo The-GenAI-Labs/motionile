@@ -1,0 +1,110 @@
+version: "2026-10-24.1"
+cases:
+  - id: short-01
+    kind: short
+    query: "What is a prime number?"
+    durationSeconds: 10
+    aspects: ["16:9"]
+    expectedSceneRange: [2, 2]
+  - id: short-02
+    kind: short
+    query: "Why is the sky blue?"
+    durationSeconds: 12
+    aspects: ["9:16"]
+    expectedSceneRange: [2, 2]
+  - id: short-03
+    kind: short
+    query: "What does an API do?"
+    durationSeconds: 15
+    aspects: ["16:9"]
+    expectedSceneRange: [2, 2]
+  - id: short-04
+    kind: short
+    query: "One-line explanation of what a hash function is"
+    durationSeconds: 18
+    aspects: ["1:1"]
+    expectedSceneRange: [2, 3]
+  - id: short-05
+    kind: short
+    query: "What is the difference between weight and mass?"
+    durationSeconds: 20
+    aspects: ["9:16"]
+    expectedSceneRange: [2, 3]
+  - id: short-06
+    kind: short
+    query: "Quick explainer: what is a CDN?"
+    durationSeconds: 20
+    aspects: ["16:9"]
+    expectedSceneRange: [2, 3]
+  - id: long-01
+    kind: long
+    query: "Explain how a modern web browser turns a URL into a rendered page, from DNS and TLS to layout and paint"
+    durationSeconds: 120
+    aspects: ["16:9"]
+    expectedSceneRange: [8, 12]
+  - id: long-02
+    kind: long
+    query: "A complete walkthrough of how photosynthesis works, from light absorption to the Calvin cycle"
+    durationSeconds: 100
+    aspects: ["16:9"]
+    expectedSceneRange: [7, 12]
+  - id: long-03
+    kind: long
+    query: "Teach me how neural networks learn, including loss, gradients, backpropagation and why depth helps"
+    durationSeconds: 120
+    aspects: ["16:9"]
+    expectedSceneRange: [8, 12]
+  - id: long-04
+    kind: long
+    query: "The full story of how a transaction is confirmed on the Bitcoin network"
+    durationSeconds: 105
+    aspects: ["9:16"]
+    expectedSceneRange: [7, 12]
+  - id: long-05
+    kind: long
+    query: "How does a relational database execute a SQL query, from parsing to the query planner to disk reads?"
+    durationSeconds: 110
+    aspects: ["16:9"]
+    expectedSceneRange: [8, 12]
+  - id: long-06
+    kind: long
+    query: "Explain inflation, central banks and interest rates, and how they affect everyday prices and savings"
+    durationSeconds: 120
+    aspects: ["1:1"]
+    expectedSceneRange: [8, 12]
+  - id: multi-01
+    kind: multi_aspect
+    query: "Explain how a load balancer distributes traffic"
+    durationSeconds: 45
+    aspects: ["16:9", "9:16", "1:1"]
+    expectedSceneRange: [3, 6]
+  - id: multi-02
+    kind: multi_aspect
+    query: "How does the Pythagorean theorem work and why is it true?"
+    durationSeconds: 60
+    aspects: ["16:9", "9:16", "1:1"]
+    expectedSceneRange: [4, 8]
+  - id: multi-03
+    kind: multi_aspect
+    query: "What happens inside a cell when DNA is copied?"
+    durationSeconds: 90
+    aspects: ["16:9", "9:16", "1:1"]
+    expectedSceneRange: [6, 12]
+  - id: multi-04
+    kind: multi_aspect
+    query: "Quick tour of how the Domain Name System resolves a name"
+    durationSeconds: 30
+    aspects: ["16:9", "9:16", "1:1"]
+    expectedSceneRange: [2, 4]
+  - id: multi-05
+    kind: multi_aspect
+    query: "Compare supply shocks and demand shocks with a clear example of each"
+    durationSeconds: 75
+    aspects: ["1:1", "9:16", "16:9"]
+    expectedSceneRange: [5, 10]
+  - id: multi-06
+    kind: multi_aspect
+    query: "How do public and private keys work together to sign a message?"
+    durationSeconds: 20
+    aspects: ["16:9", "9:16", "1:1"]
+    expectedSceneRange: [2, 3]

@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import JsonValue
 
 from motionile.engine.ai.job_options import JobOptions, JobStatus
+from motionile.engine.ai.llm.models import CallContext
 from motionile.engine.ai.scenes.models import SceneModule
 from motionile.engine.ai.storyboard import Storyboard
 from motionile.engine.audio.narration_models import NarrationDocument
@@ -174,6 +175,18 @@ class LoadedSkill:
 
 
 @dataclass(frozen=True, slots=True)
+class SelectedSkills:
+    style: LoadedSkill
+    visual: tuple[LoadedSkill, ...]
+    domain: tuple[LoadedSkill, ...]
+    reasons: Mapping[str, str]
+
+    @property
+    def all(self) -> tuple[LoadedSkill, ...]:
+        return (self.style, *self.visual, *self.domain)
+
+
+@dataclass(frozen=True, slots=True)
 class ContextSection:
     title: str
     text: str
@@ -251,6 +264,10 @@ class SkillCatalog(Protocol):
     async def by_slugs(self, slugs: Sequence[str]) -> list[SkillSummary]: ...
 
     async def load(self, slugs: Sequence[str]) -> list[LoadedSkill]: ...
+
+
+class SkillRouter(Protocol):
+    async def select(self, job: JobSnapshot, context: CallContext, *, token_budget: int) -> SelectedSkills: ...
 
 
 class ContextProvider(Protocol):

@@ -1,0 +1,6 @@
+{
+  "verdict": "refuse",
+  "code": "policy_prompt_extraction",
+  "reason": "The text asks for the system prompt.",
+  "detected": ["policy_prompt_extraction"]
+}

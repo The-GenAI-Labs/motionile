@@ -1,0 +1,6 @@
+{
+  "verdict": "refuse",
+  "code": "policy_self_harm",
+  "reason": "The request asks for self-harm instructions.",
+  "detected": ["policy_self_harm"]
+}

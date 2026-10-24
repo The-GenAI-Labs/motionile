@@ -1,0 +1,254 @@
+{
+  "version": 1,
+  "title": "How to Explain Anything",
+  "summary": "A simple method for explaining any idea: ask a clear question, split it into parts, order them, add an example and show it visually.",
+  "audienceLevel": "beginner",
+  "language": "en",
+  "targetDurationMs": 120000,
+  "aspects": [
+    "16:9"
+  ],
+  "styleSkill": "minimal-dark",
+  "scenes": [
+    {
+      "id": "hook",
+      "position": 0,
+      "goal": "Open with curiosity",
+      "narration": "Every complicated idea starts as a simple question someone asked once. Curiosity is the engine that turns confusion into understanding. This video shows a simple way to explain almost anything.",
+      "visualBrief": "A question mark growing into a lightbulb on a dark background.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "kinetic-typography",
+        "comparison-split"
+      ],
+      "keyTerms": [
+        "curiosity"
+      ],
+      "onScreenText": [
+        "Why?",
+        "How?"
+      ],
+      "targetDurationMs": 12500
+    },
+    {
+      "id": "question",
+      "position": 1,
+      "goal": "State the question",
+      "narration": "Begin by stating the question as plainly as you can. A clear question tells you what a good answer must contain. If the question is vague, every answer that follows will wander.",
+      "visualBrief": "A sharp question card next to a blurry one.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "kinetic-typography",
+        "comparison-split"
+      ],
+      "keyTerms": [
+        "clear question"
+      ],
+      "onScreenText": [
+        "Clear",
+        "Vague"
+      ],
+      "targetDurationMs": 13333
+    },
+    {
+      "id": "parts",
+      "position": 2,
+      "goal": "Break the idea into parts",
+      "narration": "Next, break the big idea into a few small parts. Each part should be simple enough to explain in a single sentence. Three to five parts are usually enough to hold in your head.",
+      "visualBrief": "One large block splitting into four small blocks.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "kinetic-typography",
+        "comparison-split"
+      ],
+      "keyTerms": [
+        "parts"
+      ],
+      "onScreenText": [
+        "3 to 5 parts"
+      ],
+      "targetDurationMs": 14167
+    },
+    {
+      "id": "order",
+      "position": 3,
+      "goal": "Order the parts",
+      "narration": "Then arrange the parts in the order a newcomer needs them. Start with what the learner already knows and build outward from there. Never use a term before you have explained what it means.",
+      "visualBrief": "Blocks sliding into a left to right sequence with numbered badges.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "kinetic-typography",
+        "comparison-split"
+      ],
+      "keyTerms": [
+        "order"
+      ],
+      "onScreenText": [
+        "First",
+        "Then",
+        "Finally"
+      ],
+      "targetDurationMs": 14167
+    },
+    {
+      "id": "example",
+      "position": 4,
+      "goal": "Add a concrete example",
+      "narration": "A concrete example makes an abstract idea feel real. Pick something familiar, like a kitchen, a road, or a library. The best examples are small enough to picture in a few seconds.",
+      "visualBrief": "An abstract shape transforming into a familiar kitchen icon.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "kinetic-typography",
+        "comparison-split"
+      ],
+      "keyTerms": [
+        "example"
+      ],
+      "onScreenText": [
+        "Abstract",
+        "Concrete"
+      ],
+      "targetDurationMs": 13333
+    },
+    {
+      "id": "visual",
+      "position": 5,
+      "goal": "Show it visually",
+      "narration": "Show the idea with shapes, motion, and as few words as possible. A moving arrow can explain flow faster than a paragraph can. Let the picture carry the meaning while the voice adds the detail.",
+      "visualBrief": "A paragraph of text on the left replaced by a simple animated arrow on the right.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "kinetic-typography",
+        "comparison-split"
+      ],
+      "keyTerms": [
+        "visual"
+      ],
+      "onScreenText": [
+        "Words",
+        "Motion"
+      ],
+      "targetDurationMs": 14583
+    },
+    {
+      "id": "pace",
+      "position": 6,
+      "goal": "Control the pace",
+      "narration": "Pace matters as much as content in a good explanation. Give each step a moment to land before moving to the next. A calm rhythm tells the viewer that they have time to think.",
+      "visualBrief": "A metronome ticking beside a row of steps lighting up one by one.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "kinetic-typography",
+        "comparison-split"
+      ],
+      "keyTerms": [
+        "pace"
+      ],
+      "onScreenText": [
+        "Slow down"
+      ],
+      "targetDurationMs": 14167
+    },
+    {
+      "id": "check",
+      "position": 7,
+      "goal": "Test the explanation",
+      "narration": "Finally, test the explanation on someone who has never heard it. Wherever they hesitate, the explanation still has a gap in it. Fix that gap, and the whole idea becomes easier for everyone.",
+      "visualBrief": "A speech bubble with a gap that gets filled by a missing piece.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "kinetic-typography",
+        "comparison-split"
+      ],
+      "keyTerms": [
+        "feedback"
+      ],
+      "onScreenText": [
+        "Test",
+        "Fix"
+      ],
+      "targetDurationMs": 13750
+    },
+    {
+      "id": "mistakes",
+      "position": 8,
+      "goal": "Avoid the common mistake",
+      "narration": "The most common mistake is trying to say everything at once. Choose the one idea that matters and leave the rest for later. Clarity comes from what you decide to leave out.",
+      "visualBrief": "A crowded page shrinking down to a single highlighted sentence.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "kinetic-typography",
+        "comparison-split"
+      ],
+      "keyTerms": [
+        "focus"
+      ],
+      "onScreenText": [
+        "One idea"
+      ],
+      "targetDurationMs": 13333
+    },
+    {
+      "id": "recap",
+      "position": 9,
+      "goal": "Recap the method",
+      "narration": "Ask a clear question, split it into parts, and order them well. Add an example, show it visually, and keep a calm pace. Do that, and almost any idea becomes something others can understand.",
+      "visualBrief": "The steps listed in order and checking off one by one.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "kinetic-typography",
+        "comparison-split"
+      ],
+      "keyTerms": [
+        "method"
+      ],
+      "onScreenText": [
+        "Ask",
+        "Split",
+        "Order",
+        "Show"
+      ],
+      "targetDurationMs": 14167
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "verdict": "refuse",
+  "code": "policy_weapons",
+  "reason": "The request asks how to build a weapon.",
+  "detected": ["policy_weapons"]
+}

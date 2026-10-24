@@ -1,0 +1,261 @@
+{
+  "version": 1,
+  "title": "How DNS Works",
+  "summary": "How a human-friendly domain name becomes a numeric address through resolvers, root, top level domain and authoritative servers.",
+  "audienceLevel": "beginner",
+  "language": "en",
+  "targetDurationMs": 120000,
+  "aspects": [
+    "16:9"
+  ],
+  "styleSkill": "minimal-dark",
+  "scenes": [
+    {
+      "id": "hook",
+      "position": 0,
+      "goal": "Show why names need translating",
+      "narration": "Every website you visit starts with a name that computers cannot read. Machines talk to each other using numeric addresses, never words. Something has to translate between the two, and it happens in milliseconds.",
+      "visualBrief": "A browser address bar typing a domain name that morphs into a row of digits.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "flow-diagram",
+        "architecture-build-up"
+      ],
+      "keyTerms": [
+        "domain name",
+        "IP address"
+      ],
+      "onScreenText": [
+        "example.com",
+        "93.184.216.34"
+      ],
+      "targetDurationMs": 14167
+    },
+    {
+      "id": "phone-book",
+      "position": 1,
+      "goal": "Introduce the phone book analogy",
+      "narration": "The Domain Name System works like a giant, shared phone book. You look up a name and receive the number of the machine behind it. No single computer holds the whole book, because the internet is far too large.",
+      "visualBrief": "An open phone book with a name on the left and a number on the right, then many books spreading outward.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "flow-diagram",
+        "architecture-build-up"
+      ],
+      "keyTerms": [
+        "DNS",
+        "phone book"
+      ],
+      "onScreenText": [
+        "Name",
+        "Number"
+      ],
+      "targetDurationMs": 16250
+    },
+    {
+      "id": "resolver",
+      "position": 2,
+      "goal": "Introduce the recursive resolver",
+      "narration": "Your request first reaches a recursive resolver run by your provider. Think of it as a librarian who does the legwork on your behalf. If it already knows the answer, it replies instantly from its cache.",
+      "visualBrief": "A laptop sending a question to a resolver icon that holds a small cache box.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "flow-diagram",
+        "architecture-build-up"
+      ],
+      "keyTerms": [
+        "resolver",
+        "cache"
+      ],
+      "onScreenText": [
+        "Resolver",
+        "Cache hit"
+      ],
+      "targetDurationMs": 15000
+    },
+    {
+      "id": "root",
+      "position": 3,
+      "goal": "Explain the root servers",
+      "narration": "Otherwise the resolver begins at the top, asking a root server. Root servers do not know the address, but they know who handles each ending. For a dot com name, they point to the dot com servers.",
+      "visualBrief": "A tree with the root at the top and branches labelled com, org and net.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "flow-diagram",
+        "architecture-build-up"
+      ],
+      "keyTerms": [
+        "root server",
+        "top level domain"
+      ],
+      "onScreenText": [
+        "Root",
+        ".com"
+      ],
+      "targetDurationMs": 15417
+    },
+    {
+      "id": "tld",
+      "position": 4,
+      "goal": "Explain the top level domain servers",
+      "narration": "The top level domain server narrows the search further. It does not hold the final answer either, only the next place to ask. Each step moves one level closer to the exact site you want.",
+      "visualBrief": "The resolver arrow moving from the com box down to a list of domain names.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "flow-diagram",
+        "architecture-build-up"
+      ],
+      "keyTerms": [
+        "TLD server"
+      ],
+      "onScreenText": [
+        "TLD server",
+        "Next hop"
+      ],
+      "targetDurationMs": 14583
+    },
+    {
+      "id": "authoritative",
+      "position": 5,
+      "goal": "Show the authoritative answer",
+      "narration": "At last, the authoritative server for the domain gives the real address. This server is run by whoever owns the domain, or their hosting company. Its answer is the one source of truth for that name.",
+      "visualBrief": "The final server highlighted with the address record flowing back along the path.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "flow-diagram",
+        "architecture-build-up"
+      ],
+      "keyTerms": [
+        "authoritative server",
+        "A record"
+      ],
+      "onScreenText": [
+        "Authoritative",
+        "A record"
+      ],
+      "targetDurationMs": 15000
+    },
+    {
+      "id": "caching",
+      "position": 6,
+      "goal": "Explain caching and time to live",
+      "narration": "Every answer carries a time to live, a countdown for caching. Resolvers and browsers store the result until that countdown ends. That is why repeat visits feel fast and the root servers stay calm.",
+      "visualBrief": "A countdown timer ring around a stored answer card.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "flow-diagram",
+        "architecture-build-up"
+      ],
+      "keyTerms": [
+        "TTL",
+        "cache"
+      ],
+      "onScreenText": [
+        "TTL: 300 s"
+      ],
+      "targetDurationMs": 14167
+    },
+    {
+      "id": "connect",
+      "position": 7,
+      "goal": "Connect the lookup to the page load",
+      "narration": "With the address in hand, your browser opens a connection. From here the usual web request flows straight to that server. The whole lookup usually finishes before the page even begins to load.",
+      "visualBrief": "A browser connecting to a server by a glowing line after the lookup finishes.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "flow-diagram",
+        "architecture-build-up"
+      ],
+      "keyTerms": [
+        "connection"
+      ],
+      "onScreenText": [
+        "Connect",
+        "Load page"
+      ],
+      "targetDurationMs": 13750
+    },
+    {
+      "id": "failure",
+      "position": 8,
+      "goal": "Show what happens when DNS fails",
+      "narration": "When DNS breaks, sites seem to vanish even though servers are fine. Outages at a large DNS provider have taken down famous services for hours. Running several name servers in different places keeps a domain reachable.",
+      "visualBrief": "A broken link between the resolver and the servers, then redundant paths lighting up.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "flow-diagram",
+        "architecture-build-up"
+      ],
+      "keyTerms": [
+        "outage",
+        "redundancy"
+      ],
+      "onScreenText": [
+        "Outage",
+        "Redundancy"
+      ],
+      "targetDurationMs": 15000
+    },
+    {
+      "id": "recap",
+      "position": 9,
+      "goal": "Recap the full lookup",
+      "narration": "So DNS turns friendly names into numbers through a chain of helpers. Resolvers ask, root and domain servers point, and caches remember. Next time a page loads instantly, thank the quiet phone book behind it.",
+      "visualBrief": "The whole chain replayed quickly from the laptop to the answer and back.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "flow-diagram",
+        "architecture-build-up"
+      ],
+      "keyTerms": [
+        "DNS"
+      ],
+      "onScreenText": [
+        "Ask",
+        "Point",
+        "Remember"
+      ],
+      "targetDurationMs": 14583
+    }
+  ]
+}

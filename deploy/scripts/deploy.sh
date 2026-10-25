@@ -121,6 +121,20 @@ main() {
     die "deployment of $tag failed during migrations"
   fi
 
+  log "syncing system prompts"
+  if ! compose run --rm --no-deps migrate python -m motionile.scripts.seed_prompts; then
+    log "prompt sync failed"
+    roll_back "$tag" "$previous_tag"
+    die "deployment of $tag failed while syncing system prompts"
+  fi
+
+  log "syncing system skills"
+  if ! compose run --rm --no-deps migrate python -m motionile.scripts.seed_skills; then
+    log "skill sync failed"
+    roll_back "$tag" "$previous_tag"
+    die "deployment of $tag failed while syncing system skills"
+  fi
+
   log "starting services and waiting up to ${WAIT_TIMEOUT_SECONDS}s for health checks"
   if ! start_services || ! wait_until_ready; then
     compose ps --all || true

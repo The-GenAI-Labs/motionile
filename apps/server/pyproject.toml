@@ -161,3 +161,11 @@ type = "forbidden"
 source_modules = ["motionile.modules.credits"]
 forbidden_modules = ["motionile.modules.billing"]
 allow_indirect_imports = false
+
+[[tool.importlinter.contracts]]
+id = "generation-uses-prompts-and-skills-through-their-packages"
+name = "generation imports prompts and skills only through their packages"
+type = "forbidden"
+source_modules = ["motionile.modules.generation"]
+forbidden_modules = ["motionile.modules.prompts.*", "motionile.modules.skills.*"]
+allow_indirect_imports = true

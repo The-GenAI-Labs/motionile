@@ -152,8 +152,8 @@ class ActivePrompt:
     key: str
     version_id: UUID
     version: int
-    body: str
-    canary: str
+    body: str = field(repr=False)
+    canary: str = field(repr=False)
     variables: tuple[str, ...]
 
 
@@ -164,6 +164,8 @@ class SkillSummary:
     description: str
     layer: SkillLayer
     version_id: UUID
+    token_count: int = 0
+    similarity: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -206,6 +208,8 @@ class PipelineStore(Protocol):
     async def latest_storyboard(self, job_id: UUID) -> StoredStoryboard | None: ...
 
     async def approved_storyboard(self, job_id: UUID) -> StoredStoryboard | None: ...
+
+    async def approve_storyboard(self, job_id: UUID, storyboard_id: UUID) -> None: ...
 
     async def save_narration(self, job_id: UUID, narration: NarrationDocument) -> None: ...
 

@@ -620,6 +620,7 @@ class AiSettings(GroupSettings):
         default="text-embedding-3-small", min_length=1, max_length=100, validation_alias="EMBEDDING_MODEL"
     )
     embedding_dimensions: int = Field(default=1_536, ge=64, le=4_096, validation_alias="EMBEDDING_DIMENSIONS")
+    fixtures_directory: OptionalPath = None
 
     @field_validator("langfuse_host")
     @classmethod

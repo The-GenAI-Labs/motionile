@@ -90,6 +90,7 @@ AI_LANGFUSE_HOST,owner,no,HTTPS origin of Langfuse; defaults to https://cloud.la
 AI_LANGFUSE_PROJECT_ID,owner,no,Langfuse project ID used to build trace links in the admin console
 EMBEDDING_MODEL,owner,no,Embedding model for skill routing; defaults to text-embedding-3-small
 EMBEDDING_DIMENSIONS,owner,no,Embedding vector size read by the migration; defaults to 1536
+AI_FIXTURES_DIRECTORY,owner,no,Directory of the scripted LLM fixtures used when PROVIDERS_MODE is fake; defaults to the repository fixtures
 RENDER_FPS,owner,no,Render frame rate from 24 to 60; defaults to 30
 RENDER_X264_CRF,owner,no,x264 constant rate factor from 0 to 51; defaults to 20
 RENDER_X264_PRESET,owner,no,x264 speed preset; defaults to veryfast

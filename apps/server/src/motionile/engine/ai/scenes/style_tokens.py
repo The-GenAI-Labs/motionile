@@ -155,24 +155,24 @@ STYLE_TOKEN_SOURCES: Mapping[str, str] = MappingProxyType(
     {
         "minimal-dark": "",
         "whiteboard": (
-            "--mo-bg:#fbfaf6;--mo-surface:#f1efe7;--mo-elevated:#e8e5da;--mo-border:#c9c3b0;"
-            "--mo-text-muted:#5b5a55;--mo-text-secondary:#3a3935;--mo-text:#16150f;"
-            "--mo-accent:#1d4ed8;--mo-danger:#b42318;--mo-success:#166534"
+            "--mo-bg:#f7f5ee;--mo-surface:#ffffff;--mo-elevated:#ece8da;--mo-border:#c9c2ae;"
+            "--mo-text-muted:#5b5b63;--mo-text-secondary:#3d3d45;--mo-text:#17171c;"
+            "--mo-accent:#1d4ed8;--mo-danger:#c62828;--mo-success:#17703a"
         ),
         "blueprint": (
-            "--mo-bg:#0b2447;--mo-surface:#123166;--mo-elevated:#19408a;--mo-border:#3b6ab0;"
-            "--mo-text-muted:#a9c3e6;--mo-text-secondary:#d4e5ff;--mo-text:#ffffff;"
-            "--mo-accent:#5ee6ff;--mo-danger:#ff9b94;--mo-success:#7dffb2"
+            "--mo-bg:#0b2545;--mo-surface:#12315a;--mo-elevated:#1a3f70;--mo-border:#3d6aa3;"
+            "--mo-text-muted:#9fb8dd;--mo-text-secondary:#c3d6f0;--mo-text:#eef4ff;"
+            "--mo-accent:#7fd1ff;--mo-danger:#ff8a80;--mo-success:#6ee7b0"
         ),
         "terminal": (
-            "--mo-bg:#070a07;--mo-surface:#0e140e;--mo-elevated:#162016;--mo-border:#2a4a2a;"
-            "--mo-text-muted:#6ea872;--mo-text-secondary:#ffc233;--mo-text:#5dff8f;"
-            "--mo-accent:#ffb000;--mo-danger:#ff6b6b;--mo-success:#5dff8f"
+            "--mo-bg:#070b07;--mo-surface:#0e160e;--mo-elevated:#162416;--mo-border:#2b4a2b;"
+            "--mo-text-muted:#6fae6f;--mo-text-secondary:#9fd99f;--mo-text:#d4f7d4;"
+            "--mo-accent:#39ff88;--mo-danger:#ff6b6b;--mo-success:#7be495"
         ),
         "editorial-light": (
-            "--mo-bg:#faf7f2;--mo-surface:#f1ece3;--mo-elevated:#e8e1d4;--mo-border:#cfc4ad;"
-            "--mo-text-muted:#645d52;--mo-text-secondary:#3d3832;--mo-text:#1a1816;"
-            "--mo-accent:#c0262d;--mo-danger:#b42318;--mo-success:#1e6b3a"
+            "--mo-bg:#faf7f2;--mo-surface:#ffffff;--mo-elevated:#f0ebe2;--mo-border:#d6cdbd;"
+            "--mo-text-muted:#5f574e;--mo-text-secondary:#3b352f;--mo-text:#14110f;"
+            "--mo-accent:#8f1d2c;--mo-danger:#b53a0a;--mo-success:#17703a"
         ),
     }
 )

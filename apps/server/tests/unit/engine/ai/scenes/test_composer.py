@@ -86,7 +86,7 @@ def test_token_overrides_are_emitted_only_when_tokens_exist() -> None:
 
     assert "mo-style-tokens" not in plain
     assert styled.count('<style id="mo-style-tokens">') == 1
-    assert '<style id="mo-style-tokens">html[data-aspect]{--mo-bg:#fbfaf6;' in styled
+    assert '<style id="mo-style-tokens">html[data-aspect]{--mo-bg:#f7f5ee;' in styled
     assert styled.index("mo-style-tokens") < styled.index('data-mo-scene-style="first"')
 
 

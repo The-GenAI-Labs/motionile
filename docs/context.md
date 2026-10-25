@@ -413,6 +413,7 @@ Password login uses argon2id and a dummy verification for unknown accounts. Ten 
 | `jobs.create` | 5/min per user, at most 2 concurrent jobs |
 | `billing.order.create` | 10/min per user |
 | `skills.write` | 20/hour per user |
+| `prompts.write` | 20/hour per user (prompt drafts, activations, rollbacks and evaluation starts) |
 | `media.session` | 60/min per user |
 | `media.upload` | 30/hour per user |
 | `music.write` | 20/hour per user |

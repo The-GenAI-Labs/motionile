@@ -16,6 +16,7 @@ from motionile.modules.skills.repository import (
     NewSkillVersion,
     SkillRecord,
     SkillState,
+    StyleRow,
     VersionRecord,
 )
 
@@ -221,6 +222,21 @@ class InMemorySkillStore:
             for skill, version in pairs
             if skill.slug in wanted
         ]
+
+    async def styles(self) -> list[StyleRow]:
+        return sorted(
+            (
+                StyleRow(
+                    skill.slug,
+                    skill.name,
+                    skill.description,
+                    str(version.frontmatter["metadata"].get("tokens", "")),
+                )
+                for skill, version in self._servable()
+                if version.frontmatter["metadata"]["layer"] == "style"
+            ),
+            key=lambda row: row.slug,
+        )
 
     async def style_exists(self, slug: str) -> bool:
         return any(

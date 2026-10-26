@@ -58,6 +58,8 @@ class RenderStore(Protocol):
 
     async def render_ids_of(self, owner_user_id: UUID) -> list[UUID]: ...
 
+    async def delete_render(self, owner_user_id: UUID, render_id: UUID) -> bool: ...
+
 
 class SqlAssetRepository:
     def __init__(self, session: AsyncSession) -> None:
@@ -189,3 +191,9 @@ class SqlRenderRepository:
     async def render_ids_of(self, owner_user_id: UUID) -> list[UUID]:
         statement = select(Render.id).where(Render.owner_user_id == owner_user_id).order_by(Render.id)
         return list(await self.session.scalars(statement))
+
+    async def delete_render(self, owner_user_id: UUID, render_id: UUID) -> bool:
+        statement = (
+            delete(Render).where(Render.id == render_id, Render.owner_user_id == owner_user_id).returning(Render.id)
+        )
+        return await self.session.scalar(statement) is not None

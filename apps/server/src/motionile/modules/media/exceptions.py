@@ -13,6 +13,11 @@ class RenderNotFoundError(NotFoundError):
     title = "Render not found"
 
 
+class RenderNotFinishedError(ConflictError):
+    default_code = "render_not_finished"
+    title = "Render not finished"
+
+
 class AssetNotFoundError(NotFoundError):
     default_code = "asset_not_found"
     title = "Asset not found"

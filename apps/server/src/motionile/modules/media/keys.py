@@ -75,6 +75,16 @@ def render_work_key(render_id: UUID, *parts: str) -> str:
     return validate_key(render_work_prefix(render_id) + "/".join(segment(part) for part in parts))
 
 
+def composition_check_prefix(job_id: UUID, check_id: str) -> str:
+    return validate_key(f"{WORK_ROOT}/jobs/{job_id}/checks/{segment(check_id)}") + "/"
+
+
+def composition_check_key(job_id: UUID, check_id: str, *parts: str) -> str:
+    if not parts:
+        raise ValueError("a composition check key needs at least one part")
+    return validate_key(composition_check_prefix(job_id, check_id) + "/".join(segment(part) for part in parts))
+
+
 def user_voice_prefix(user_id: UUID) -> str:
     return validate_key(f"{VOICE_ROOT}/u/{user_id}") + "/"
 

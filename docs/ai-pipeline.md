@@ -2,7 +2,7 @@
 
 This is the reference for Phase 9: the model layer, prompts and guardrails, system skills, the `storyboard@1` and `scene-module@1` contracts, the LangGraph pipeline, repair and degradation, cancellation, charging, the jobs API and the settings that tune all of it. The render and audio engine it feeds is in [`render.md`](render.md) and [`audio.md`](audio.md); the content policy is [`ai-policy.md`](ai-policy.md); evaluation is [`evals.md`](evals.md).
 
-Decisions behind it: [ADR 0009](adr/0009-narration-first-generation-pipeline.md) (order of work), [0029](adr/0029-scene-builders-assembled-by-code.md) (scene modules), [0030](adr/0030-graceful-degradation-with-fallback-scenes.md) (fallback scenes), [0031](adr/0031-predictable-charging.md) (charging), [0032](adr/0032-revisions-as-child-jobs.md) (revisions), [0033](adr/0033-eval-gated-prompt-activation.md) (eval-gated prompts), [0034](adr/0034-generation-queue-for-long-running-graphs.md) (queue).
+Decisions behind it: [ADR 0009](adr/0009-narration-first-generation-pipeline.md) (order of work), [0029](adr/0029-scene-builders-assembled-by-code.md) (scene modules), [0030](adr/0030-graceful-degradation-with-fallback-scenes.md) (fallback scenes), [0031](adr/0031-predictable-charging.md) (charging), [0032](adr/0032-revisions-as-child-jobs.md) (revisions), [0033](adr/0033-eval-gated-prompt-activation.md) (eval-gated prompts), [0034](adr/0034-generation-queue-for-long-running-graphs.md) (queue), [0035](adr/0035-composition-checks-run-on-the-render-queue.md) (composition checks on the render queue).
 
 ## 1. Where the code lives
 
@@ -96,7 +96,7 @@ Every node writes `job_events` rows (append-only) and publishes the same message
 
 Payloads never carry prompts, skill content, model output text beyond ids and codes, secrets or contact data.
 
-`GET /v1/jobs/{id}/events` sends `event: snapshot` with the job first, then each stored event the client has not seen (`Last-Event-ID`, UUIDv7 order is time order), then live messages from Redis. The SSE `id` is the `job_events.id`; Redis-only progress frames carry no id. A heartbeat comment goes out every 15 seconds, the stream re-reads the job every 10 seconds so a lost message cannot hang it, ends after a terminal event, and each user may hold at most five streams (same lease mechanism as render events).
+`GET /v1/jobs/{id}/events` sends `event: snapshot` with the job first, then each stored event the client has not seen (`Last-Event-ID`, UUIDv7 order is time order), then live messages from Redis. The SSE frames are `event: snapshot` (the job) and `event: job_event` (`{ id, type, stage, payload, at }`); the SSE `id` is the `job_events.id`; Redis-only progress frames carry no id. A heartbeat comment goes out every 15 seconds, the stream re-reads the job every 10 seconds so a lost message cannot hang it, ends after a terminal event, and each user may hold at most five streams (same lease mechanism as render events).
 
 ## 3. Contracts
 

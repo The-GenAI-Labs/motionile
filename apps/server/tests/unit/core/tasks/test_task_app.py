@@ -91,3 +91,15 @@ async def test_defer_after_commit_enqueues_only_after_commit(in_memory_app: tupl
     await run_after_commit(session)
     assert len(connector.jobs) == 1
     await session.close()
+
+
+async def test_defer_after_commit_passes_the_lock(in_memory_app: tuple[App, InMemoryConnector]) -> None:
+    _, connector = in_memory_app
+    session = AsyncSession()
+
+    defer_after_commit(session, dispatch_event, lock="job-1", subscription="tests.any", payload={})
+    defer_after_commit(session, dispatch_event, subscription="tests.any", payload={})
+    await run_after_commit(session)
+
+    assert sorted(str(job["lock"]) for job in connector.jobs.values()) == ["None", "job-1"]
+    await session.close()

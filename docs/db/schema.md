@@ -1458,7 +1458,7 @@ Module `generation` (moved from `media`) · Phase 9 · Mutable
 | `job_id`       | `uuid`        | no   | -       |                                                               |
 | `slug`         | `text`        | no   | -       | Random URL-safe ID used in `/v/[shareId]`                     |
 | `rendition_id` | `uuid`        | no   | -       |                                                               |
-| `is_public`    | `boolean`     | no   | `false` |                                                               |
+| `is_public`    | `boolean`     | no   | `false` | Search engines may index the public page (`allowIndexing`)    |
 | `expires_at`   | `timestamptz` | yes  | -       |                                                               |
 | `view_count`   | `bigint`      | no   | `0`     |                                                               |
 | `revoked_at`   | `timestamptz` | yes  | -       | Added so owners can disable a link without losing its counter |

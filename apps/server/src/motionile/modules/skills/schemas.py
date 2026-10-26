@@ -35,6 +35,20 @@ class SkillListQuery(PageQuery):
     layer: SkillLayer | None = None
 
 
+class StyleView(ResponseModel):
+    slug: str
+    name: str
+    description: str
+    background: str
+    surface: str
+    text: str
+    accent: str
+
+
+class StyleListView(ResponseModel):
+    items: list[StyleView]
+
+
 class ReseedView(ResponseModel):
     created: int
     updated: int

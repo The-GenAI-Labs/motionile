@@ -1,4 +1,5 @@
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import timedelta
 from uuid import UUID
 
@@ -6,9 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.engine.audio.narration_models import NarrationDocument
 from motionile.modules.audit import AuditContext
+from motionile.modules.media.assets import AssetService
 from motionile.modules.media.delivery import MediaDelivery, MediaSessionGrant
-from motionile.modules.media.domain import Aspect, AssetStatus, RenderSource, RenditionStatus
-from motionile.modules.media.exceptions import RenderNotFoundError
+from motionile.modules.media.domain import Aspect, AssetStatus, RenderSource, RenderStatus, RenditionStatus, is_terminal
+from motionile.modules.media.exceptions import RenderNotFinishedError, RenderNotFoundError
+from motionile.modules.media.keys import render_media_prefix
 from motionile.modules.media.models import Asset, Render, Rendition
 from motionile.modules.media.render_commands import RenderCommands
 from motionile.modules.media.render_options import RenderOptions, ResolvedVoice, SceneScript
@@ -21,6 +24,18 @@ type RenderStoreFactory = Callable[[AsyncSession], RenderStore]
 ASPECT_ORDER = {aspect: position for position, aspect in enumerate((Aspect.LANDSCAPE, Aspect.PORTRAIT, Aspect.SQUARE))}
 
 
+@dataclass(frozen=True, slots=True)
+class SignedRendition:
+    rendition_id: UUID
+    aspect: Aspect
+    width: int
+    height: int
+    duration_ms: int | None
+    url: str
+    poster_url: str | None
+    expires_in: timedelta
+
+
 class MediaService:
     def __init__(
         self,
@@ -28,10 +43,12 @@ class MediaService:
         store_factory: RenderStoreFactory = SqlRenderRepository,
         *,
         commands: RenderCommands | None = None,
+        assets: AssetService | None = None,
     ) -> None:
         self._delivery = delivery
         self._store_factory = store_factory
         self._commands = commands
+        self._assets = assets
 
     @property
     def delivery(self) -> MediaDelivery:
@@ -66,7 +83,7 @@ class MediaService:
     async def cancel_render(self, session: AsyncSession, user_id: UUID, render_id: UUID) -> RenderView:
         return await self._render_commands().cancel_render(session, user_id, render_id)
 
-    async def narrate(
+    async def narrate(  # noqa: PLR0913
         self,
         session: AsyncSession,
         user_id: UUID,
@@ -74,8 +91,11 @@ class MediaService:
         voice: ResolvedVoice,
         *,
         padding_ms: int | None = None,
+        job_id: UUID | None = None,
     ) -> NarrationDocument:
-        return await self._render_commands().narrate(session, user_id, scenes, voice, padding_ms=padding_ms)
+        return await self._render_commands().narrate(
+            session, user_id, scenes, voice, padding_ms=padding_ms, job_id=job_id
+        )
 
     async def selectable_music(self, session: AsyncSession) -> list[MusicTrackView]:
         return await self._render_commands().selectable_music(session)
@@ -115,6 +135,48 @@ class MediaService:
             )
             for item in renditions
         ]
+
+    async def signed_rendition(
+        self, session: AsyncSession, owner_user_id: UUID, render_id: UUID, rendition_id: UUID, ttl: timedelta
+    ) -> SignedRendition | None:
+        store = self._store_factory(session)
+        render = await store.get_render(owner_user_id, render_id)
+        if render is None:
+            return None
+        rendition = next((item for item in await store.renditions(render.id) if item.id == rendition_id), None)
+        if rendition is None or rendition.status != RenditionStatus.READY.value or rendition.asset_id is None:
+            return None
+        assets = await store.assets_by_ids(
+            owner_user_id, {item for item in (rendition.asset_id, rendition.poster_webp_asset_id) if item is not None}
+        )
+        video = assets.get(rendition.asset_id)
+        if video is None or video.status != AssetStatus.READY.value:
+            return None
+        poster = assets.get(rendition.poster_webp_asset_id) if rendition.poster_webp_asset_id is not None else None
+        poster_ready = poster is not None and poster.status == AssetStatus.READY.value
+        return SignedRendition(
+            rendition_id=rendition.id,
+            aspect=Aspect(rendition.aspect),
+            width=rendition.width,
+            height=rendition.height,
+            duration_ms=rendition.duration_ms,
+            url=await self._delivery.signed_url(video.storage_key, ttl, owner_user_id=owner_user_id),
+            poster_url=(
+                await self._delivery.signed_url(poster.storage_key, ttl, owner_user_id=owner_user_id)
+                if poster is not None and poster_ready
+                else None
+            ),
+            expires_in=ttl,
+        )
+
+    async def delete_render(self, session: AsyncSession, user_id: UUID, render_id: UUID) -> None:
+        if self._assets is None:
+            raise RuntimeError("this MediaService was built without an asset service")
+        render = await self._owned_render(session, user_id, render_id)
+        if not is_terminal(RenderStatus(render.status)):
+            raise RenderNotFinishedError
+        await self._store_factory(session).delete_render(user_id, render.id)
+        await self._assets.delete_by_prefix(session, user_id, render_media_prefix(user_id, render.id))
 
     async def _owned_render(self, session: AsyncSession, user_id: UUID, render_id: UUID) -> Render:
         render = await self._store_factory(session).get_render(user_id, render_id)

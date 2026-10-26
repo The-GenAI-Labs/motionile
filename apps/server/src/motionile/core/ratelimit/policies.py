@@ -69,6 +69,8 @@ DEFAULT_POLICIES: tuple[RateLimitPolicy, ...] = (
     RateLimitPolicy("catalog.read", (RateLimitRule(600, MINUTE, RateLimitScope.IP),)),
     RateLimitPolicy("jobs.create", (RateLimitRule(5, MINUTE, RateLimitScope.USER),)),
     RateLimitPolicy("jobs.write", (RateLimitRule(30, MINUTE, RateLimitScope.USER),)),
+    RateLimitPolicy("share.view", (RateLimitRule(120, MINUTE, RateLimitScope.IP),)),
+    RateLimitPolicy("share.manage", (RateLimitRule(30, HOUR, RateLimitScope.USER),)),
     RateLimitPolicy("billing.order.create", (RateLimitRule(10, MINUTE, RateLimitScope.USER),)),
     RateLimitPolicy("skills.write", (RateLimitRule(20, HOUR, RateLimitScope.USER),)),
     RateLimitPolicy("prompts.write", (RateLimitRule(20, HOUR, RateLimitScope.USER),)),

@@ -86,6 +86,14 @@ class CatalogRow:
 
 
 @dataclass(frozen=True, slots=True)
+class StyleRow:
+    slug: str
+    name: str
+    description: str
+    tokens: str
+
+
+@dataclass(frozen=True, slots=True)
 class BodyRow:
     row: CatalogRow
     body: str
@@ -122,6 +130,8 @@ class SkillStore(Protocol):
     async def bodies(self, slugs: Sequence[str]) -> list[BodyRow]: ...
 
     async def style_exists(self, slug: str) -> bool: ...
+
+    async def styles(self) -> list[StyleRow]: ...
 
 
 def layer_of_version() -> ColumnElement[str]:
@@ -355,6 +365,18 @@ class SqlSkillRepository:
         )
         return [
             BodyRow(row=catalog_row(row, None), body=row.body, tokens=row.tokens or "")
+            for row in await self._session.execute(statement)
+        ]
+
+    async def styles(self) -> list[StyleRow]:
+        statement = (
+            select(Skill.slug, Skill.name, Skill.description, tokens_of_version().label("tokens"))
+            .join(SkillVersion, SkillVersion.id == Skill.current_version_id)
+            .where(*servable_skill_filters(), layer_of_version() == "style")
+            .order_by(Skill.slug)
+        )
+        return [
+            StyleRow(row.slug, row.name, row.description, row.tokens or "")
             for row in await self._session.execute(statement)
         ]
 

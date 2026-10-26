@@ -188,3 +188,21 @@ async def test_the_catalog_hides_disabled_skills_and_reports_style_existence(see
     assert [item.slug for item in await catalog.by_slugs(["terminal", "blueprint", "blueprint"])] == ["blueprint"]
     assert await catalog.load(["terminal"]) == []
     assert await catalog.by_slugs([]) == []
+
+
+async def test_the_catalog_lists_the_five_styles_with_palettes_and_no_text(seeded: Harness) -> None:
+    catalog = DatabaseSkillCatalog(seeded.world.transaction, seeded.world.store)
+
+    styles = await catalog.styles()
+
+    assert [style.slug for style in styles] == [
+        "blueprint",
+        "editorial-light",
+        "minimal-dark",
+        "terminal",
+        "whiteboard",
+    ]
+    assert all({"--mo-bg", "--mo-surface", "--mo-text", "--mo-accent"} <= set(style.palette) for style in styles)
+    assert all(not hasattr(style, "body") for style in styles)
+    minimal = next(style for style in styles if style.slug == "minimal-dark")
+    assert minimal.palette["--mo-bg"] == "#0e0e10"

@@ -46,7 +46,7 @@ SETTING_DEFINITIONS = (
             "maxItems": 50,
             "uniqueItems": True,
         },
-        ["minimal", "editorial", "diagram"],
+        ["minimal-dark", "whiteboard", "blueprint", "terminal", "editorial-light"],
         "Allowed default video style slugs",
         True,
     ),

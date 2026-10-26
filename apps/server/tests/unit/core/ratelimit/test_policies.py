@@ -23,6 +23,8 @@ CONTEXT_POLICIES = {
     "catalog.read": [(600, MINUTE, RateLimitScope.IP)],
     "jobs.create": [(5, MINUTE, RateLimitScope.USER)],
     "jobs.write": [(30, MINUTE, RateLimitScope.USER)],
+    "share.view": [(120, MINUTE, RateLimitScope.IP)],
+    "share.manage": [(30, HOUR, RateLimitScope.USER)],
     "billing.order.create": [(10, MINUTE, RateLimitScope.USER)],
     "skills.write": [(20, HOUR, RateLimitScope.USER)],
     "prompts.write": [(20, HOUR, RateLimitScope.USER)],

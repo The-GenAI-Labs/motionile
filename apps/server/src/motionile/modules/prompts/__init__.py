@@ -1,5 +1,6 @@
 from motionile.modules.prompts.admin_router import admin_prompts_router
 from motionile.modules.prompts.eval_runs import EvalRunService, ExternalRun, record_external_run
+from motionile.modules.prompts.evaluation import prompts_under_evaluation
 from motionile.modules.prompts.exceptions import BootstrapRefusedError, PromptNotActiveError
 from motionile.modules.prompts.executor import (
     EvalExecutionError,
@@ -34,5 +35,6 @@ __all__ = [
     "build_prompt_store",
     "ensure_bootstrap_allowed",
     "install_eval_executor",
+    "prompts_under_evaluation",
     "record_external_run",
 ]

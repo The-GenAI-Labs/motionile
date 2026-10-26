@@ -304,6 +304,15 @@ class InMemoryRenderStore:
     async def render_ids_of(self, owner_user_id: UUID) -> list[UUID]:
         return [render.id for render in self._world.renders.values() if render.owner_user_id == owner_user_id]
 
+    async def delete_render(self, owner_user_id: UUID, render_id: UUID) -> bool:
+        render = self._world.renders.get(render_id)
+        if render is None or render.owner_user_id != owner_user_id:
+            return False
+        del self._world.renders[render_id]
+        for rendition_id in [item.id for item in self._world.renditions.values() if item.render_id == render_id]:
+            del self._world.renditions[rendition_id]
+        return True
+
 
 class InMemoryMusicStore:
     def __init__(self, world: World) -> None:

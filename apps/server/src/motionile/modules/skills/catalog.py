@@ -1,9 +1,18 @@
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from motionile.engine.ai.ports import LoadedSkill, SkillLayer, SkillSummary
 from motionile.engine.ai.scenes.style_tokens import parse_style_tokens
 from motionile.engine.ai.skills.loader import token_count_for, token_count_of
 from motionile.modules.skills.repository import CatalogRow, SqlSkillRepository, StoreFactory, Transaction
+
+
+@dataclass(frozen=True, slots=True)
+class StyleOption:
+    slug: str
+    name: str
+    description: str
+    palette: dict[str, str]
 
 
 def summary_of(row: CatalogRow) -> SkillSummary:
@@ -52,3 +61,16 @@ class DatabaseSkillCatalog:
     async def style_exists(self, slug: str) -> bool:
         async with self._transaction() as session:
             return await self._store_factory(session).style_exists(slug)
+
+    async def styles(self) -> list[StyleOption]:
+        async with self._transaction() as session:
+            rows = await self._store_factory(session).styles()
+        return [
+            StyleOption(
+                slug=row.slug,
+                name=row.name,
+                description=row.description,
+                palette=parse_style_tokens(row.tokens, slug=row.slug).palette,
+            )
+            for row in rows
+        ]

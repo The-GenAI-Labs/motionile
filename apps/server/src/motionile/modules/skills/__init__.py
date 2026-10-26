@@ -5,6 +5,7 @@ from motionile.modules.skills.factory import build_embedder, build_skill_catalog
 from motionile.modules.skills.models import EMBEDDING_DIMENSIONS, Skill, SkillEmbedding, SkillFile, SkillVersion
 from motionile.modules.skills.seed import SeedReport, SkillSeeder
 from motionile.modules.skills.service import SkillsService
+from motionile.modules.skills.styles_router import styles_router
 
 __all__ = [
     "EMBEDDING_DIMENSIONS",
@@ -21,4 +22,5 @@ __all__ = [
     "build_embedder",
     "build_skill_catalog",
     "build_skill_seeder",
+    "styles_router",
 ]

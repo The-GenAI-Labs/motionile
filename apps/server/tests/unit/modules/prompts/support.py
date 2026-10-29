@@ -11,7 +11,7 @@ from motionile.engine.ai.prompts import PROMPT_KEYS, load_prompt_sources
 from motionile.engine.ai.prompts.loader import PromptSource, body_checksum
 from motionile.modules.audit import AuditContext, AuditEvent
 from motionile.modules.prompts import auditing as auditing_module
-from motionile.modules.prompts.domain import Actor
+from motionile.modules.prompts.domain import Actor, EvalQueue
 from motionile.modules.prompts.eval_runs import EvalRunService
 from motionile.modules.prompts.gate import REQUIRED_SUITES, ActivationGate
 from motionile.modules.prompts.models import PromptVersion
@@ -35,6 +35,7 @@ class Harness:
     seeder: PromptSeeder
     store: DatabasePromptStore
     enqueued: list[UUID] = field(default_factory=list[UUID])
+    queues: list[EvalQueue] = field(default_factory=list[EvalQueue])
     audit: list[AuditEvent] = field(default_factory=list[AuditEvent])
 
     async def seed(self, sources: Sequence[PromptSource] | None = None) -> None:
@@ -68,10 +69,12 @@ def build_harness(monkeypatch: pytest.MonkeyPatch) -> Harness:
 
     monkeypatch.setattr(auditing_module, "record_audit", record_audit)
     enqueued: list[UUID] = []
+    queues: list[EvalQueue] = []
 
-    def enqueue(session: AsyncSession, run_id: UUID) -> None:
+    def enqueue(session: AsyncSession, run_id: UUID, queue: EvalQueue) -> None:
         del session
         enqueued.append(run_id)
+        queues.append(queue)
 
     gate = ActivationGate(world.store)
     return Harness(
@@ -84,5 +87,6 @@ def build_harness(monkeypatch: pytest.MonkeyPatch) -> Harness:
         seeder=PromptSeeder(world.transaction, world.store),
         store=DatabasePromptStore(world.transaction, store_factory=world.store),
         enqueued=enqueued,
+        queues=queues,
         audit=audit,
     )

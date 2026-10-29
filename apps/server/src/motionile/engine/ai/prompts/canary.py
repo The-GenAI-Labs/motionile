@@ -15,6 +15,7 @@ from motionile.engine.ai.ports import ActivePrompt, LoadedSkill
 CANARY_PREFIX: Final = "mo-canary-"
 CANARY_RANDOM_BYTES: Final = 18
 OVERLAP_WORDS: Final = 12
+SKILL_OVERLAP_WORDS: Final = 24
 CANARY_FRAGMENT_CHARS: Final = 12
 WORD = re.compile(r"[^\W_]+")
 NON_ALPHANUMERIC = re.compile(r"[\W_]+")
@@ -45,10 +46,10 @@ def words_of(text: str) -> list[str]:
     return WORD.findall(unicodedata.normalize("NFKC", text).casefold())
 
 
-def shingles_of(words: Sequence[str]) -> Iterable[tuple[str, ...]]:
-    if len(words) < OVERLAP_WORDS:
+def shingles_of(words: Sequence[str], size: int = OVERLAP_WORDS) -> Iterable[tuple[str, ...]]:
+    if len(words) < size:
         return ()
-    return zip(*(islice(words, offset, None) for offset in range(OVERLAP_WORDS)), strict=False)
+    return zip(*(islice(words, offset, None) for offset in range(size)), strict=False)
 
 
 def fragments_of(squashed: str) -> set[str]:
@@ -84,8 +85,11 @@ class OutputScanner:
         )
         self._hex_fragments = frozenset(canary.encode("utf-8").hex() for canary in canaries)
         self._base64_fragments = frozenset(fragment for canary in canaries for fragment in base64_fragments(canary))
-        bodies = [prompt.body for prompt in prompts] + [skill.body for skill in skills] + list(extra_texts)
-        self._shingles = frozenset(shingle for body in bodies for shingle in shingles_of(words_of(body)))
+        instruction_bodies = [prompt.body for prompt in prompts] + list(extra_texts)
+        self._shingles = frozenset(shingle for body in instruction_bodies for shingle in shingles_of(words_of(body)))
+        self._skill_shingles = frozenset(
+            shingle for skill in skills for shingle in shingles_of(words_of(skill.body), SKILL_OVERLAP_WORDS)
+        )
 
     def contains_canary(self, text: str) -> bool:
         squashed = squash(text)
@@ -98,9 +102,12 @@ class OutputScanner:
         return any(fragment in hexadecimal for fragment in self._hex_fragments)
 
     def overlaps_instructions(self, text: str) -> bool:
-        if not self._shingles:
-            return False
-        return any(shingle in self._shingles for shingle in shingles_of(words_of(text)))
+        words = words_of(text)
+        if self._shingles and any(shingle in self._shingles for shingle in shingles_of(words)):
+            return True
+        return bool(self._skill_shingles) and any(
+            shingle in self._skill_shingles for shingle in shingles_of(words, SKILL_OVERLAP_WORDS)
+        )
 
     def scan_text(self, text: str) -> ScanResult:
         if self.contains_canary(text):

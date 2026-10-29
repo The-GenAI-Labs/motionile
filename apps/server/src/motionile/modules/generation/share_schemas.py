@@ -42,3 +42,5 @@ class SharedVideoView(ResponseModel):
     playback_url: str
     playback_expires_in_seconds: int
     allow_indexing: bool
+    uploaded_at: datetime
+    music_attribution: str | None = None

@@ -24,7 +24,7 @@ from motionile.modules.prompts import (
     record_external_run,
 )
 from motionile.modules.prompts.dependencies import get_eval_run_service
-from motionile.modules.prompts.domain import RunTrigger
+from motionile.modules.prompts.domain import EvalQueue, RunTrigger
 from motionile.modules.prompts.eval_runs import EvalRunService
 from motionile.modules.prompts.gate import REQUIRED_SUITES, ActivationGate
 from motionile.modules.prompts.repository import SqlPromptRepository
@@ -129,8 +129,8 @@ class PromptsApi:
         return [row[0] for row in rows]
 
 
-def ignore_enqueue(session: AsyncSession, run_id: UUID) -> None:
-    del session, run_id
+def ignore_enqueue(session: AsyncSession, run_id: UUID, queue: EvalQueue) -> None:
+    del session, run_id, queue
 
 
 def runner_for(api: PromptsApi, executor: EvalExecutor | None) -> EvalRunner:
@@ -150,8 +150,8 @@ async def prompts_api(media_api: MediaApi) -> AsyncIterator[PromptsApi]:
     api = PromptsApi(media_api)
     resources = media_api.resources
 
-    def enqueue(session: AsyncSession, run_id: UUID) -> None:
-        del session
+    def enqueue(session: AsyncSession, run_id: UUID, queue: EvalQueue) -> None:
+        del session, queue
         api.enqueued.append(run_id)
 
     def service() -> EvalRunService:

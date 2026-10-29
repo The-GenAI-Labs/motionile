@@ -1,7 +1,7 @@
 "use client";
 
 import type { zJobsReviseJobBody } from "@motionile/api-contract";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import type { z } from "zod";
 
@@ -16,6 +16,14 @@ import {
 import { isRetryableSubmitError } from "@/features/generation/errors";
 import { generationKeys } from "@/features/generation/query-keys";
 import type { Aspect, Job } from "@/features/generation/types/generation.types";
+import { libraryKeys } from "@/features/library/query-keys";
+
+const invalidateLibrary = (client: QueryClient) =>
+  Promise.all([
+    client.invalidateQueries({ queryKey: libraryKeys.lists() }),
+    client.invalidateQueries({ queryKey: libraryKeys.recent() }),
+    client.invalidateQueries({ queryKey: libraryKeys.activeJobs() }),
+  ]);
 
 export const useCancelJob = (jobId: string) => {
   const client = useQueryClient();
@@ -25,6 +33,7 @@ export const useCancelJob = (jobId: string) => {
       client.setQueryData(generationKeys.job(jobId), job);
       void client.invalidateQueries({ queryKey: generationKeys.jobs() });
       void client.invalidateQueries({ queryKey: creditsKeys.wallet() });
+      void invalidateLibrary(client);
     },
   });
 };
@@ -37,6 +46,7 @@ export const useDeleteJob = (jobId: string) => {
       client.removeQueries({ queryKey: generationKeys.job(jobId) });
       client.removeQueries({ queryKey: generationKeys.events(jobId) });
       void client.invalidateQueries({ queryKey: generationKeys.jobs() });
+      void invalidateLibrary(client);
     },
   });
 };
@@ -67,6 +77,7 @@ export const useReviseJob = (jobId: string) => {
       client.setQueryData(generationKeys.job(job.id), job);
       void client.invalidateQueries({ queryKey: generationKeys.jobs() });
       void client.invalidateQueries({ queryKey: creditsKeys.wallet() });
+      void invalidateLibrary(client);
       return job;
     } catch (failure) {
       if (!isRetryableSubmitError(failure)) {
@@ -79,11 +90,19 @@ export const useReviseJob = (jobId: string) => {
   return { submit, error: mutation.error, isSubmitting: mutation.isPending, reset: mutation.reset };
 };
 
-export const useCreateShare = (jobId: string) =>
-  useMutation({
+export const useCreateShare = (jobId: string) => {
+  const client = useQueryClient();
+  return useMutation({
     mutationFn: (input: { aspect: Aspect; allowIndexing: boolean }) =>
       createShareLink(jobId, input),
+    onSuccess: () => invalidateLibrary(client),
   });
+};
 
-export const useRevokeShare = (jobId: string) =>
-  useMutation({ mutationFn: () => revokeShareLinks(jobId) });
+export const useRevokeShare = (jobId: string) => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => revokeShareLinks(jobId),
+    onSuccess: () => invalidateLibrary(client),
+  });
+};

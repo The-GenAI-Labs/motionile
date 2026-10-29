@@ -136,10 +136,10 @@ class ShareService:
             raise ShareNotFoundError
         link, job = found
         render_id = job.render_id
-        signed = (
-            await self._media.signed_rendition(session, job.user_id, render_id, link.rendition_id, self._playback_ttl)
-            if render_id is not None
-            else None
+        if render_id is None:
+            raise ShareNotFoundError
+        signed = await self._media.signed_rendition(
+            session, job.user_id, render_id, link.rendition_id, self._playback_ttl
         )
         if signed is None:
             raise ShareNotFoundError
@@ -158,7 +158,18 @@ class ShareService:
             playback_url=signed.url,
             playback_expires_in_seconds=int(signed.expires_in.total_seconds()),
             allow_indexing=link.is_public,
+            uploaded_at=job.completed_at or link.created_at,
+            music_attribution=await self._music_attribution(session, job.user_id, render_id, link.rendition_id),
         )
+
+    async def _music_attribution(
+        self, session: AsyncSession, owner_id: UUID, render_id: UUID, rendition_id: UUID
+    ) -> str | None:
+        views = await self._media.renditions_for(session, owner_id, render_id)
+        attribution = next((view.attribution for view in views if view.id == rendition_id), None)
+        if attribution is None:
+            return None
+        return attribution.attribution_text or f"{attribution.title} ({attribution.license_name})"
 
     def _available(self, link: ShareLink, job: Job) -> bool:
         expired = link.expires_at is not None and link.expires_at <= self._clock.now()

@@ -156,7 +156,6 @@ def test_skills_extra_texts_are_included_in_the_overlap_index() -> None:
         extra_texts=["Rendered reference text that must stay private for good reasons only, always."],
     )
 
-    assert scanner.scan_text(words(SKILL_BODY, 2, 13)).kind == "overlap"
     assert (
         scanner.scan_text("rendered reference text that must stay private for good reasons only always").kind
         == "overlap"
@@ -164,10 +163,25 @@ def test_skills_extra_texts_are_included_in_the_overlap_index() -> None:
     assert not OutputScanner([prompt()]).scan_text(words(SKILL_BODY, 2, 13)).blocked
 
 
+LONG_SKILL_BODY = " ".join(f"concept{index}" for index in range(40))
+
+
+def test_skill_text_needs_a_longer_verbatim_run_than_instructions_to_be_blocked() -> None:
+    scanner = OutputScanner([prompt()], [skill(LONG_SKILL_BODY)])
+
+    assert scanner.scan_text(words_of_long(24)).kind == "overlap"
+    assert not scanner.scan_text(words_of_long(23)).blocked
+    assert not scanner.scan_text(words_of_long(13)).blocked
+
+
+def words_of_long(count: int) -> str:
+    return " ".join(f"concept{index}" for index in range(5, 5 + count))
+
+
 def test_code_is_only_checked_for_canaries() -> None:
     active = prompt()
-    scanner = OutputScanner([active], [skill()])
-    reused = words(SKILL_BODY, 0, 15)
+    scanner = OutputScanner([active], [skill(LONG_SKILL_BODY)])
+    reused = words_of_long(30)
 
     assert scanner.scan_text(reused).kind == "overlap"
     assert not scanner.scan_code(f"const note = '{reused}';").blocked

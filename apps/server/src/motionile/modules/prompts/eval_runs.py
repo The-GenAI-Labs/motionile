@@ -12,8 +12,8 @@ from motionile.modules.prompts.auditing import audit
 from motionile.modules.prompts.domain import (
     AUDIT_RUN_TARGET,
     DATASET_VERSION_FORMAT,
-    EVAL_QUEUE_BY_SUITE,
     ERROR_CODE_FORMAT,
+    EVAL_QUEUE_BY_SUITE,
     MAX_RUN_VERSIONS,
     PENDING_DATASET_VERSION,
     SUITE_FORMAT,

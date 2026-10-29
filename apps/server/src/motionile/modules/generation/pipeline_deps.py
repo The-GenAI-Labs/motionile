@@ -5,7 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.resources import Resources
 from motionile.engine.ai.graphs.deps import PipelineConfig, PipelineDependencies
+from motionile.engine.ai.graphs.errors import PipelineError
 from motionile.engine.ai.guardrails import InputGuard, OutputGuard
+from motionile.engine.ai.ports import ActivePrompt, PromptStore
 from motionile.engine.ai.prompts.canary import OutputScanner
 from motionile.engine.ai.skills import LibrarySkillRouter
 from motionile.modules.generation.check_gateway import StorageCheckGateway
@@ -22,10 +24,28 @@ from motionile.modules.generation.render_gateway import MediaRenderGateway
 from motionile.modules.generation.render_queue_checker import RenderQueueChecker
 from motionile.modules.generation.runtime_settings import PlatformSettingsReader, RuntimeSettings
 from motionile.modules.media import defer_composition_check, media_service_for, render_events_for
+from motionile.modules.prompts import PromptNotActiveError
 from motionile.modules.skills import build_skill_catalog
 from motionile.modules.voices import VoiceLookupImpl
 
 SECONDS_PER_MINUTE: Final = 60
+PROMPT_NOT_ACTIVE: Final = "prompt_not_active"
+
+
+class PipelinePromptStore:
+    def __init__(self, inner: PromptStore) -> None:
+        self._inner = inner
+
+    async def active(self, key: str) -> ActivePrompt:
+        try:
+            return await self._inner.active(key)
+        except PromptNotActiveError as error:
+            raise PipelineError(
+                PROMPT_NOT_ACTIVE, "The video service is not ready yet. Please try again later."
+            ) from error
+
+    async def all_active(self) -> list[ActivePrompt]:
+        return await self._inner.all_active()
 
 
 async def pipeline_config(session: AsyncSession, resources: Resources) -> PipelineConfig:
@@ -49,7 +69,7 @@ async def build_dependencies(resources: Resources, job_id: UUID) -> PipelineDepe
     settings = resources.settings
     transaction = resources.database.transaction
     llm = llm_client_for(resources)
-    prompts = prompt_store_for(resources)
+    prompts = PipelinePromptStore(prompt_store_for(resources))
     media = media_service_for(resources)
     voices = VoiceLookupImpl()
     async with transaction() as session:

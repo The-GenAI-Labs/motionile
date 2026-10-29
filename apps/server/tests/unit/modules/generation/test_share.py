@@ -20,7 +20,7 @@ from motionile.modules.generation.models import Job, ShareLink
 from motionile.modules.generation.share_schemas import ShareCreateRequest
 from motionile.modules.generation.share_service import ShareService, pick_rendition
 from motionile.modules.generation.slugs import SLUG_PATTERN, UNKNOWN_SLUG, is_valid_slug, lookup_slug, new_slug
-from motionile.modules.media import Aspect, RenditionStatus, RenditionView, SignedRendition
+from motionile.modules.media import Aspect, MusicAttributionView, RenditionStatus, RenditionView, SignedRendition
 
 NOW = datetime(2026, 10, 25, 12, 0, tzinfo=UTC)
 TTL = timedelta(minutes=15)
@@ -350,3 +350,23 @@ async def test_a_dead_link_is_not_counted(fixture: Fixture) -> None:
 
     assert fixture.store.links[0].view_count == 0
     assert fixture.views.seen == set()
+
+
+async def test_the_page_carries_the_upload_date_and_the_music_credit(fixture: Fixture) -> None:
+    view = await fixture.service.create(fixture.session, fixture.owner, fixture.job.id, fixture.request())
+    fixture.renditions[0] = fixture.renditions[0].model_copy(
+        update={
+            "attribution": MusicAttributionView(
+                track_id=new_id(),
+                title="Slow Morning",
+                license_name="CC BY 4.0",
+                license_url="https://creativecommons.org/licenses/by/4.0/",
+                attribution_text=None,
+            )
+        }
+    )
+
+    page = await fixture.service.view(fixture.session, view.slug, "viewer-1")
+
+    assert page.music_attribution == "Slow Morning (CC BY 4.0)"
+    assert page.uploaded_at == (fixture.job.completed_at or NOW)

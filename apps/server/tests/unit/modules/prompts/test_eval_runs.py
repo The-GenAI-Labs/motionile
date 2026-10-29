@@ -19,7 +19,7 @@ from motionile.modules.prompts import (
     install_eval_executor,
     record_external_run,
 )
-from motionile.modules.prompts.domain import RunTrigger
+from motionile.modules.prompts.domain import EVAL_QUEUE_BY_SUITE, EvalQueue, RunTrigger
 from motionile.modules.prompts.exceptions import (
     EvalRunInvalidError,
     EvalRunNotFoundError,
@@ -27,7 +27,7 @@ from motionile.modules.prompts.exceptions import (
     UnknownSuiteError,
 )
 from motionile.modules.prompts.executor import eval_executor_for
-from motionile.modules.prompts.gate import REQUIRED_SUITES
+from motionile.modules.prompts.gate import KNOWN_SUITES, REQUIRED_SUITES
 from motionile.modules.prompts.models import EvalRun
 from motionile.modules.prompts.repository import RunFilter
 from motionile.modules.prompts.runner import EvalRunner
@@ -86,6 +86,32 @@ async def test_starting_a_run_creates_a_running_row_and_defers_the_task_once(har
     [event] = [event for event in harness.audit if event.action == "prompts.eval_started"]
     assert event.target_type == "eval_run"
     assert event.actor_user_id == ACTOR.user_id
+
+
+def test_every_known_suite_has_exactly_one_queue_and_only_the_browser_suites_use_the_render_queue() -> None:
+    assert set(EVAL_QUEUE_BY_SUITE) == set(KNOWN_SUITES)
+    assert {suite for suite, queue in EVAL_QUEUE_BY_SUITE.items() if queue is EvalQueue.BROWSER} == {"scenes", "sync"}
+    assert {suite for suite, queue in EVAL_QUEUE_BY_SUITE.items() if queue is EvalQueue.GENERATION} == {
+        "planner",
+        "safety",
+        "cost",
+    }
+
+
+@pytest.mark.parametrize(
+    ("suite", "queue"),
+    [
+        ("planner", EvalQueue.GENERATION),
+        ("safety", EvalQueue.GENERATION),
+        ("cost", EvalQueue.GENERATION),
+        ("scenes", EvalQueue.BROWSER),
+        ("sync", EvalQueue.BROWSER),
+    ],
+)
+async def test_each_suite_is_deferred_to_its_own_queue(harness: Harness, suite: str, queue: EvalQueue) -> None:
+    await start(harness, suite)
+
+    assert harness.queues == [queue]
 
 
 async def test_unknown_suites_versions_and_empty_selections_are_rejected(harness: Harness) -> None:

@@ -190,4 +190,4 @@ Expected result: `/health/ready` reports `postgres: ok`, and the restored data i
 ## Other notes
 
 - Roles are per branch. A branch created from `staging` inherits the `motionile` role and password at creation time; a later password reset on the root does not change existing child branches.
-- Neon's connection limit on the pooled endpoint is far higher than on the direct one. Keep `DATABASE_POOL_SIZE` and the worker count small enough that direct connections from `worker-default`, `worker-render` and `migrate` stay within the compute's `max_connections`.
+- Neon's connection limit on the pooled endpoint is far higher than on the direct one. Keep `DATABASE_POOL_SIZE` and the worker count small enough that direct connections from `worker-default`, `worker-generation`, `worker-render` and `migrate` stay within the compute's `max_connections`.

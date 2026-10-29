@@ -45,6 +45,20 @@ class RunTrigger(StrEnum):
     ADMIN = "admin"
 
 
+class EvalQueue(StrEnum):
+    GENERATION = "generation"
+    BROWSER = "render"
+
+
+EVAL_QUEUE_BY_SUITE: Final[Mapping[str, EvalQueue]] = {
+    "planner": EvalQueue.GENERATION,
+    "safety": EvalQueue.GENERATION,
+    "cost": EvalQueue.GENERATION,
+    "scenes": EvalQueue.BROWSER,
+    "sync": EvalQueue.BROWSER,
+}
+
+
 class ActivationKind(StrEnum):
     ACTIVATED = "activated"
     ROLLED_BACK = "rolled_back"

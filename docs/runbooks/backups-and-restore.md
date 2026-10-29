@@ -35,7 +35,7 @@ Use this for data loss or corruption caused by a bad migration, a bug or a manua
 2. Stop the workers so they do not run jobs against data that is about to change. On the instance as `deploy`:
 
    ```bash
-   /srv/motionile/bundle/scripts/compose.sh stop worker-default worker-render
+   /srv/motionile/bundle/scripts/compose.sh stop worker-default worker-generation worker-render
    ```
 
    Expected result: both show `exited` in `compose.sh ps`.
@@ -64,7 +64,7 @@ To undo the restore, run instant restore again with **From another branch** and 
 
 ## 2. Restore Redis from the backup bucket
 
-`restore-redis.sh` stops `api`, `mcp`, `worker-default`, `worker-render` and `redis`, replaces `/srv/motionile/data/redis` with the backup, and starts everything with `--wait`. The API returns `502` from Caddy while it runs, usually under a minute. Everything written to Redis after the backup time is lost.
+`restore-redis.sh` stops `api`, `mcp`, `worker-default`, `worker-generation`, `worker-render` and `redis`, replaces `/srv/motionile/data/redis` with the backup, and starts everything with `--wait`. The API returns `502` from Caddy while it runs, usually under a minute. Everything written to Redis after the backup time is lost.
 
 1. Open a shell on the instance as `deploy` ([access-and-operations.md](access-and-operations.md#1-open-a-shell-on-the-instance)).
 2. List backups:
@@ -159,7 +159,7 @@ On the instance, in the `ssm-user` shell (it has sudo):
 
    Expected result: the same layout as `/srv/motionile/data`: `redis/`, `caddy/data/`, `caddy/config/`.
 
-7. Stop the services that own the directory, copy, and start them again. As `deploy` stop the services (Caddy example; for Redis use `api mcp worker-default worker-render redis`):
+7. Stop the services that own the directory, copy, and start them again. As `deploy` stop the services (Caddy example; for Redis use `api mcp worker-default worker-generation worker-render redis`):
 
    ```bash
    /srv/motionile/bundle/scripts/compose.sh stop proxy

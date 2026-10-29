@@ -12,11 +12,13 @@ from motionile.modules.prompts.auditing import audit
 from motionile.modules.prompts.domain import (
     AUDIT_RUN_TARGET,
     DATASET_VERSION_FORMAT,
+    EVAL_QUEUE_BY_SUITE,
     ERROR_CODE_FORMAT,
     MAX_RUN_VERSIONS,
     PENDING_DATASET_VERSION,
     SUITE_FORMAT,
     Actor,
+    EvalQueue,
     EvalStatus,
     PromptAction,
     RunStatus,
@@ -46,7 +48,7 @@ from motionile.modules.prompts.views import eval_run_view
 
 MAX_RECORDED_VERSIONS = 100
 
-type EnqueueEval = Callable[[AsyncSession, UUID], None]
+type EnqueueEval = Callable[[AsyncSession, UUID, EvalQueue], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -180,7 +182,7 @@ class EvalRunService:
             Subject(AUDIT_RUN_TARGET, run.id),
             {"suite": suite, "version_ids": [str(version_id) for version_id in unique]},
         )
-        self._enqueue(session, run.id)
+        self._enqueue(session, run.id, EVAL_QUEUE_BY_SUITE[suite])
         return run
 
     async def start_run(self, actor: Actor, suite: str, version_ids: Sequence[UUID]) -> EvalRunView:

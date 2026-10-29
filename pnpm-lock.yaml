@@ -58,6 +58,9 @@ importers:
       '@marsidev/react-turnstile':
         specifier: 1.6.2
         version: 1.6.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@microsoft/fetch-event-source':
+        specifier: 2.0.1
+        version: 2.0.1
       '@motionile/api-contract':
         specifier: workspace:*
         version: link:../../packages/api-contract
@@ -997,6 +1000,9 @@ packages:
     peerDependencies:
       react: ^17.0.2 || ^18.0.0 || ^19.0
       react-dom: ^17.0.2 || ^18.0.0 || ^19.0
+
+  '@microsoft/fetch-event-source@2.0.1':
+    resolution: {integrity: sha512-W6CLUJ2eBMw3Rec70qrsEW0jOm/3twwJv21mrmj2yORiaVmVYGS4sSS5yUwvQc1ZlDLYGPnClVWmUUMagKNsfA==}
 
   '@msw/url@0.1.2':
     resolution: {integrity: sha512-DdeBLQxQ+ZrtmwEmaj7GQ7lbzPCgbbbyAqOz/I4ulo68hwBpfdNvQJ5bmihJUkAAKOeCmqCIG3OFZGosqFN4mA==}
@@ -4805,6 +4811,8 @@ snapshots:
     dependencies:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
+
+  '@microsoft/fetch-event-source@2.0.1': {}
 
   '@msw/url@0.1.2': {}
 

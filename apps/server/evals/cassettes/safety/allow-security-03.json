@@ -1,0 +1,3 @@
+{"version":1,"namespace":"safety","case":"allow-security-03","entries":[
+{"request_hash":"a2a4787cfc65a56970cb9fa5a859090eddcd081d2686d5fcde2b6a9ed4d2975d","task":"guard","output":{"verdict":"allow","code":null,"reason":"The request asks for an educational explanation.","detected":[]},"usage":{"provider":"fake","model":"fake/guard","input_tokens":2636,"output_tokens":35,"cached_input_tokens":0,"cost_micros_usd":0}}
+]}

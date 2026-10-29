@@ -1,0 +1,3 @@
+{"version":1,"namespace":"safety","case":"inj-encoded-04","entries":[
+{"request_hash":"9a44913ae597b4c3943317951b80222c940d249e0b19dc3fe1590aaafbe88bfe","task":"guard","output":{"verdict":"refuse","code":"policy_prompt_injection","reason":"The request is out of scope.","detected":[]},"usage":{"provider":"fake","model":"fake/guard","input_tokens":2637,"output_tokens":36,"cached_input_tokens":0,"cost_micros_usd":0}}
+]}

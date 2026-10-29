@@ -11,12 +11,15 @@ import {
   Music,
   PlusCircle,
   Receipt,
+  ScrollText,
   Settings,
   Share2,
   Shield,
   SlidersHorizontal,
   Sparkles,
   Users,
+  WandSparkles,
+  Workflow,
 } from "lucide-react";
 import type { MetadataRoute, Route } from "next";
 
@@ -170,6 +173,14 @@ export const adminNavigation = {
       permission: "render.testbed",
     },
     { title: "Voices", href: "/admin/voices", icon: AudioLines, permission: "voices.manage" },
+    { title: "Jobs", href: "/admin/jobs", icon: Workflow, permission: "jobs.read_all" },
+    { title: "Prompts", href: "/admin/prompts", icon: ScrollText, permission: "prompts.manage" },
+    {
+      title: "System skills",
+      href: "/admin/skills",
+      icon: WandSparkles,
+      permission: "skills.manage",
+    },
     { title: "Feature flags", href: "/admin/flags", icon: Sparkles, permission: "flags.manage" },
     {
       title: "Settings",

@@ -76,6 +76,7 @@ export interface ApiErrorInit {
   fieldErrors?: readonly FieldError[];
   requestId?: string | null;
   retryAfterSeconds?: number | null;
+  extensions?: Readonly<Record<string, string | number | boolean>>;
   cause?: unknown;
 }
 
@@ -114,6 +115,34 @@ const parseJsonText = (text: string): unknown => {
 const normalizeBody = (body: unknown): unknown =>
   typeof body === "string" && body.trim() !== "" ? parseJsonText(body) : body;
 
+const STANDARD_PROBLEM_MEMBERS = new Set([
+  "type",
+  "title",
+  "status",
+  "detail",
+  "instance",
+  "code",
+  "requestId",
+  "errors",
+  "challenge",
+]);
+
+const readExtensions = (body: unknown): Record<string, string | number | boolean> => {
+  const extensions: Record<string, string | number | boolean> = {};
+  if (typeof body !== "object" || body === null) {
+    return extensions;
+  }
+  for (const [key, value] of Object.entries(body)) {
+    if (
+      !STANDARD_PROBLEM_MEMBERS.has(key) &&
+      (typeof value === "string" || typeof value === "number" || typeof value === "boolean")
+    ) {
+      extensions[key] = value;
+    }
+  }
+  return extensions;
+};
+
 const emptyToNull = (value: string | null | undefined): string | null =>
   value === undefined || value === null || value === "" ? null : value;
 
@@ -129,6 +158,7 @@ export class ApiError extends Error {
   readonly fieldErrors: readonly FieldError[];
   readonly requestId: string | null;
   readonly retryAfterSeconds: number | null;
+  readonly extensions: Readonly<Record<string, string | number | boolean>>;
 
   constructor(init: ApiErrorInit) {
     super(init.detail ?? init.title, { cause: init.cause });
@@ -144,6 +174,7 @@ export class ApiError extends Error {
     this.fieldErrors = init.fieldErrors ?? [];
     this.requestId = init.requestId ?? null;
     this.retryAfterSeconds = init.retryAfterSeconds ?? null;
+    this.extensions = init.extensions ?? {};
   }
 
   get isClientError(): boolean {
@@ -197,6 +228,7 @@ export class ApiError extends Error {
         fieldErrors: problem.data.errors ?? [],
         requestId: emptyToNull(problem.data.requestId) ?? headerRequestId,
         retryAfterSeconds,
+        extensions: readExtensions(parsedBody),
         cause,
       });
     }

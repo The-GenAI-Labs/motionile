@@ -15,6 +15,15 @@ x-render-worker-required-environment: &render-worker-required-environment
   STORAGE_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:?set STORAGE_FORCE_PATH_STYLE}
   MEDIA_DELIVERY_MODE: ${MEDIA_DELIVERY_MODE:?set MEDIA_DELIVERY_MODE}
 
+x-render-worker-eval-environment: &render-worker-eval-environment
+  AI_ANTHROPIC_API_KEY: ${AI_ANTHROPIC_API_KEY:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  AI_LANGFUSE_PUBLIC_KEY: ${AI_LANGFUSE_PUBLIC_KEY:-}
+  AI_LANGFUSE_SECRET_KEY: ${AI_LANGFUSE_SECRET_KEY:-}
+  AI_LANGFUSE_HOST: ${AI_LANGFUSE_HOST:-}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
+  EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-}
+
 x-required-environment: &required-environment
   <<: *render-worker-required-environment
   AI_ANTHROPIC_API_KEY: ${AI_ANTHROPIC_API_KEY:?set AI_ANTHROPIC_API_KEY}
@@ -75,7 +84,8 @@ services:
 
   worker-render:
     image: ${MOTIONILE_WORKER_IMAGE:?set MOTIONILE_WORKER_IMAGE}
-    environment: *render-worker-required-environment
+    environment:
+      <<: [*render-worker-required-environment, *render-worker-eval-environment]
     logging: *logging
 
   migrate:

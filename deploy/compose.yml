@@ -54,6 +54,16 @@ x-ai-environment: &ai-environment
   AI_LANGFUSE_PROJECT_ID: ${AI_LANGFUSE_PROJECT_ID:-}
   EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
   EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-}
+  AI_FIXTURES_DIRECTORY: ${AI_FIXTURES_DIRECTORY:-/app/fixtures/llm}
+
+x-eval-environment: &eval-environment
+  AI_ANTHROPIC_API_KEY: ${AI_ANTHROPIC_API_KEY:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  AI_LANGFUSE_PUBLIC_KEY: ${AI_LANGFUSE_PUBLIC_KEY:-}
+  AI_LANGFUSE_SECRET_KEY: ${AI_LANGFUSE_SECRET_KEY:-}
+  AI_LANGFUSE_HOST: ${AI_LANGFUSE_HOST:-}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
+  EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-}
 
 x-cloudfront-signing: &cloudfront-signing
   CLOUDFRONT_PRIVATE_KEY: ${CLOUDFRONT_PRIVATE_KEY:-}
@@ -73,7 +83,7 @@ x-shared-environment: &shared-environment
   LOG_LEVEL: ${LOG_LEVEL:-INFO}
 
 x-render-worker-environment: &render-worker-environment
-  <<: [*media-environment, *shared-environment]
+  <<: [*media-environment, *shared-environment, *eval-environment]
   APP_ROLE: render_worker
   HOME: /tmp
   RENDER_WORK_DIRECTORY: /work

@@ -35,6 +35,7 @@ jobs:
       images: ${{ steps.filter.outputs.images }}
       stack: ${{ steps.filter.outputs.stack }}
       infra: ${{ steps.filter.outputs.infra }}
+      ai: ${{ steps.filter.outputs.ai }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -77,6 +78,8 @@ jobs:
               - "tests/**"
               - "deploy/**"
               - "pnpm-lock.yaml"
+            ai:
+              - "apps/server/src/motionile/engine/ai/**"
             infra:
               - *workflow
               - "infra/**"
@@ -234,14 +237,42 @@ jobs:
     needs: changes
     if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Run eval suites against thresholds
-        run: pnpm run evals
+        with:
+          render: "true"
+      - name: Deterministic checks and replayed judge recordings
+        run: pnpm run evals --mode=cassette --output="$RUNNER_TEMP/results-cassette.json"
+      - name: Check provider keys for the live subset
+        id: keys
+        if: needs.changes.outputs.ai == 'true'
+        env:
+          ANTHROPIC_KEY: ${{ secrets.AI_ANTHROPIC_API_KEY }}
+          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [[ -n "$ANTHROPIC_KEY" && -n "$OPENAI_KEY" ]]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::AI files changed but the repository has no provider keys for this run (fork pull requests receive none), so the live eval subset was skipped."
+          fi
+      - name: Live eval subset for changed AI files
+        if: needs.changes.outputs.ai == 'true' && steps.keys.outputs.present == 'true'
+        env:
+          AI_ANTHROPIC_API_KEY: ${{ secrets.AI_ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: pnpm run evals --mode=live --changed-ai --output="$RUNNER_TEMP/results-live.json"
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: eval-results
+          path: ${{ runner.temp }}/results-*.json
+          if-no-files-found: warn
+          retention-days: 14
 
   scan:
     name: scan

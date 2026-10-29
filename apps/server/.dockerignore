@@ -8,7 +8,8 @@ coverage
 htmlcov
 tests
 !tests/fixtures/compositions
-evals
+!tests/fixtures/llm
+evals/cassettes
 node_modules
 package.json
 openapi.json

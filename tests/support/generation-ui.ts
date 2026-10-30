@@ -16,7 +16,7 @@ import {
 } from "./generation.js";
 
 export const E2E_DURATION_SECONDS = 10;
-export const FIXTURE_TIMEOUT_MS = COMPLETION_TIMEOUT_MS + 240000;
+export const FIXTURE_TIMEOUT_MS = COMPLETION_TIMEOUT_MS + 120000;
 export const PAGE_STEP_TIMEOUT_MS = 180000;
 export const PLAYBACK_TIMEOUT_MS = 60000;
 export const BINARY_SEARCH_QUERY = "How does binary search work?";

@@ -20,7 +20,7 @@ export const SHORT_DURATION_SECONDS = 20;
 export const TERMINAL_JOB_STATUSES = ["completed", "failed", "cancelled"];
 export const POLICY_REFUSAL_MESSAGE =
   "Motionile could not use this request. Describe the topic you want explained and try again.";
-export const COMPLETION_TIMEOUT_MS = 480000;
+export const COMPLETION_TIMEOUT_MS = 720000;
 export const PLANNING_TIMEOUT_MS = 120000;
 
 export const PROMPT_FRAGMENTS = [

@@ -325,8 +325,11 @@ export const buildTimeline = (job: Job, events: readonly JobEvent[]): TimelineMo
   const rows = stageDefinitions.map((definition, index): TimelineRow => {
     const state = walk.rows[index] ?? { started: false, completed: false, durationMs: 0 };
     const status = resolveStatus(index, state, walk, job, definition.optional);
-    const approvalOff = definition.key === "approval" && !job.options.reviewStoryboard;
-    const finalStatus = approvalOff && !state.started ? "skipped" : status;
+    const approvalOff =
+      definition.key === "approval" &&
+      !job.options.reviewStoryboard &&
+      !walk.tally.approvalRequested;
+    const finalStatus = approvalOff ? "skipped" : status;
     return {
       key: definition.key,
       label: definition.label,

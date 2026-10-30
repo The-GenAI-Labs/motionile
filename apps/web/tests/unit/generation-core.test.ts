@@ -291,6 +291,24 @@ describe("timeline", () => {
     expect(rows["voice"]?.status).toBe("pending");
   });
 
+  it("shows the review as skipped when it was never requested, even though the graph passed through it", () => {
+    const events = [
+      event("stage.started", { stage: "approval" }, 1),
+      event("stage.completed", { stage: "approval", durationMs: 4 }, 2),
+    ];
+    const rows = Object.fromEntries(
+      buildTimeline(
+        job({
+          status: "voicing",
+          currentStage: "voice",
+          options: { ...job().options, reviewStoryboard: false },
+        }),
+        events,
+      ).rows.map((row) => [row.key, row]),
+    );
+    expect(rows["approval"]?.status).toBe("skipped");
+  });
+
   it("shows every stage done for a completed job", () => {
     const rows = buildTimeline(job({ status: "completed" }), []).rows;
     expect(rows.find((row) => row.key === "plan")?.status).toBe("done");

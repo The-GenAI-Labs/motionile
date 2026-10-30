@@ -918,10 +918,11 @@ def test_prompt_template_checks(connection: Connection, overrides: dict[str, Any
 
 
 def test_prompt_template_keys_are_unique(connection: Connection) -> None:
-    make_template(connection, key="planner.storyboard")
+    key = f"schema.probe_{uuid4().hex}"
+    make_template(connection, key=key)
 
     with rejected(connection, "uq_prompt_templates_key"):
-        make_template(connection, key="planner.storyboard")
+        make_template(connection, key=key)
 
 
 @pytest.mark.parametrize(

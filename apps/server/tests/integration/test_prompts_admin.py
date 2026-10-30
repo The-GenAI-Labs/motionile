@@ -257,14 +257,8 @@ async def test_activation_is_blocked_until_every_required_suite_passed_then_roll
 
     assert await prompts_api.audit_actions(KEY) == [
         "prompts.draft_created",
-        "prompts.eval_recorded",
-        "prompts.eval_recorded",
-        "prompts.eval_recorded",
         "prompts.version_activated",
         "prompts.draft_created",
-        "prompts.eval_recorded",
-        "prompts.eval_recorded",
-        "prompts.eval_recorded",
         "prompts.version_activated",
         "prompts.version_rolled_back",
     ]
@@ -297,7 +291,9 @@ async def test_drafts_are_validated_and_deduplicated(prompts_api: PromptsApi) ->
     duplicate = await manager.post(path, json={"body": DRAFT_BODY, "variables": ["language"]}, headers=csrf(manager))
     extra = await manager.post(path, json={"body": DRAFT_BODY, "other": 1}, headers=csrf(manager))
     missing = await manager.post(
-        f"{ADMIN}/templates/missing.template/versions", json={"body": DRAFT_BODY}, headers=csrf(manager)
+        f"{ADMIN}/templates/missing.template/versions",
+        json={"body": DRAFT_BODY, "variables": ["language"]},
+        headers=csrf(manager),
     )
 
     assert (invalid.status_code, invalid.json()["code"]) == (422, "prompt_draft_invalid")

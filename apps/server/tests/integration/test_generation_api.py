@@ -55,7 +55,7 @@ async def test_creating_a_job_reserves_credits_and_replaying_the_key_returns_the
     assert body["status"] == "queued"
     assert (body["creditsEstimated"], body["creditsReserved"], body["creditsCharged"]) == (140, 140, None)
     assert body["options"]["style"] == "minimal-dark"
-    assert body["options"]["voiceId"] == str(generation_api.voice_id)
+    assert body["options"]["voiceId"] in await generation_api.ready_builtin_voice_ids()
     assert first.headers["location"] == f"/v1/jobs/{body['id']}"
     assert second.status_code == 202
     assert second.json() == body

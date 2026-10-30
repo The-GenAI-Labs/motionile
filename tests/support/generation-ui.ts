@@ -215,7 +215,10 @@ export async function openAnonymousVisitor(browser: Browser): Promise<AnonymousV
 }
 
 export async function robotsDirective(page: Page): Promise<string> {
-  return (await page.locator('meta[name="robots"]').getAttribute("content")) ?? "";
+  const directives = await page
+    .locator('meta[name="robots"]')
+    .evaluateAll((tags) => tags.map((tag) => tag.getAttribute("content") ?? ""));
+  return directives.join(", ");
 }
 
 export async function jsonLdTypes(page: Page): Promise<string[]> {

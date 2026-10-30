@@ -99,6 +99,10 @@ class GenerationApi:
         async with self.database.transaction() as session:
             return (await session.execute(text(statement), parameters)).first()
 
+    async def rows(self, statement: str, **parameters: Any) -> list[Any]:
+        async with self.database.transaction() as session:
+            return list((await session.execute(text(statement), parameters)).all())
+
     async def wallet(self, user_id: UUID) -> tuple[int, int]:
         found = await self.row("SELECT balance, reserved FROM credit_wallets WHERE user_id = :u", u=user_id)
         return (0, 0) if found is None else (found[0], found[1])
@@ -108,6 +112,10 @@ class GenerationApi:
             await session.execute(
                 text("UPDATE jobs SET status = :status WHERE id = :id"), {"status": status, "id": UUID(str(job_id))}
             )
+
+    async def ready_builtin_voice_ids(self) -> set[str]:
+        rows = await self.rows("SELECT id FROM voices WHERE kind = 'builtin' AND status = 'ready'")
+        return {str(row[0]) for row in rows}
 
     async def job_count(self, user_id: UUID) -> int:
         return int(await self.scalar("SELECT count(*) FROM jobs WHERE user_id = :u", u=user_id))

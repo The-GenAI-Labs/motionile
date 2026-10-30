@@ -53,9 +53,9 @@ test("revising a finished video makes a new video and leaves the original untouc
   await dialog.getByRole("textbox", { name: "What should change?" }).fill(INSTRUCTIONS);
   await dialog.getByRole("button", { name: "Start revision", exact: true }).click();
 
-  await expect(page).toHaveURL(jobUrl, { timeout: 60000 });
+  await expect.poll(() => jobIdOf(page), { timeout: 60000 }).not.toBe(parent.id);
+  await expect(page).toHaveURL(jobUrl);
   const childId = jobIdOf(page);
-  expect(childId).not.toBe(parent.id);
   await expect(page.getByRole("list", { name: "Video stages" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your video" })).toBeVisible({
     timeout: COMPLETION_TIMEOUT_MS,

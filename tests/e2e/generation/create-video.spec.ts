@@ -17,7 +17,7 @@ test.beforeEach(async ({ context }) => {
 async function fundedCreator(page: Page, request: Parameters<typeof signupWithRole>[0]) {
   const creator = await signupWithRole(request, "super_admin");
   await new VoiceUser(creator).readyBuiltinVoice();
-  await buyPack(creator, new FakeRazorpay(request));
+  await buyPack(creator, new FakeRazorpay(request), "pack_creator");
   await creator.waitForBalance(100);
   await signInAs(page, creator);
 }

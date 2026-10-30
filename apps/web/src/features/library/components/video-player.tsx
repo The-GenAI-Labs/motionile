@@ -37,6 +37,7 @@ export interface VideoPlayerProps {
   deliveryMode: MediaDeliveryMode;
   title: string;
   initialAspect?: Aspect;
+  onPlaybackStart?: () => void;
   onPlaybackError?: () => void;
   className?: string;
 }
@@ -55,6 +56,7 @@ export function VideoPlayer({
   deliveryMode,
   title,
   initialAspect,
+  onPlaybackStart,
   onPlaybackError,
   className,
 }: VideoPlayerProps) {
@@ -172,6 +174,7 @@ export function VideoPlayer({
           onSeeked={handleTimeUpdate}
           onPlay={() => {
             setPlaying(true);
+            onPlaybackStart?.();
           }}
           onPause={() => {
             setPlaying(false);

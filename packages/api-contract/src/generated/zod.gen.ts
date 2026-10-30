@@ -4545,6 +4545,15 @@ export const zShareGetSharedVideoPath = z.object({
  */
 export const zShareGetSharedVideoResponse = zSharedVideoView;
 
+export const zShareRecordShareViewPath = z.object({
+    slug: z.string().min(1).max(64)
+});
+
+/**
+ * Successful Response
+ */
+export const zShareRecordShareViewResponse = z.void();
+
 /**
  * Successful Response
  */

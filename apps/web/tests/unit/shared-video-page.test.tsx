@@ -33,6 +33,7 @@ const video = (overrides: Partial<SharedVideo> = {}): SharedVideo => ({
   posterUrl: "https://cdn.motionile.test/media/u/u1/r1/poster.webp",
   summary: "A short tour of DNS lookups.",
   title: "How DNS works",
+  uploadedAt: "2026-10-01T10:00:00Z",
   width: 1920,
   ...overrides,
 });
@@ -148,9 +149,17 @@ describe("shared video page", () => {
       description: "A short tour of DNS lookups.",
       thumbnailUrl: ["https://cdn.motionile.test/media/u/u1/r1/poster.webp"],
       duration: "PT1M2S",
+      uploadDate: "2026-10-01T10:00:00Z",
       contentUrl: "https://cdn.motionile.test/media/u/u1/r1/16x9.mp4?sig=abc",
       embedUrl: "https://motionile.test/v/abc123abc123",
     });
+  });
+
+  it("credits the music of a video that uses a licensed track", async () => {
+    loadSharedVideo.mockResolvedValue(video({ musicAttribution: "Slow Morning (CC BY 4.0)" }));
+    render(await sharePage.default(params()));
+
+    expect(screen.getByText("Music: Slow Morning (CC BY 4.0)")).toBeInTheDocument();
   });
 
   it("responds with not found for a missing or revoked link", async () => {

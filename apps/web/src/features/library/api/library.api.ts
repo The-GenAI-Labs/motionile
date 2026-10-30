@@ -1,6 +1,10 @@
 import * as contract from "@motionile/api-contract";
 
-import { LIBRARY_PAGE_SIZE, renderIdSchema } from "@/features/library/schemas/library.schema";
+import {
+  LIBRARY_PAGE_SIZE,
+  renderIdSchema,
+  shareSlugSchema,
+} from "@/features/library/schemas/library.schema";
 import type { LibraryFilters } from "@/features/library/types/library.types";
 import { apiClient } from "@/lib/api/client";
 
@@ -40,3 +44,9 @@ export const listLibrary = async (
       })
     ).data,
   );
+
+export const recordShareView = async (slug: string): Promise<void> => {
+  await apiClient.post<unknown>(`/v1/share/${shareSlugSchema.parse(slug)}/views`, undefined, {
+    skipAuthRefresh: true,
+  });
+};

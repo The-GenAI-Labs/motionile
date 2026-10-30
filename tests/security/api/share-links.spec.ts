@@ -26,6 +26,10 @@ const TIMING_SAMPLES = 15;
 const TIMING_WARMUP = 3;
 const TIMING_FLOOR_MS = 150;
 const RATE_LIMIT_OVERSHOOT = 5;
+const INTERNAL_HEADER = "X-Motionile-Internal";
+const INTERNAL_SECRET =
+  process.env["SHARE_INTERNAL_SECRET"] ?? "motionile-ci-share-internal-secret-0123456789";
+const WRONG_SECRETS = ["", "wrong-secret", INTERNAL_SECRET.slice(0, -1), `${INTERNAL_SECRET}x`];
 const PUBLIC_KEYS = [
   "allowIndexing",
   "aspect",
@@ -64,6 +68,16 @@ function publicGet(
   ip: string = uniqueClientIp(),
 ): Promise<APIResponse> {
   return request.get(`/v1/share/${encodeURIComponent(slug)}`, {
+    headers: { "X-Forwarded-For": ip },
+  });
+}
+
+function publicCount(
+  request: APIRequestContext,
+  slug: string,
+  ip: string = uniqueClientIp(),
+): Promise<APIResponse> {
+  return request.post(`/v1/share/${encodeURIComponent(slug)}/views`, {
     headers: { "X-Forwarded-For": ip },
   });
 }
@@ -354,6 +368,119 @@ test("views are limited per address with Retry-After and other addresses are una
   expect(Number(limited.headers()["retry-after"])).toBeLessThanOrEqual(3600);
   expect(limited.headers()["ratelimit-limit"]).toBe(String(limit));
   expect(other.status()).toBe(200);
+});
+
+test("a wrong internal secret never bypasses the view limit", async ({ request }) => {
+  for (const secret of WRONG_SECRETS) {
+    const ip = uniqueClientIp();
+    const first = await request.get(`/v1/share/${live.slug}`, {
+      headers: { "X-Forwarded-For": ip, [INTERNAL_HEADER]: secret },
+    });
+    const limit = Number(first.headers()["ratelimit-limit"]);
+    expect(Number.isInteger(limit) && limit > 0, `limit for "${secret}"`).toBe(true);
+    const statuses: number[] = [];
+    for (let attempt = 1; attempt < limit + RATE_LIMIT_OVERSHOOT; attempt += 1) {
+      const response = await request.get(`/v1/share/${randomSlug()}`, {
+        headers: { "X-Forwarded-For": ip, [INTERNAL_HEADER]: secret },
+      });
+      statuses.push(response.status());
+    }
+
+    expect(first.status(), `secret "${secret}"`).toBe(200);
+    expect(statuses.at(-1), `secret "${secret}"`).toBe(429);
+  }
+});
+
+test("the internal secret serves page reads without a per-address limit or rate-limit headers", async ({
+  request,
+}) => {
+  const ip = uniqueClientIp();
+  const probe = await publicGet(request, randomSlug(), ip);
+  const limit = Number(probe.headers()["ratelimit-limit"]);
+  const statuses: number[] = [];
+  let limitHeader: string | undefined;
+  for (let attempt = 0; attempt < limit + RATE_LIMIT_OVERSHOOT; attempt += 1) {
+    const response = await request.get(`/v1/share/${live.slug}`, {
+      headers: { "X-Forwarded-For": ip, [INTERNAL_HEADER]: INTERNAL_SECRET },
+    });
+    statuses.push(response.status());
+    limitHeader ??= response.headers()["ratelimit-limit"];
+  }
+
+  expect(Number.isInteger(limit) && limit > 0).toBe(true);
+  expect(statuses.every((status) => status === 200)).toBe(true);
+  expect(limitHeader).toBeUndefined();
+});
+
+test("the view counter answers 204 with no body for every visitor and repeat", async ({
+  request,
+}) => {
+  const ip = uniqueClientIp();
+  const first = await publicCount(request, live.slug, ip);
+  const repeated = await publicCount(request, live.slug, ip);
+  const otherVisitor = await publicCount(request, live.slug);
+
+  for (const response of [first, repeated, otherVisitor]) {
+    expect(response.status(), await response.text()).toBe(204);
+    expect(await response.text()).toBe("");
+    expect(response.headers()["cache-control"]).toBe("no-store");
+  }
+  expect(Number(first.headers()["ratelimit-limit"])).toBeGreaterThan(0);
+});
+
+test("the view counter is limited per address with Retry-After and does not use the read limit", async ({
+  request,
+}) => {
+  const ip = uniqueClientIp();
+  const first = await publicCount(request, live.slug, ip);
+  const limit = Number(first.headers()["ratelimit-limit"]);
+  const statuses = [first.status()];
+  for (let attempt = 1; attempt < limit + RATE_LIMIT_OVERSHOOT; attempt += 1) {
+    statuses.push((await publicCount(request, live.slug, ip)).status());
+  }
+  const limited = await publicCount(request, live.slug, ip);
+  const read = await publicGet(request, live.slug, ip);
+
+  expect(Number.isInteger(limit) && limit > 0).toBe(true);
+  expect(statuses.slice(0, limit).every((status) => status === 204)).toBe(true);
+  expect(statuses.slice(limit).every((status) => status === 429)).toBe(true);
+  expect(limited.status()).toBe(429);
+  expect(limited.headers()["content-type"]).toBe(PROBLEM_JSON);
+  expect(((await limited.json()) as JobProblem).code).toBe("rate_limited");
+  expect(Number(limited.headers()["retry-after"])).toBeGreaterThanOrEqual(1);
+  expect(read.status()).toBe(200);
+});
+
+test("the internal secret does not lift the view counter limit", async ({ request }) => {
+  const ip = uniqueClientIp();
+  const headers = { "X-Forwarded-For": ip, [INTERNAL_HEADER]: INTERNAL_SECRET };
+  const first = await request.post(`/v1/share/${live.slug}/views`, { headers });
+  const limit = Number(first.headers()["ratelimit-limit"]);
+  let last = first;
+  for (let attempt = 1; attempt < limit + RATE_LIMIT_OVERSHOOT; attempt += 1) {
+    last = await request.post(`/v1/share/${live.slug}/views`, { headers });
+  }
+
+  expect(Number.isInteger(limit) && limit > 0).toBe(true);
+  expect(last.status()).toBe(429);
+});
+
+test("counting a view of an unknown, malformed or revoked slug returns the read's 404", async ({
+  request,
+}) => {
+  const baseline = await publicGet(request, randomSlug());
+  const baselineProblem = (await baseline.json()) as JobProblem;
+  const slugs = [randomSlug(), sampled[0]?.slug ?? "", ...MALFORMED_SLUGS];
+
+  for (const slug of slugs) {
+    const response = await publicCount(request, slug);
+    const problem = (await response.json()) as JobProblem;
+
+    expect(response.status(), slug).toBe(404);
+    expect(response.headers()["content-type"], slug).toBe(PROBLEM_JSON);
+    expect(withoutVolatileFields(problem), slug).toEqual(withoutVolatileFields(baselineProblem));
+    expect(Object.keys(problem).sort(), slug).toEqual(Object.keys(baselineProblem).sort());
+  }
 });
 
 test("another user cannot share, unshare, cancel, revise or delete a finished video", async () => {

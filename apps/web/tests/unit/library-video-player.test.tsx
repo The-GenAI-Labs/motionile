@@ -355,3 +355,17 @@ describe("VideoPlayer music credit", () => {
     expect(screen.queryByText(/Music:/)).toBeNull();
   });
 });
+
+describe("VideoPlayer playback start", () => {
+  it("notifies the owner each time the video starts playing", () => {
+    const onPlaybackStart = vi.fn();
+    renderPlayer({ onPlaybackStart });
+
+    expect(onPlaybackStart).not.toHaveBeenCalled();
+    fireEvent.play(video());
+    fireEvent.pause(video());
+    fireEvent.play(video());
+
+    expect(onPlaybackStart).toHaveBeenCalledTimes(2);
+  });
+});

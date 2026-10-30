@@ -15290,6 +15290,52 @@ export type ShareGetSharedVideoResponses = {
 
 export type ShareGetSharedVideoResponse = ShareGetSharedVideoResponses[keyof ShareGetSharedVideoResponses];
 
+export type ShareRecordShareViewData = {
+    body?: never;
+    path: {
+        /**
+         * Slug
+         */
+        slug: string;
+    };
+    query?: never;
+    url: '/v1/share/{slug}/views';
+};
+
+export type ShareRecordShareViewErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type ShareRecordShareViewError = ShareRecordShareViewErrors[keyof ShareRecordShareViewErrors];
+
+export type ShareRecordShareViewResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type ShareRecordShareViewResponse = ShareRecordShareViewResponses[keyof ShareRecordShareViewResponses];
+
 export type StylesListStylesData = {
     body?: never;
     path?: never;

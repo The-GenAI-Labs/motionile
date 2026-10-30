@@ -11,5 +11,6 @@ declare namespace NodeJS {
     readonly AUTH_JWT_AUDIENCE?: string;
     readonly CATALOG_REVALIDATION_SECRET?: string;
     readonly API_INTERNAL_URL?: string;
+    readonly SHARE_INTERNAL_SECRET?: string;
   }
 }

@@ -74,6 +74,7 @@ export default async function SharedVideoPage({ params }: SharePageProps) {
             path: sharePath(shareId),
             thumbnailUrls: [video.posterUrl ?? "/opengraph-image"],
             ...(video.durationMs === null ? {} : { durationSeconds: video.durationMs / 1000 }),
+            uploadDate: video.uploadedAt,
             contentUrl: video.playbackUrl,
             embedUrl: sharePath(shareId),
           })}
@@ -84,6 +85,9 @@ export default async function SharedVideoPage({ params }: SharePageProps) {
         {video.summary ? <p className="text-subtle-foreground">{video.summary}</p> : null}
       </header>
       <SharedVideoPlayer slug={shareId} video={video} />
+      {video.musicAttribution ? (
+        <p className="text-sm text-muted-foreground">Music: {video.musicAttribution}</p>
+      ) : null}
       <aside
         aria-labelledby="made-with-heading"
         className="flex flex-col gap-4 rounded-xl border bg-surface p-6 sm:flex-row sm:items-center sm:justify-between"

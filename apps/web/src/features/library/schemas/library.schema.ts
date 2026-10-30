@@ -12,6 +12,10 @@ export const renderIdSchema = z.uuid();
 
 export const jobIdSchema = z.uuid();
 
+export const SHARE_SLUG_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
+export const shareSlugSchema = z.string().regex(SHARE_SLUG_PATTERN);
+
 export const LIBRARY_PAGE_SIZE = 24;
 export const RECENT_VIDEOS_LIMIT = 6;
 export const SEARCH_DEBOUNCE_MS = 300;

@@ -8,7 +8,7 @@ import tinycss2
 from tinycss2 import color3
 from tinycss2.ast import Declaration, FunctionBlock, HashToken, Node, ParseError
 
-from motionile.engine.render.validate import contrast_ratio, relative_luminance
+from motionile.engine.render.contrast import contrast_ratio, relative_luminance
 
 TOKEN_NAMES = (
     "--mo-bg",

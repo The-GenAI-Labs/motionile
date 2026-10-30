@@ -7,7 +7,7 @@ from motionile.engine.ai.llm.redaction import REDACTED, redact, redact_value, tr
     "secret",
     [
         "Authorization: Bearer abc123DEF456ghi789",
-        "bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r",
+        "bearer " + ".".join(["eyJhbGciOiJIUzI1NiJ9", "eyJzdWIiOiIxMjM0NTY3ODkwIn0", "dBjftJeZ4CVPmB92K27uhbUJU1p1r"]),
         "sk-ant-api03-AbCdEfGhIjKlMnOpQrStUvWxYz",
         "sk-proj-0123456789abcdefghij",
         "pk-lf-1234567890abcdefgh",

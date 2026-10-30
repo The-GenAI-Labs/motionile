@@ -17,7 +17,7 @@ from motionile.engine.ai.scenes.style_tokens import (
     parse_style_tokens,
     style_tokens_for,
 )
-from motionile.engine.render.validate import contrast_ratio
+from motionile.engine.render.contrast import contrast_ratio
 
 STYLE_SLUGS = ("minimal-dark", "whiteboard", "blueprint", "terminal", "editorial-light")
 

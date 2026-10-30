@@ -209,11 +209,38 @@ jobs:
         with:
           render: "true"
       - name: pytest integration
+        env:
+          PYTEST_ADDOPTS: --ignore=tests/integration/pipeline
         run: pnpm run test:integration
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: integration-coverage
+          path: apps/server/coverage/
+          if-no-files-found: warn
+          retention-days: 14
+
+  integration-pipeline:
+    name: integration-pipeline
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          render: "true"
+      - name: pytest integration
+        env:
+          PYTEST_ADDOPTS: tests/integration/pipeline
+        run: pnpm run test:integration
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: integration-pipeline-coverage
           path: apps/server/coverage/
           if-no-files-found: warn
           retention-days: 14
@@ -498,6 +525,7 @@ jobs:
         typecheck,
         unit,
         integration,
+        integration-pipeline,
         contract,
         evals,
         scan,

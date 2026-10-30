@@ -1,6 +1,6 @@
-FROM ghcr.io/astral-sh/uv:0.13.0 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
 
-FROM python:3.13.16-slim-trixie AS base
+FROM python:3.15.0-slim-trixie AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \

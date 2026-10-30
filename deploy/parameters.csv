@@ -27,6 +27,7 @@ DATABASE_DIRECT_URL,owner,yes,"Direct PostgreSQL URL used by migrations and work
 REDIS_PASSWORD,owner,yes,Password of the Compose Redis service
 SECURITY_PAGINATION_SECRET,owner,yes,At least 32 random characters that sign pagination cursors
 CATALOG_REVALIDATION_SECRET,owner,yes,At least 32 random characters shared by catalog revalidation tasks and the web endpoint
+SHARE_INTERNAL_SECRET,owner,yes,At least 32 random characters shared by the API and the web server so server-rendered share pages skip the per-IP limit and the view counter
 ENCRYPTION_KEYS,owner,yes,"JSON map of key version to base64 32-byte AES-GCM key, for example {""1"":""<base64>""}"
 TURNSTILE_SECRET_KEY,owner,yes,Cloudflare Turnstile secret key of this environment
 CLOUDFRONT_PRIVATE_KEY,owner,no,PEM RSA private key stored base64-encoded that signs CloudFront cookies and URLs; used from Phase 8 and required when MEDIA_DELIVERY_MODE=cloudfront

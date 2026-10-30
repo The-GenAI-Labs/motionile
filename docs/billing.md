@@ -102,7 +102,7 @@ Expiry does not wait for the sweeper. `reserve`, `commit`, `clawback` and `adjus
 
 Credits held by an active reservation are never expired or clawed back: expiry, clawback and deductions are limited to `balance - reserved`, and whatever could not be taken waits for the next sweep or the reservation settlement. This is why a refund of a pack whose credits are partly held, or already spent, claws back less than it refunds. The refund record shows the credits actually recovered, and that is intended ([ADR 0018](adr/0018-credit-lots-and-reservations.md)).
 
-A reservation that is never settled is released by `credits.release_stale_reservations` (every 5 minutes) once its TTL has passed.
+A reservation that is never settled is released by `credits.release_stale_reservations` (every 5 minutes) once its TTL has passed. Job reservations use a fixed TTL of 120 days (`JOB_RESERVATION_TTL`) so this sweeper never releases one while its job runs; the job's own sweepers release it on every terminal path.
 
 ## 3. Products
 

@@ -46,6 +46,7 @@ stateDiagram-v2
     generating --> cancelled
     validating --> cancelled
     rendering --> cancelled
+    awaiting_approval --> failed: approved but the resume never ran
     planning --> failed
     voicing --> failed
     generating --> failed
@@ -59,7 +60,7 @@ stateDiagram-v2
 
 - MCP jobs (`source = 'mcp'`) skip planning: `queued --> voicing` when only narration is submitted, `queued --> validating` when narration audio already exists.
 - A job whose `options.reviewStoryboard` is off goes from `planning` straight to `voicing`; otherwise it waits in `awaiting_approval`, and a regeneration returns it to `planning`.
-- Cancellation is allowed from every non-terminal state. `awaiting_approval` cannot fail: it ends by approval, regeneration, cancellation or the approval timeout, which cancels.
+- Cancellation is allowed from every non-terminal state. `awaiting_approval` ends by approval, regeneration, cancellation or the approval timeout, which cancels; it fails only when the storyboard was approved and the resume task never ran within `ai.stage_timeout_minutes`, which the stalled-job sweeper detects with the `job_stalled` code.
 - `modules/generation/domain.py` (`JOB_TRANSITIONS`) is the code form of this diagram; a unit test compares the two.
 - `completed` commits the charged credits and releases the rest; `failed` and `cancelled` release the whole reservation.
 - `awaiting_approval` jobs expire to `cancelled` after 7 days.

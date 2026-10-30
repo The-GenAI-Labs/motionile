@@ -412,7 +412,8 @@ Password login uses argon2id and a dummy verification for unknown accounts. Ten 
 | `catalog.read` | 600/min per IP for cached public catalog and billing product reads and static generation |
 | `jobs.create` | 5/min per user; at most `jobs.max_active_per_user` (2) active jobs |
 | `jobs.write` | 30/min per user (storyboard edits, approve, regenerate, cancel, delete) |
-| `share.view` | 120/min per IP (public share page) |
+| `share.view` | 120/min per IP (public share page; requests carrying the internal secret skip it) |
+| `share.count` | 60/min per IP (browser view counter) |
 | `share.manage` | 30/hour per user (create and revoke share links) |
 | `billing.order.create` | 10/min per user |
 | `skills.write` | 20/hour per user |

@@ -19,6 +19,9 @@ runs:
     - name: Configure catalog revalidation
       shell: bash
       run: echo 'CATALOG_REVALIDATION_SECRET=motionile-ci-catalog-revalidation-secret' >> "$GITHUB_ENV"
+    - name: Configure the share page secret
+      shell: bash
+      run: echo 'SHARE_INTERNAL_SECRET=motionile-ci-share-internal-secret-0123456789' >> "$GITHUB_ENV"
     - name: Configure browser authentication
       if: inputs.browser-auth == 'true'
       shell: bash

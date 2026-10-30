@@ -1313,7 +1313,7 @@ Module `generation` · Phase 9 · Mutable
 - `fk_jobs_topic_id_topics` → `topics.id` **ON DELETE SET NULL**.
 - `fk_jobs_parent_job_id_jobs` → `jobs.id` **ON DELETE SET NULL**: deleting the original never blocks or removes its revisions.
 - `fk_jobs_render_id_renders` → `renders.id` **ON DELETE SET NULL**.
-- `uq_jobs_user_id_idempotency_key` unique (`user_id`, `idempotency_key`) (nulls distinct: jobs without a key never collide).
+- `uq_jobs_user_id_idempotency_key` unique (`user_id`, `idempotency_key`) (nulls distinct: jobs without a key never collide). The stored key is the client's `Idempotency-Key` prefixed with its scope (`create:<key>` or `revise:<parentJobId>:<key>`), so one client key never resolves to a job of another flow.
 - `ck_jobs_source`: `source IN ('catalog', 'query', 'mcp')`.
 - `ck_jobs_status`: `status IN ('queued', 'planning', 'awaiting_approval', 'voicing', 'generating', 'validating', 'rendering', 'completed', 'failed', 'cancelled')`.
 - `ck_jobs_query_length`: `char_length(query) BETWEEN 1 AND 2000`.

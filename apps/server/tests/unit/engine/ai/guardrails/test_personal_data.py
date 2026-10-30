@@ -1,7 +1,7 @@
 import pytest
 
 from motionile.engine.ai.guardrails import PersonalDataKind, contains_personal_data, detect_personal_data
-from motionile.engine.ai.guardrails.personal_data import luhn_valid, verhoeff_valid
+from motionile.engine.ai.guardrails.personal_data import has_phone, luhn_valid, verhoeff_valid
 
 
 @pytest.mark.parametrize(
@@ -65,3 +65,19 @@ def test_huge_inputs_are_scanned_quickly() -> None:
     text = "plain words with numbers 12 345 6789 " * 20_000
 
     assert not contains_personal_data(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "The resolver answers with 93.184.216.34 for the domain.",
+        "A private network often uses 192.168.0.1 as its gateway.",
+        "Cloudflare publishes 1.1.1.1 as a public resolver.",
+    ],
+)
+def test_an_ip_address_in_a_networking_explanation_is_not_a_phone_number(text: str) -> None:
+    assert not contains_personal_data(text)
+
+
+def test_a_phone_number_next_to_an_ip_address_is_still_found() -> None:
+    assert has_phone("Server 93.184.216.34 support line +1 650-253-0000")

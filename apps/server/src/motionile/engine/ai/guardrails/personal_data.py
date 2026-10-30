@@ -18,6 +18,7 @@ AADHAAR_GROUPED = re.compile(r"(?<!\d)[2-9]\d{3}[ -]\d{4}[ -]\d{4}(?!\d)")
 AADHAAR_CONTIGUOUS = re.compile(r"(?<!\d)[2-9]\d{11}(?!\d)")
 CARD_CANDIDATE = re.compile(r"(?<!\d)(?:\d[ -]?){12,18}\d(?!\d)")
 CARD_PREFIX = re.compile(r"^(?:4|5[1-5]|2[2-7]|3[0-9]|6|81|82)")
+IPV4_ADDRESS = re.compile(r"(?<![\d.])(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?![\d.])")
 SSN = re.compile(r"(?<!\d)(?!000|666|9\d\d)\d{3}-(?!00)\d{2}-(?!0000)\d{4}(?!\d)")
 
 RESERVED_EMAIL_LABELS: Final = frozenset({"example", "test", "invalid", "localhost"})
@@ -90,7 +91,10 @@ def has_email(text: str) -> bool:
 
 
 def has_phone(text: str) -> bool:
-    matcher = PhoneNumberMatcher(text, DEFAULT_PHONE_REGION, leniency=Leniency.VALID, max_tries=MAX_PHONE_TRIES)
+    without_addresses = IPV4_ADDRESS.sub(" ", text)
+    matcher = PhoneNumberMatcher(
+        without_addresses, DEFAULT_PHONE_REGION, leniency=Leniency.VALID, max_tries=MAX_PHONE_TRIES
+    )
     return any(phonenumbers.is_valid_number(match.number) for match in matcher)
 
 

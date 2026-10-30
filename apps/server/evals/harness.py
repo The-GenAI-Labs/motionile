@@ -109,6 +109,10 @@ class EvalPipelineStore:
         del job_id
         return self.job
 
+    async def reservation_active(self, job_id: UUID) -> bool:
+        del job_id
+        return True
+
     async def transition(self, job_id: UUID, to: JobStatus, *, stage: str) -> bool:
         del job_id, stage
         if self.job.status.is_terminal or self.job.cancel_requested:

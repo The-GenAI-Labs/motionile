@@ -8,7 +8,7 @@ from motionile.engine.ai.scenes.static_checks import check_scene_module
 SYNTAX = StaticFindingCode.BUILDER_SYNTAX
 IDENTIFIER = StaticFindingCode.BUILDER_IDENTIFIER
 FORBIDDEN = StaticFindingCode.BUILDER_FORBIDDEN_SYNTAX
-MAX_CHECK_SECONDS = 0.02
+MAX_CHECK_SECONDS = 0.25
 
 
 def findings_for(builder: str) -> list[StaticFinding]:

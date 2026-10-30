@@ -1,4 +1,4 @@
-FROM node:24.21.0-trixie-slim AS base
+FROM node:26.12.0-trixie-slim AS base
 ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH \
     NEXT_TELEMETRY_DISABLED=1
@@ -29,7 +29,7 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
     NEXT_PUBLIC_PROVIDERS_MODE=$NEXT_PUBLIC_PROVIDERS_MODE
 RUN pnpm --filter @motionile/web build
 
-FROM node:24.21.0-trixie-slim AS runner
+FROM node:26.12.0-trixie-slim AS runner
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \

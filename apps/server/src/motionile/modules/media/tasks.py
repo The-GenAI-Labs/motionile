@@ -20,6 +20,7 @@ TTS_CACHE_RETENTION = timedelta(days=90)
 RENDER_RUN_TASK = "render.run"
 CHECK_COMPOSITION_TASK = "media.check_composition"
 RENDER_RETRY = RetryStrategy(max_attempts=3, wait=5)
+CHECK_PRIORITY = 10
 CHECK_RETRY = RetryStrategy(max_attempts=3, wait=5)
 
 logger = structlog.get_logger(__name__)
@@ -67,7 +68,9 @@ async def check_composition(job_id: str, check_id: str) -> None:
 
 async def defer_composition_check(job_id: UUID, check_id: str) -> None:
     try:
-        await check_composition.configure(queueing_lock=check_id).defer_async(job_id=str(job_id), check_id=check_id)
+        await check_composition.configure(queueing_lock=check_id, priority=CHECK_PRIORITY).defer_async(
+            job_id=str(job_id), check_id=check_id
+        )
     except AlreadyEnqueued:
         logger.info("media.composition_check_already_queued", job_id=str(job_id))
 

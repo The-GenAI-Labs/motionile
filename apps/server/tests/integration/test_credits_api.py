@@ -73,7 +73,6 @@ class Api:
                     model="eleven_v3",
                     cost_micros_usd=1_234,
                     credits=spent,
-                    job_id=new_id(),
                 ),
             )
 

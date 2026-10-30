@@ -46,5 +46,6 @@ class SkillsApi:
 
 async def purge_skills(database: Database) -> None:
     async with database.transaction() as session:
+        await session.execute(text("SET LOCAL motionile.allow_purge = 'on'"))
         for statement in DELETE_STATEMENTS:
             await session.execute(text(statement))

@@ -214,7 +214,7 @@ async def install_voice(database: Database) -> UUID:
                 "INSERT INTO voices (id, owner_user_id, provider, provider_voice_id, name, kind, language, status) "
                 "VALUES (:id, NULL, 'fake', :provider_voice, 'Aria', 'builtin', 'en', 'ready')"
             ),
-            {"id": voice_id, "provider_voice": f"fake-{voice_id.hex[:8]}"},
+            {"id": voice_id, "provider_voice": f"fake-{voice_id.hex[-12:]}"},
         )
     return voice_id
 

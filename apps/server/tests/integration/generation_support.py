@@ -165,7 +165,7 @@ class GenerationApi:
 
     async def seed_topic(self, *, active: bool = True) -> UUID:
         category_id, subcategory_id, topic_id = new_id(), new_id(), new_id()
-        suffix = topic_id.hex[:10]
+        suffix = topic_id.hex[-10:]
         async with self.database.transaction() as session:
             await session.execute(
                 text(
@@ -241,7 +241,7 @@ async def install_generation_data(api: MediaApi) -> UUID:
                 "INSERT INTO voices (id, owner_user_id, provider, provider_voice_id, name, kind, language, status) "
                 "VALUES (:id, NULL, 'fake', :provider_voice, 'Aria', 'builtin', 'en', 'ready')"
             ),
-            {"id": voice_id, "provider_voice": f"fake-{voice_id.hex[:8]}"},
+            {"id": voice_id, "provider_voice": f"fake-{voice_id.hex[-12:]}"},
         )
     return voice_id
 

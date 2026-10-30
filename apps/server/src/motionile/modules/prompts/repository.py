@@ -6,6 +6,7 @@ from typing import Any, Protocol
 from uuid import UUID
 
 from sqlalchemy import Select, func, select, update
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -205,7 +206,7 @@ class SqlPromptRepository:
             (
                 await self.session.execute(
                     select(PromptVersion.template_id, PromptVersion.eval_status)
-                    .distinct(PromptVersion.template_id)
+                    .ext(distinct_on(PromptVersion.template_id))
                     .order_by(PromptVersion.template_id, PromptVersion.version.desc())
                 )
             ).all()

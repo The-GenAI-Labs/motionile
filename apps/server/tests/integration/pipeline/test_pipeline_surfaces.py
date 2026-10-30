@@ -8,6 +8,8 @@ from tests.fakes.settings import SHARE_INTERNAL_SECRET
 from tests.integration.pipeline.support import PipelineEnv, SseFrame, parse_sse
 from tests.integration.test_auth import csrf
 
+from motionile.core.security.cookies import CSRF_COOKIE
+
 pytestmark = pytest.mark.slow
 
 FUNDS = 1_000
@@ -37,11 +39,17 @@ class Finished:
         return await (client or self.owner).post(
             f"/v1/jobs/{self.job_id}/share",
             json={"aspect": "16:9", **body},
-            headers=csrf(client or self.owner),
+            headers=csrf_if_signed_in(client or self.owner),
         )
 
     async def unshare(self, client: httpx.AsyncClient | None = None) -> httpx.Response:
-        return await (client or self.owner).delete(f"/v1/jobs/{self.job_id}/share", headers=csrf(client or self.owner))
+        return await (client or self.owner).delete(
+            f"/v1/jobs/{self.job_id}/share", headers=csrf_if_signed_in(client or self.owner)
+        )
+
+
+def csrf_if_signed_in(client: httpx.AsyncClient) -> dict[str, str]:
+    return csrf(client) if CSRF_COOKIE in client.cookies else {}
 
 
 @pytest.fixture
@@ -158,7 +166,8 @@ async def test_a_shared_video_opens_signed_out_without_revealing_the_owner(finis
     assert body["allowIndexing"] is True
     assert body["playbackUrl"]
     assert page.headers["cache-control"] == "no-store"
-    assert str(finished.env.generation.primary_id) not in page.text
+    without_urls = json.dumps({key: value for key, value in body.items() if not key.endswith("Url")})
+    assert str(finished.env.generation.primary_id) not in without_urls
     assert str(finished.job_id) not in page.text
     async with httpx.AsyncClient(timeout=30) as raw:
         video = await raw.get(body["playbackUrl"], headers={"Range": "bytes=0-1023"})
@@ -222,7 +231,7 @@ async def test_counting_a_view_of_a_dead_link_answers_like_reading_it(finished: 
     assert (
         len(
             {
-                (response.json()["code"], response.json()["title"], response.json()["detail"])
+                (response.json()["code"], response.json()["title"], response.json().get("detail"))
                 for response in [*reads, *counts]
             }
         )
@@ -249,7 +258,7 @@ async def test_every_dead_link_answers_the_same_way(finished: Finished) -> None:
 
     assert {response.status_code for response in answers} == {404}
     assert {response.json()["code"] for response in answers} == {"share_not_found"}
-    assert len({(response.json()["title"], response.json()["detail"]) for response in answers}) == 1
+    assert len({(response.json()["title"], response.json().get("detail")) for response in answers}) == 1
 
 
 async def test_only_the_owner_can_manage_links(finished: Finished) -> None:

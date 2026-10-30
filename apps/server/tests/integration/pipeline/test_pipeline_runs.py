@@ -149,7 +149,7 @@ async def test_a_scene_that_cannot_be_repaired_falls_back_and_the_video_still_co
     pipeline_env: PipelineEnv,
 ) -> None:
     env = pipeline_env
-    env.script = FakeScript.for_scene("example", ["broken-overflow"])
+    env.script = FakeScript.for_scene("example", ["broken-syntax"])
 
     job_id = await completed_job(env)
 

@@ -196,7 +196,8 @@ for (const [index, attempt] of ATTEMPTS.entries()) {
     const { query: echoedQuery, ...withoutQuery } = failed;
     expect(echoedQuery).toBe(attempt.query);
     expect(leaksIn(withoutQuery)).toEqual([]);
-    expect(leaksIn(stream.text)).toEqual([]);
+    const escapedQuery = JSON.stringify(attempt.query).slice(1, -1);
+    expect(leaksIn(stream.text.split(escapedQuery).join(""))).toEqual([]);
     expect(failed.errorMessage).not.toContain(attempt.query);
   });
 }

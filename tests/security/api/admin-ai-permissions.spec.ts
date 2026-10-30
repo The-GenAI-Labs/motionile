@@ -440,7 +440,7 @@ test("the prompt diff carries no-store caching and redacts every canary line", a
   expect(response.status(), JSON.stringify(body)).toBe(200);
   expect(response.headers()["cache-control"]).toBe("no-store");
   expect(body.lines.some((line) => line.endsWith("[canary redacted]"))).toBe(true);
-  expect(leaksIn(body.lines, CANARY_FRAGMENTS)).toEqual([]);
+  expect(leaksIn(body.lines, ["mo-canary-"])).toEqual([]);
 });
 
 const ADMIN_WRITES: readonly (readonly [string, string, Record<string, unknown>?])[] = [

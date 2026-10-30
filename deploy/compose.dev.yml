@@ -155,7 +155,7 @@ services:
       - backend
 
   mailpit:
-    image: axllent/mailpit:v1.31.5
+    image: axllent/mailpit:v1.32.0
     restart: unless-stopped
     ports:
       - "1025:1025"

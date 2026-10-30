@@ -18,7 +18,7 @@ async function fundedCreator(page: Page, request: Parameters<typeof signupWithRo
   const creator = await signupWithRole(request, "super_admin");
   await new VoiceUser(creator).readyBuiltinVoice();
   await buyPack(creator, new FakeRazorpay(request), "pack_creator");
-  await creator.waitForBalance(100);
+  await creator.waitForBalance(500);
   await signInAs(page, creator);
 }
 

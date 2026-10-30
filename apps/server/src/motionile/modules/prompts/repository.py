@@ -199,9 +199,7 @@ class SqlPromptRepository:
                 await self.session.execute(
                     select(PromptVersion.template_id, func.count()).group_by(PromptVersion.template_id)
                 )
-            )
-            .tuples()
-            .all()
+            ).all()
         )
         latest = dict(
             (
@@ -210,9 +208,7 @@ class SqlPromptRepository:
                     .distinct(PromptVersion.template_id)
                     .order_by(PromptVersion.template_id, PromptVersion.version.desc())
                 )
-            )
-            .tuples()
-            .all()
+            ).all()
         )
         return [
             TemplateSummary(key, description, active_version, counts.get(template_id, 0), latest.get(template_id))

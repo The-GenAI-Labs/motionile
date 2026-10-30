@@ -72,6 +72,16 @@ services:
       storage-init:
         condition: service_completed_successfully
 
+  worker-generation:
+    build: *server-build
+    image: motionile-api:local
+    environment: *dev-storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
+
   worker-render:
     build:
       <<: *server-build

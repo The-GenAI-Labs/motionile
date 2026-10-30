@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Minimal &amp; &lt;clean&gt; "video"</title>
+<link rel="stylesheet" href="https://runtime.motionile.local/v1/base.css">
+<style data-mo-scene-style="outro">
+.mo-s-outro { display: flex; }
+</style>
+<script src="https://runtime.motionile.local/v1/gsap/gsap.min.js"></script>
+<script src="https://runtime.motionile.local/v1/motionile.js"></script>
+</head>
+<body>
+<main class="mo-stage">
+<section class="mo-scene mo-s-intro" data-scene="intro">
+</section>
+<section class="mo-scene mo-s-outro" data-scene="outro">
+</section>
+</main>
+<script>
+Motionile.composition({
+  aspects: ["16:9", "9:16", "1:1"],
+  scenes: [
+    {
+      id: "intro",
+      build(ctx) {
+ctx.timeline.from(ctx.root, { opacity: 0, duration: 0.4 }, 0);
+      },
+    },
+    {
+      id: "outro",
+      build(ctx) {
+const last = ctx.words.length - 1;
+ctx.timeline.from(ctx.root, { opacity: 0 }, ctx.at(last));
+      },
+    },
+  ],
+});
+</script>
+</body>
+</html>

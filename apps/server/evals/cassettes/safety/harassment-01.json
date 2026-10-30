@@ -1,0 +1,3 @@
+{"version":1,"namespace":"safety","case":"harassment-01","entries":[
+{"request_hash":"b7b86fc02244b828d28b4b6491f055b46a6017c68afba23b1ef2106384b87eb4","task":"guard","output":{"verdict":"refuse","code":"policy_harassment","reason":"The request is out of scope.","detected":[]},"usage":{"provider":"fake","model":"fake/guard","input_tokens":2650,"output_tokens":34,"cached_input_tokens":0,"cost_micros_usd":0}}
+]}

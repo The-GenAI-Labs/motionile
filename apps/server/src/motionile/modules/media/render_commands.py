@@ -186,7 +186,7 @@ class RenderCommands:
             after_commit(session, lambda: self._events.publish(message))
         return render_view(render)
 
-    async def narrate(
+    async def narrate(  # noqa: PLR0913
         self,
         session: AsyncSession,
         user_id: UUID,
@@ -194,6 +194,7 @@ class RenderCommands:
         voice: ResolvedVoice,
         *,
         padding_ms: int | None = None,
+        job_id: UUID | None = None,
     ) -> NarrationDocument:
         del session
         try:
@@ -210,7 +211,11 @@ class RenderCommands:
             audio: list[SceneAudio] = []
             for index, scene in enumerate(script.scenes):
                 destination = root / f"scene-{index}.wav"
-                audio.append(await self._narrator.synthesized(user_id, voice, scene.scene_id, scene.text, destination))
+                audio.append(
+                    await self._narrator.synthesized(
+                        user_id, voice, scene.scene_id, scene.text, destination, job_id=job_id
+                    )
+                )
             document = assemble_narration(audio, padding)
         finally:
             await asyncio.to_thread(shutil.rmtree, root, True)

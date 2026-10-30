@@ -25,6 +25,7 @@ from motionile.core.config import (
     RedisSettings,
     SecuritySettings,
     Settings,
+    ShareSettings,
     StorageSettings,
     for_asyncpg,
     get_settings,
@@ -129,6 +130,30 @@ def test_short_catalog_revalidation_secret_is_rejected() -> None:
         CatalogSettings(revalidation_secret=SecretStr("short"))
 
 
+def test_short_share_internal_secret_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="at least 32"):
+        ShareSettings(internal_secret=SecretStr("short"))
+
+
+def test_share_internal_secret_is_read_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SHARE_INTERNAL_SECRET", "x" * 40)
+
+    secret = Settings().share.internal_secret
+
+    assert secret is not None
+    assert secret.get_secret_value() == "x" * 40
+    assert "x" * 40 not in repr(Settings().share)
+
+
+def test_deployed_services_require_the_share_internal_secret() -> None:
+    settings = deployed()
+    assert settings.deployment_problems() == []
+
+    missing = settings.model_copy(update={"share": ShareSettings()})
+
+    assert missing.deployment_problems() == ["SHARE_INTERNAL_SECRET must be set"]
+
+
 @pytest.mark.parametrize("key", ["not-base64!", base64.b64encode(b"too-short").decode()])
 def test_invalid_encryption_keys_are_rejected(key: str) -> None:
     with pytest.raises(ValidationError):
@@ -172,6 +197,7 @@ def test_deployed_environments_reject_unsafe_defaults(env: AppEnv) -> None:
         "ENCRYPTION_KEYS must be set",
         "TURNSTILE_SECRET_KEY must be set",
         "CATALOG_REVALIDATION_SECRET must be set",
+        "SHARE_INTERNAL_SECRET must be set",
         "STORAGE_BUCKET must be set",
         "BILLING_RAZORPAY_KEY_ID must be set",
         "BILLING_RAZORPAY_KEY_SECRET must be set",
@@ -213,6 +239,7 @@ def test_blank_secrets_from_env_files_are_treated_as_unset(monkeypatch: pytest.M
         "STORAGE_ACCESS_KEY_ID",
         "STORAGE_ENDPOINT_URL",
         "CATALOG_REVALIDATION_SECRET",
+        "SHARE_INTERNAL_SECRET",
         "BILLING_RAZORPAY_KEY_ID",
         "BILLING_RAZORPAY_KEY_SECRET",
         "BILLING_RAZORPAY_WEBHOOK_SECRET",
@@ -226,6 +253,7 @@ def test_blank_secrets_from_env_files_are_treated_as_unset(monkeypatch: pytest.M
     assert settings.storage.access_key_id is None
     assert settings.storage.endpoint_url is None
     assert settings.catalog.revalidation_secret is None
+    assert settings.share.internal_secret is None
     assert settings.billing.razorpay_key_id is None
     assert settings.billing.razorpay_key_secret is None
     assert settings.billing.razorpay_webhook_secret is None

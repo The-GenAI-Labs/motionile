@@ -219,6 +219,8 @@ erDiagram
 erDiagram
     users ||--o{ jobs : "requests"
     topics |o--o{ jobs : "seeds"
+    jobs |o--o{ jobs : "is revised by"
+    renders |o--o| jobs : "renders"
     jobs ||--o{ storyboards : "plans with"
     users |o--o{ storyboards : "approves"
     storyboards ||--o{ scenes : "contains"
@@ -232,19 +234,26 @@ erDiagram
         uuid id PK
         uuid user_id FK
         uuid topic_id FK
+        uuid parent_job_id FK
+        uuid render_id FK
         text source
         text status
+        jsonb reports
     }
     storyboards {
         uuid id PK
         uuid job_id FK
         integer version
+        text origin
         uuid approved_by FK
     }
     scenes {
         uuid id PK
         uuid storyboard_id FK
+        text scene_key
         integer position
+        boolean is_fallback
+        jsonb module
         uuid audio_asset_id FK
         uuid html_asset_id FK
     }
@@ -267,10 +276,15 @@ erDiagram
     assets {
         uuid id PK
     }
+    renders {
+        uuid id PK
+    }
     skill_versions {
         uuid id PK
     }
 ```
+
+`job_skills` belongs to Phase 10; it is drawn here to show where the skill versions a job used will be recorded. A job's credit reservation is `credit_reservations` with `ref_type = 'job'` and `ref_id` equal to the job ID, without a foreign key.
 
 ## AI configuration and skills
 
@@ -279,6 +293,8 @@ erDiagram
     prompt_templates ||--o{ prompt_versions : "versions"
     prompt_versions |o--o| prompt_templates : "is active in"
     users |o--o{ prompt_versions : "authors"
+    users |o--o{ eval_runs : "starts"
+    prompt_versions }o--o{ eval_runs : "is covered by"
     users |o--o{ skills : "owns"
     skills ||--o{ skill_versions : "versions"
     skill_versions |o--o| skills : "is current in"
@@ -297,6 +313,15 @@ erDiagram
         uuid template_id FK
         integer version
         text eval_status
+        uuid created_by FK
+    }
+    eval_runs {
+        uuid id PK
+        text suite
+        uuid[] prompt_version_ids
+        text status
+        boolean passed
+        text trigger
         uuid created_by FK
     }
     skills {
@@ -331,6 +356,8 @@ erDiagram
         uuid id PK
     }
 ```
+
+`eval_runs.prompt_version_ids` is an array without a foreign key; the relation to `prompt_versions` is resolved with `@>` and kept when a version is removed. System skills have a null `owner_user_id`; user-owned skills arrive in Phase 10.
 
 ## Memory and RAG
 

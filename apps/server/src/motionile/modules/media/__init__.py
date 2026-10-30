@@ -11,6 +11,16 @@ from motionile.modules.media.bounded_upload import (
     read_upload_part,
     unique_parts,
 )
+from motionile.modules.media.composition_check import (
+    CHECK_REQUEST_NAME,
+    CHECK_RESULT_NAME,
+    FRAMES_FOLDER,
+    CompositionCheckRequest,
+    CompositionCheckResult,
+    CompositionCheckService,
+    FrameEntry,
+    composition_check_id,
+)
 from motionile.modules.media.delivery import (
     CloudFrontDelivery,
     CloudFrontSigner,
@@ -63,6 +73,7 @@ from motionile.modules.media.exceptions import (
     MusicTrackNotFoundError,
     MusicTrackUnavailableError,
     RenderAudioRejectedError,
+    RenderNotFinishedError,
     RenderNotFoundError,
     RenderOptionsInvalidError,
     RenderUploadTooLargeError,
@@ -80,8 +91,11 @@ from motionile.modules.media.factory import (
 )
 from motionile.modules.media.fake_consent import FakeConsentTranscripts
 from motionile.modules.media.keys import (
+    composition_check_key,
+    composition_check_prefix,
     composition_key,
     consent_recording_key,
+    job_work_prefix,
     mixed_audio_key,
     music_key,
     poster_key,
@@ -131,14 +145,18 @@ from motionile.modules.media.schemas import (
     RenditionListView,
     RenditionView,
 )
-from motionile.modules.media.service import MediaService
+from motionile.modules.media.service import MediaService, SignedRendition
 from motionile.modules.media.speech import SpeechResult, SpeechService
+from motionile.modules.media.tasks import defer_composition_check
 from motionile.modules.media.testbed_router import testbed_router as render_testbed_router
 from motionile.modules.media.voice_lookup import VoiceLookup, resolve_render_options
 
 __all__ = [
     "ACTIVE_RENDER_STATUSES",
+    "CHECK_REQUEST_NAME",
+    "CHECK_RESULT_NAME",
     "FORM_OVERHEAD_BYTES",
+    "FRAMES_FOLDER",
     "RENDER_PIPELINE",
     "RENDER_TRANSITIONS",
     "STAGE_PROGRESS_WEIGHTS",
@@ -157,10 +175,14 @@ __all__ = [
     "AssetView",
     "CloudFrontDelivery",
     "CloudFrontSigner",
+    "CompositionCheckRequest",
+    "CompositionCheckResult",
+    "CompositionCheckService",
     "CompositionTooLargeError",
     "DeliveryCookie",
     "FakeConsentTranscripts",
     "FormLimits",
+    "FrameEntry",
     "GoldenCatalogDep",
     "GoldenNotFoundError",
     "InvalidRenderTransitionError",
@@ -188,6 +210,7 @@ __all__ = [
     "RenderEvents",
     "RenderEventsDep",
     "RenderFailureCode",
+    "RenderNotFinishedError",
     "RenderNotFoundError",
     "RenderOptions",
     "RenderOptionsInvalidError",
@@ -205,6 +228,7 @@ __all__ = [
     "RenditionView",
     "ResolvedVoice",
     "SceneScript",
+    "SignedRendition",
     "SpeechResult",
     "SpeechService",
     "SpeechServiceDep",
@@ -225,14 +249,19 @@ __all__ = [
     "build_voice_cloner",
     "can_transition",
     "cancel_flag_key",
+    "composition_check_id",
+    "composition_check_key",
+    "composition_check_prefix",
     "composition_key",
     "consent_recording_key",
+    "defer_composition_check",
     "delivery_for",
     "ffmpeg_tools",
     "file_upload_schema",
     "forbidden",
     "invalid_fields",
     "is_terminal",
+    "job_work_prefix",
     "media_router",
     "media_service_for",
     "missing",

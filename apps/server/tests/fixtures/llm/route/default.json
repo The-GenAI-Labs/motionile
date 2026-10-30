@@ -1,0 +1,22 @@
+{
+  "style": {
+    "slug": "minimal-dark",
+    "reason": "The brand default style suits a clean explainer."
+  },
+  "visual": [
+    {
+      "slug": "kinetic-typography",
+      "reason": "Short narration lines read well as animated text."
+    },
+    {
+      "slug": "flow-diagram",
+      "reason": "The topic describes a sequence of steps."
+    }
+  ],
+  "domain": [
+    {
+      "slug": "cs-fundamentals",
+      "reason": "The topic belongs to core computer science concepts."
+    }
+  ]
+}

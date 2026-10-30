@@ -71,16 +71,31 @@ jobs:
   evals:
     name: evals
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Full eval suite
+        with:
+          render: "true"
+      - name: Full live eval run against staging settings
+        shell: bash
+        env:
+          AI_ANTHROPIC_API_KEY: ${{ secrets.AI_ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          EVALS_NIGHTLY_BUDGET_MICROS: ${{ vars.EVALS_NIGHTLY_BUDGET_MICROS }}
         run: |
+          [[ -n "$AI_ANTHROPIC_API_KEY" && -n "$OPENAI_API_KEY" ]] || { echo "::error::set the AI_ANTHROPIC_API_KEY and OPENAI_API_KEY repository secrets"; exit 1; }
           mkdir -p eval-report
-          pnpm evals 2>&1 | tee eval-report/evals.log
+          arguments=(--mode=live --record --budget-micros="${EVALS_NIGHTLY_BUDGET_MICROS:-25000000}" --output=eval-report/results.json --cassettes-dir=eval-report/cassettes)
+          if [[ -n "${DATABASE_URL:-}" ]]; then
+            arguments+=(--trigger=nightly --prompts=database)
+          else
+            echo "::notice::STAGING_DATABASE_URL is not set, so the results are not recorded in eval_runs."
+          fi
+          pnpm run evals "${arguments[@]}" 2>&1 | tee eval-report/evals.log
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:

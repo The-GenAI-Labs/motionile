@@ -1,4 +1,5 @@
 import json
+import logging
 
 import pytest
 import structlog
@@ -160,3 +161,10 @@ def test_payment_payloads_mask_customer_contact_and_instrument_details() -> None
             }
         },
     }
+
+
+@pytest.mark.parametrize("name", ["LiteLLM", "litellm", "langfuse", "httpx", "httpcore"])
+def test_chatty_client_libraries_are_capped_at_warning_even_in_debug(name: str) -> None:
+    configure_logging(settings_for(AppEnv.CI, LogLevel.DEBUG))
+
+    assert logging.getLogger(name).level == logging.WARNING

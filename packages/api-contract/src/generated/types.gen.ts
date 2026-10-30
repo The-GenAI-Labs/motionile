@@ -91,6 +91,167 @@ export type AdminCatalogTreeResponse = {
 };
 
 /**
+ * AdminCostView
+ */
+export type AdminCostView = {
+    /**
+     * Audiocharacters
+     */
+    audioCharacters: number;
+    /**
+     * Costmicrosusd
+     */
+    costMicrosUsd: number;
+    /**
+     * Creditscharged
+     */
+    creditsCharged: number | null;
+    /**
+     * Inputtokens
+     */
+    inputTokens: number;
+    /**
+     * Outputtokens
+     */
+    outputTokens: number;
+    /**
+     * Renderms
+     */
+    renderMs: number;
+    /**
+     * Usagerecords
+     */
+    usageRecords: number;
+};
+
+/**
+ * AdminEventView
+ */
+export type AdminEventView = {
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Payload
+     */
+    payload: {
+        [key: string]: JsonValue;
+    };
+    /**
+     * Stage
+     */
+    stage: string | null;
+    /**
+     * Type
+     */
+    type: string;
+};
+
+/**
+ * AdminJobDetail
+ */
+export type AdminJobDetail = {
+    approvedStoryboard: Storyboard | null;
+    cost: AdminCostView;
+    /**
+     * Events
+     */
+    events: Array<AdminEventView>;
+    job: JobView;
+    /**
+     * Reports
+     */
+    reports: {
+        [key: string]: JsonValue;
+    };
+    /**
+     * Scenes
+     */
+    scenes: Array<AdminSceneView>;
+    /**
+     * Storyboardversions
+     */
+    storyboardVersions: Array<AdminStoryboardVersion>;
+    /**
+     * Traceurl
+     */
+    traceUrl: string | null;
+};
+
+/**
+ * AdminJobPage
+ */
+export type AdminJobPage = {
+    /**
+     * Items
+     */
+    items: Array<AdminJobSummary>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * AdminJobSummary
+ */
+export type AdminJobSummary = {
+    /**
+     * Completedat
+     */
+    completedAt: string | null;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Creditscharged
+     */
+    creditsCharged: number | null;
+    /**
+     * Creditsestimated
+     */
+    creditsEstimated: number;
+    /**
+     * Creditsreserved
+     */
+    creditsReserved: number;
+    /**
+     * Currentstage
+     */
+    currentStage: string | null;
+    /**
+     * Errorcode
+     */
+    errorCode: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Parentjobid
+     */
+    parentJobId: string | null;
+    /**
+     * Query
+     */
+    query: string;
+    source: JobSource;
+    status: JobStatus;
+    /**
+     * Userid
+     */
+    userId: string;
+};
+
+/**
  * AdminLedgerEntryResponse
  */
 export type AdminLedgerEntryResponse = {
@@ -903,6 +1064,68 @@ export type AdminRunResponse = {
 };
 
 /**
+ * AdminSceneView
+ */
+export type AdminSceneView = {
+    /**
+     * Actualdurationms
+     */
+    actualDurationMs: number | null;
+    /**
+     * Attemptlog
+     */
+    attemptLog: Array<{
+        [key: string]: JsonValue;
+    }>;
+    /**
+     * Errorcode
+     */
+    errorCode: string | null;
+    /**
+     * Isfallback
+     */
+    isFallback: boolean;
+    /**
+     * Position
+     */
+    position: number;
+    /**
+     * Repairattempts
+     */
+    repairAttempts: number;
+    /**
+     * Sceneid
+     */
+    sceneId: string;
+    /**
+     * Status
+     */
+    status: string;
+};
+
+/**
+ * AdminStoryboardVersion
+ */
+export type AdminStoryboardVersion = {
+    /**
+     * Approved
+     */
+    approved: boolean;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Origin
+     */
+    origin: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
  * AdminSubscriptionCancelRequest
  */
 export type AdminSubscriptionCancelRequest = {
@@ -1454,11 +1677,24 @@ export type AnalyticsResponse = {
 };
 
 /**
+ * ApproveRequest
+ */
+export type ApproveRequest = {
+    expectedVersion: StoryboardVersion;
+};
+
+/**
  * Aspect
  */
 export type Aspect = '16:9' | '9:16' | '1:1';
 
+export type AspectChoice = Array<AspectName>;
+
+export type AspectName = '16:9' | '9:16' | '1:1';
+
 export type AttributionText = string;
+
+export type AudienceLevel = 'beginner' | 'intermediate' | 'advanced';
 
 /**
  * AuditEntryResponse
@@ -2036,6 +2272,28 @@ export type ChangeSubscriptionRequest = {
 };
 
 /**
+ * ChargingParametersView
+ */
+export type ChargingParametersView = {
+    /**
+     * Basecredits
+     */
+    baseCredits: number;
+    /**
+     * Clonedvoicepremium
+     */
+    clonedVoicePremium: number;
+    /**
+     * Creditspersecond
+     */
+    creditsPerSecond: number;
+    /**
+     * Extraaspectpercent
+     */
+    extraAspectPercent: number;
+};
+
+/**
  * CheckoutPrefillResponse
  */
 export type CheckoutPrefillResponse = {
@@ -2597,9 +2855,79 @@ export type DailyUsers = {
 };
 
 /**
+ * DayOutcomeView
+ */
+export type DayOutcomeView = {
+    /**
+     * Cancelled
+     */
+    cancelled: number;
+    /**
+     * Completed
+     */
+    completed: number;
+    /**
+     * Day
+     */
+    day: string;
+    /**
+     * Failed
+     */
+    failed: number;
+    /**
+     * Successrate
+     */
+    successRate: number | null;
+};
+
+/**
  * DependencyStatus
  */
 export type DependencyStatus = 'ok' | 'unavailable';
+
+/**
+ * DiffView
+ */
+export type DiffView = {
+    /**
+     * Added
+     */
+    added: number;
+    /**
+     * Fromversion
+     */
+    fromVersion: number;
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Lines
+     */
+    lines: Array<string>;
+    /**
+     * Removed
+     */
+    removed: number;
+    /**
+     * Toversion
+     */
+    toVersion: number;
+};
+
+/**
+ * DraftRequest
+ */
+export type DraftRequest = {
+    /**
+     * Body
+     */
+    body: string;
+    /**
+     * Variables
+     */
+    variables?: Array<VariableName>;
+};
 
 /**
  * DuplicateProductRequest
@@ -2627,6 +2955,139 @@ export type DuplicateProductRequest = {
      */
     pricePaise?: number | null;
 };
+
+export type Duration = number;
+
+/**
+ * EmbeddingStatus
+ */
+export type EmbeddingStatus = 'ready' | 'stale' | 'missing';
+
+/**
+ * EstimateRequest
+ */
+export type EstimateRequest = {
+    options: JobOptionsRequest;
+};
+
+/**
+ * EstimateView
+ */
+export type EstimateView = {
+    /**
+     * Affordable
+     */
+    affordable: boolean;
+    /**
+     * Aspectcount
+     */
+    aspectCount: number;
+    /**
+     * Availablecredits
+     */
+    availableCredits: number;
+    /**
+     * Clonedvoice
+     */
+    clonedVoice: boolean;
+    /**
+     * Credits
+     */
+    credits: number;
+    parameters: ChargingParametersView;
+    /**
+     * Seconds
+     */
+    seconds: number;
+};
+
+/**
+ * EvalRunPage
+ */
+export type EvalRunPage = {
+    /**
+     * Items
+     */
+    items: Array<EvalRunView>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * EvalRunRequest
+ */
+export type EvalRunRequest = {
+    suite: SuiteName;
+    /**
+     * Versionids
+     */
+    versionIds: Array<string>;
+};
+
+/**
+ * EvalRunView
+ */
+export type EvalRunView = {
+    /**
+     * Createdby
+     */
+    createdBy: string | null;
+    /**
+     * Datasetversion
+     */
+    datasetVersion: string;
+    /**
+     * Errorcode
+     */
+    errorCode: string | null;
+    /**
+     * Finishedat
+     */
+    finishedAt: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Modelsused
+     */
+    modelsUsed: {
+        [key: string]: unknown;
+    };
+    /**
+     * Passed
+     */
+    passed: boolean | null;
+    /**
+     * Promptversionids
+     */
+    promptVersionIds: Array<string>;
+    /**
+     * Scores
+     */
+    scores: {
+        [key: string]: unknown;
+    };
+    /**
+     * Startedat
+     */
+    startedAt: string;
+    status: RunStatus;
+    /**
+     * Suite
+     */
+    suite: string;
+    trigger: RunTrigger;
+};
+
+/**
+ * EvalStatus
+ */
+export type EvalStatus = 'pending' | 'passed' | 'failed';
 
 /**
  * EvaluatedFlagsResponse
@@ -2963,7 +3424,280 @@ export type IdentifierRequest = {
     identifier: string;
 };
 
+export type Instructions = string;
+
 export type IntervalName = 'month' | 'year';
+
+/**
+ * JobAnalyticsView
+ */
+export type JobAnalyticsView = {
+    /**
+     * Averagecostmicrosusd
+     */
+    averageCostMicrosUsd: number | null;
+    /**
+     * Averagecreditscharged
+     */
+    averageCreditsCharged: number | null;
+    /**
+     * Datefrom
+     */
+    dateFrom: string;
+    /**
+     * Dateto
+     */
+    dateTo: string;
+    /**
+     * Days
+     */
+    days: Array<DayOutcomeView>;
+    /**
+     * Fallbackrate
+     */
+    fallbackRate: number | null;
+    /**
+     * Repairrate
+     */
+    repairRate: number | null;
+    /**
+     * Scenes
+     */
+    scenes: number;
+    /**
+     * Stages
+     */
+    stages: Array<StageDurationView>;
+    /**
+     * Successrate
+     */
+    successRate: number | null;
+};
+
+/**
+ * JobCreateRequest
+ */
+export type JobCreateRequest = {
+    options: JobOptionsRequest;
+    query?: UserQuery | null;
+    /**
+     * Topicid
+     */
+    topicId?: string | null;
+};
+
+/**
+ * JobOptionsOverrides
+ */
+export type JobOptionsOverrides = {
+    aspects?: AspectChoice | null;
+    /**
+     * Burninsubtitles
+     */
+    burnInSubtitles?: boolean | null;
+    durationSeconds?: Duration | null;
+    language?: LanguageCode | null;
+    /**
+     * Musictrackid
+     */
+    musicTrackId?: string | null;
+    /**
+     * Reviewstoryboard
+     */
+    reviewStoryboard?: boolean | null;
+    style?: Slug | null;
+    /**
+     * Subtitles
+     */
+    subtitles?: boolean | null;
+    /**
+     * Voiceid
+     */
+    voiceId?: string | null;
+};
+
+/**
+ * JobOptionsRequest
+ */
+export type JobOptionsRequest = {
+    aspects?: AspectChoice | null;
+    /**
+     * Burninsubtitles
+     */
+    burnInSubtitles?: boolean;
+    durationSeconds: Duration;
+    language?: LanguageCode | null;
+    /**
+     * Musictrackid
+     */
+    musicTrackId?: string | null;
+    /**
+     * Reviewstoryboard
+     */
+    reviewStoryboard?: boolean;
+    style?: Slug | null;
+    /**
+     * Subtitles
+     */
+    subtitles?: boolean | null;
+    /**
+     * Voiceid
+     */
+    voiceId?: string | null;
+};
+
+/**
+ * JobOptionsView
+ */
+export type JobOptionsView = {
+    /**
+     * Aspects
+     */
+    aspects: Array<AspectName>;
+    /**
+     * Burninsubtitles
+     */
+    burnInSubtitles: boolean;
+    /**
+     * Durationseconds
+     */
+    durationSeconds: number;
+    /**
+     * Language
+     */
+    language: string;
+    /**
+     * Musictrackid
+     */
+    musicTrackId: string | null;
+    /**
+     * Reviewstoryboard
+     */
+    reviewStoryboard: boolean;
+    revision: RevisionView | null;
+    /**
+     * Style
+     */
+    style: string;
+    /**
+     * Subtitles
+     */
+    subtitles: boolean;
+    /**
+     * Voiceid
+     */
+    voiceId: string;
+    /**
+     * Voiceiscloned
+     */
+    voiceIsCloned: boolean;
+};
+
+/**
+ * JobPage
+ */
+export type JobPage = {
+    /**
+     * Items
+     */
+    items: Array<JobView>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+export type JobSource = 'catalog' | 'query' | 'mcp';
+
+/**
+ * JobStatus
+ */
+export type JobStatus = 'queued' | 'planning' | 'awaiting_approval' | 'voicing' | 'generating' | 'validating' | 'rendering' | 'completed' | 'failed' | 'cancelled';
+
+/**
+ * JobView
+ */
+export type JobView = {
+    /**
+     * Cancelrequestedat
+     */
+    cancelRequestedAt: string | null;
+    /**
+     * Completedat
+     */
+    completedAt: string | null;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Creditscharged
+     */
+    creditsCharged: number | null;
+    /**
+     * Creditsestimated
+     */
+    creditsEstimated: number;
+    /**
+     * Creditsreserved
+     */
+    creditsReserved: number;
+    /**
+     * Currentstage
+     */
+    currentStage: string | null;
+    /**
+     * Errorcode
+     */
+    errorCode: string | null;
+    /**
+     * Errormessage
+     */
+    errorMessage: string | null;
+    /**
+     * Errortitle
+     */
+    errorTitle: string | null;
+    /**
+     * Fallbacksceneids
+     */
+    fallbackSceneIds: Array<string>;
+    /**
+     * Id
+     */
+    id: string;
+    options: JobOptionsView;
+    /**
+     * Parentjobid
+     */
+    parentJobId: string | null;
+    /**
+     * Query
+     */
+    query: string;
+    /**
+     * Renderid
+     */
+    renderId: string | null;
+    source: JobSource;
+    /**
+     * Startedat
+     */
+    startedAt: string | null;
+    status: JobStatus;
+    /**
+     * Topicid
+     */
+    topicId: string | null;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+};
+
+export type JsonValue = unknown;
 
 /**
  * JwksResponse
@@ -2976,6 +3710,12 @@ export type JwksResponse = {
         [key: string]: string;
     }>;
 };
+
+export type KeyTerm = string;
+
+export type LanguageCode = string;
+
+export type LayoutNote = string;
 
 /**
  * LedgerEntryResponse
@@ -3033,7 +3773,75 @@ export type LedgerReasonName = 'purchase' | 'subscription_grant' | 'promo_grant'
 
 export type LedgerRefTypeName = 'payment' | 'refund' | 'reservation' | 'lot' | 'admin' | 'promo';
 
+/**
+ * LibraryItem
+ */
+export type LibraryItem = {
+    /**
+     * Aspects
+     */
+    aspects: Array<AspectName>;
+    /**
+     * Completedat
+     */
+    completedAt: string | null;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Durationms
+     */
+    durationMs: number | null;
+    /**
+     * Fallbacksceneids
+     */
+    fallbackSceneIds: Array<string>;
+    /**
+     * Jobid
+     */
+    jobId: string;
+    /**
+     * Query
+     */
+    query: string;
+    /**
+     * Renditions
+     */
+    renditions: Array<RenditionView>;
+    /**
+     * Shareslug
+     */
+    shareSlug: string | null;
+    /**
+     * Thumbnailurl
+     */
+    thumbnailUrl: string | null;
+    /**
+     * Title
+     */
+    title: string;
+};
+
+/**
+ * LibraryPage
+ */
+export type LibraryPage = {
+    /**
+     * Items
+     */
+    items: Array<LibraryItem>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
 export type LicenseName = string;
+
+export type Line = string;
 
 /**
  * LivenessResponse
@@ -3191,6 +3999,8 @@ export type MusicUpdateRequest = {
     title?: Title | null;
 };
 
+export type Narration = string;
+
 /**
  * OAuthStartQuery
  */
@@ -3214,6 +4024,19 @@ export type OAuthStartResponse = {
      */
     url: string;
 };
+
+/**
+ * OnScreenLimitView
+ */
+export type OnScreenLimitView = {
+    aspect: AspectName;
+    /**
+     * Characters
+     */
+    characters: number;
+};
+
+export type OnScreenText = string;
 
 export type OrderKindName = 'credit_pack' | 'subscription';
 
@@ -3517,6 +4340,13 @@ export type RefundResponse = {
 export type RefundStatusName = 'pending' | 'processed' | 'failed';
 
 /**
+ * RegenerateRequest
+ */
+export type RegenerateRequest = {
+    instructions: Instructions;
+};
+
+/**
  * RegisterRequest
  */
 export type RegisterRequest = {
@@ -3770,6 +4600,28 @@ export type ReorderItem = {
 };
 
 /**
+ * ReseedView
+ */
+export type ReseedView = {
+    /**
+     * Created
+     */
+    created: number;
+    /**
+     * Embedded
+     */
+    embedded: number;
+    /**
+     * Unchanged
+     */
+    unchanged: number;
+    /**
+     * Updated
+     */
+    updated: number;
+};
+
+/**
  * ResetPasswordRequest
  */
 export type ResetPasswordRequest = {
@@ -3848,6 +4700,32 @@ export type RevenueDayTotalsResponse = {
      * Refundedpaise
      */
     refundedPaise: number;
+};
+
+/**
+ * ReviseRequest
+ */
+export type ReviseRequest = {
+    instructions: Instructions;
+    options?: JobOptionsOverrides | null;
+    /**
+     * Sceneids
+     */
+    sceneIds?: Array<SceneIdentifier>;
+};
+
+/**
+ * RevisionView
+ */
+export type RevisionView = {
+    /**
+     * Instructions
+     */
+    instructions: string;
+    /**
+     * Sceneids
+     */
+    sceneIds: Array<string>;
 };
 
 /**
@@ -3932,9 +4810,23 @@ export type RoleUpdateRequest = {
     permissions?: Array<string> | null;
 };
 
+/**
+ * RunStatus
+ */
+export type RunStatus = 'running' | 'finished' | 'errored';
+
 export type RunStatusName = 'running' | 'completed' | 'failed';
 
+/**
+ * RunTrigger
+ */
+export type RunTrigger = 'ci' | 'nightly' | 'admin';
+
 export type RunTypeName = 'pending_orders' | 'subscriptions' | 'settlement';
+
+export type SceneIdentifier = string;
+
+export type SearchText = string;
 
 /**
  * SessionResponse
@@ -4064,7 +4956,456 @@ export type SettingUpdateRequest = {
 
 export type SettingValue = boolean | number | string | Array<string>;
 
+/**
+ * ShareCreateRequest
+ */
+export type ShareCreateRequest = {
+    /**
+     * Allowindexing
+     */
+    allowIndexing?: boolean;
+    aspect?: AspectName | null;
+    /**
+     * Renditionid
+     */
+    renditionId?: string | null;
+};
+
+/**
+ * ShareLinkView
+ */
+export type ShareLinkView = {
+    /**
+     * Allowindexing
+     */
+    allowIndexing: boolean;
+    aspect: AspectName;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Renditionid
+     */
+    renditionId: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Url
+     */
+    url: string;
+    /**
+     * Viewcount
+     */
+    viewCount: number;
+};
+
+/**
+ * SharedVideoView
+ */
+export type SharedVideoView = {
+    /**
+     * Allowindexing
+     */
+    allowIndexing: boolean;
+    aspect: AspectName;
+    /**
+     * Durationms
+     */
+    durationMs: number | null;
+    /**
+     * Height
+     */
+    height: number;
+    /**
+     * Language
+     */
+    language: string | null;
+    /**
+     * Musicattribution
+     */
+    musicAttribution?: string | null;
+    /**
+     * Playbackexpiresinseconds
+     */
+    playbackExpiresInSeconds: number;
+    /**
+     * Playbackurl
+     */
+    playbackUrl: string;
+    /**
+     * Posterurl
+     */
+    posterUrl: string | null;
+    /**
+     * Summary
+     */
+    summary: string | null;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Uploadedat
+     */
+    uploadedAt: string;
+    /**
+     * Width
+     */
+    width: number;
+};
+
+/**
+ * SkillDetailView
+ */
+export type SkillDetailView = {
+    /**
+     * Checksum
+     */
+    checksum: string;
+    /**
+     * Description
+     */
+    description: string;
+    embeddingStatus: EmbeddingStatus;
+    layer: SkillLayer;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Tokencount
+     */
+    tokenCount: number;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Versions
+     */
+    versions: Array<SkillVersionView>;
+};
+
+/**
+ * SkillLayer
+ */
+export type SkillLayer = 'style' | 'visual' | 'domain';
+
+/**
+ * SkillPage
+ */
+export type SkillPage = {
+    /**
+     * Items
+     */
+    items: Array<SkillView>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * SkillVersionView
+ */
+export type SkillVersionView = {
+    /**
+     * Checksum
+     */
+    checksum: string;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Number
+     */
+    number: number;
+};
+
+/**
+ * SkillView
+ */
+export type SkillView = {
+    /**
+     * Checksum
+     */
+    checksum: string;
+    /**
+     * Description
+     */
+    description: string;
+    embeddingStatus: EmbeddingStatus;
+    layer: SkillLayer;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Tokencount
+     */
+    tokenCount: number;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+export type Slug = string;
+
+export type Stage = string;
+
+/**
+ * StageDurationView
+ */
+export type StageDurationView = {
+    /**
+     * Averageseconds
+     */
+    averageSeconds: number;
+    /**
+     * Samples
+     */
+    samples: number;
+    stage: Stage;
+};
+
 export type StatementVersion = string;
+
+/**
+ * Storyboard
+ */
+export type Storyboard = {
+    /**
+     * Aspects
+     */
+    aspects: Array<AspectName>;
+    audienceLevel: AudienceLevel;
+    /**
+     * Language
+     */
+    language: string;
+    /**
+     * Scenes
+     */
+    scenes: Array<StoryboardScene>;
+    styleSkill: Slug;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Targetdurationms
+     */
+    targetDurationMs: number;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Version
+     */
+    version?: 1;
+};
+
+/**
+ * StoryboardIssue
+ */
+export type StoryboardIssue = {
+    code: StoryboardIssueCode;
+    /**
+     * Detail
+     */
+    detail?: {
+        [key: string]: number | number | string;
+    };
+    /**
+     * Message
+     */
+    message: string;
+    /**
+     * Sceneid
+     */
+    sceneId?: string | null;
+};
+
+/**
+ * StoryboardIssueCode
+ */
+export type StoryboardIssueCode = 'scene_count' | 'total_duration' | 'speaking_rate_low' | 'speaking_rate_high' | 'on_screen_text_length' | 'aspects_mismatch' | 'layout_notes_missing' | 'language_mismatch' | 'style_mismatch';
+
+/**
+ * StoryboardLimitsView
+ */
+export type StoryboardLimitsView = {
+    /**
+     * Durationtolerancepercent
+     */
+    durationTolerancePercent: number;
+    /**
+     * Maxscenes
+     */
+    maxScenes: number;
+    /**
+     * Maxwordspersecond
+     */
+    maxWordsPerSecond: number;
+    /**
+     * Minscenes
+     */
+    minScenes: number;
+    /**
+     * Minwordspersecond
+     */
+    minWordsPerSecond: number;
+    /**
+     * Nominalwordspersecond
+     */
+    nominalWordsPerSecond: number;
+    /**
+     * Onscreentext
+     */
+    onScreenText: Array<OnScreenLimitView>;
+};
+
+/**
+ * StoryboardScene
+ */
+export type StoryboardScene = {
+    goal: Line;
+    id: SceneIdentifier;
+    /**
+     * Keyterms
+     */
+    keyTerms?: Array<KeyTerm>;
+    /**
+     * Layoutnotes
+     */
+    layoutNotes: {
+        [key in AspectName]?: LayoutNote;
+    };
+    narration: Narration;
+    /**
+     * Onscreentext
+     */
+    onScreenText?: Array<OnScreenText>;
+    /**
+     * Position
+     */
+    position: number;
+    /**
+     * Targetdurationms
+     */
+    targetDurationMs: number;
+    visualBrief: VisualBrief;
+    /**
+     * Visualskills
+     */
+    visualSkills?: Array<Slug>;
+};
+
+/**
+ * StoryboardUpdateRequest
+ */
+export type StoryboardUpdateRequest = {
+    content: Storyboard;
+    expectedVersion: StoryboardVersion;
+};
+
+export type StoryboardVersion = number;
+
+/**
+ * StoryboardView
+ */
+export type StoryboardView = {
+    /**
+     * Approved
+     */
+    approved: boolean;
+    content: Storyboard;
+    /**
+     * Issues
+     */
+    issues: Array<StoryboardIssue>;
+    limits: StoryboardLimitsView;
+    /**
+     * Origin
+     */
+    origin: string;
+    /**
+     * Updatedat
+     */
+    updatedAt: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * StyleListView
+ */
+export type StyleListView = {
+    /**
+     * Items
+     */
+    items: Array<StyleView>;
+};
+
+/**
+ * StyleView
+ */
+export type StyleView = {
+    /**
+     * Accent
+     */
+    accent: string;
+    /**
+     * Background
+     */
+    background: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Surface
+     */
+    surface: string;
+    /**
+     * Text
+     */
+    text: string;
+};
 
 /**
  * SubcategoryDetailResponse
@@ -4199,6 +5540,41 @@ export type SubscriptionResponse = {
 };
 
 export type SubscriptionStatusName = 'created' | 'authenticated' | 'active' | 'pending' | 'halted' | 'paused' | 'cancelled' | 'completed' | 'expired';
+
+export type SuiteName = string;
+
+/**
+ * TemplateList
+ */
+export type TemplateList = {
+    /**
+     * Items
+     */
+    items: Array<TemplateView>;
+};
+
+/**
+ * TemplateView
+ */
+export type TemplateView = {
+    /**
+     * Activeversion
+     */
+    activeVersion: number | null;
+    /**
+     * Description
+     */
+    description: string | null;
+    /**
+     * Key
+     */
+    key: string;
+    latestEvalStatus: EvalStatus | null;
+    /**
+     * Versioncount
+     */
+    versionCount: number;
+};
 
 export type Title = string;
 
@@ -4637,6 +6013,8 @@ export type UserProfileUpdateRequest = {
     name?: string | null;
 };
 
+export type UserQuery = string;
+
 /**
  * UserRoleMutationRequest
  */
@@ -4674,6 +6052,8 @@ export type ValidationError = {
      */
     type: string;
 };
+
+export type VariableName = string;
 
 /**
  * VerificationProblem
@@ -4766,6 +6146,57 @@ export type VerifySubscriptionRequest = {
      */
     razorpaySubscriptionId: string;
 };
+
+export type VersionNumber = number;
+
+/**
+ * VersionPage
+ */
+export type VersionPage = {
+    /**
+     * Items
+     */
+    items: Array<VersionView>;
+    /**
+     * Nextcursor
+     *
+     * Opaque cursor for the next page; null on the last page
+     */
+    nextCursor?: string | null;
+};
+
+/**
+ * VersionView
+ */
+export type VersionView = {
+    /**
+     * Checksumprefix
+     */
+    checksumPrefix: string;
+    /**
+     * Createdat
+     */
+    createdAt: string;
+    /**
+     * Createdby
+     */
+    createdBy: string | null;
+    evalStatus: EvalStatus;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Isactive
+     */
+    isActive: boolean;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+export type VisualBrief = string;
 
 /**
  * VoiceKind
@@ -4936,6 +6367,8 @@ export type WebhookReprocessResponse = {
 };
 
 export type WebhookStatusName = 'received' | 'processing' | 'processed' | 'failed' | 'ignored';
+
+export type AspectChoiceWritable = Array<AspectName>;
 
 /**
  * LoginRequest
@@ -5158,6 +6591,60 @@ export type AdminInsightsGetAnalyticsResponses = {
 };
 
 export type AdminInsightsGetAnalyticsResponse = AdminInsightsGetAnalyticsResponses[keyof AdminInsightsGetAnalyticsResponses];
+
+export type AdminJobsGetJobAnalyticsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Datefrom
+         */
+        dateFrom?: string | null;
+        /**
+         * Dateto
+         */
+        dateTo?: string | null;
+    };
+    url: '/v1/admin/analytics/jobs';
+};
+
+export type AdminJobsGetJobAnalyticsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminJobsGetJobAnalyticsError = AdminJobsGetJobAnalyticsErrors[keyof AdminJobsGetJobAnalyticsErrors];
+
+export type AdminJobsGetJobAnalyticsResponses = {
+    /**
+     * Successful Response
+     */
+    200: JobAnalyticsView;
+};
+
+export type AdminJobsGetJobAnalyticsResponse = AdminJobsGetJobAnalyticsResponses[keyof AdminJobsGetJobAnalyticsResponses];
 
 export type AdminInsightsListAuditEntriesData = {
     body?: never;
@@ -7847,6 +9334,134 @@ export type PlatformUpdateFlagResponses = {
 
 export type PlatformUpdateFlagResponse = PlatformUpdateFlagResponses[keyof PlatformUpdateFlagResponses];
 
+export type AdminJobsListAdminJobsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Status
+         */
+        status?: JobStatus | null;
+        /**
+         * Source
+         */
+        source?: JobSource | null;
+        /**
+         * Userid
+         */
+        userId?: string | null;
+        /**
+         * Createdfrom
+         */
+        createdFrom?: string | null;
+        /**
+         * Createdto
+         */
+        createdTo?: string | null;
+    };
+    url: '/v1/admin/jobs';
+};
+
+export type AdminJobsListAdminJobsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminJobsListAdminJobsError = AdminJobsListAdminJobsErrors[keyof AdminJobsListAdminJobsErrors];
+
+export type AdminJobsListAdminJobsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminJobPage;
+};
+
+export type AdminJobsListAdminJobsResponse = AdminJobsListAdminJobsResponses[keyof AdminJobsListAdminJobsResponses];
+
+export type AdminJobsGetAdminJobData = {
+    body?: never;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/jobs/{job_id}';
+};
+
+export type AdminJobsGetAdminJobErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminJobsGetAdminJobError = AdminJobsGetAdminJobErrors[keyof AdminJobsGetAdminJobErrors];
+
+export type AdminJobsGetAdminJobResponses = {
+    /**
+     * Successful Response
+     */
+    200: AdminJobDetail;
+};
+
+export type AdminJobsGetAdminJobResponse = AdminJobsGetAdminJobResponses[keyof AdminJobsGetAdminJobResponses];
+
 export type AdminMusicListMusicTracksData = {
     body?: never;
     path?: never;
@@ -8201,6 +9816,522 @@ export type AdminMusicDeactivateMusicTrackResponses = {
 };
 
 export type AdminMusicDeactivateMusicTrackResponse = AdminMusicDeactivateMusicTrackResponses[keyof AdminMusicDeactivateMusicTrackResponses];
+
+export type AdminPromptsListEvalRunsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Suite
+         */
+        suite?: SuiteName | null;
+        /**
+         * Status
+         */
+        status?: RunStatus | null;
+    };
+    url: '/v1/admin/prompts/eval-runs';
+};
+
+export type AdminPromptsListEvalRunsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminPromptsListEvalRunsError = AdminPromptsListEvalRunsErrors[keyof AdminPromptsListEvalRunsErrors];
+
+export type AdminPromptsListEvalRunsResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalRunPage;
+};
+
+export type AdminPromptsListEvalRunsResponse = AdminPromptsListEvalRunsResponses[keyof AdminPromptsListEvalRunsResponses];
+
+export type AdminPromptsStartEvalRunData = {
+    body: EvalRunRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/prompts/eval-runs';
+};
+
+export type AdminPromptsStartEvalRunErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminPromptsStartEvalRunError = AdminPromptsStartEvalRunErrors[keyof AdminPromptsStartEvalRunErrors];
+
+export type AdminPromptsStartEvalRunResponses = {
+    /**
+     * Successful Response
+     */
+    202: EvalRunView;
+};
+
+export type AdminPromptsStartEvalRunResponse = AdminPromptsStartEvalRunResponses[keyof AdminPromptsStartEvalRunResponses];
+
+export type AdminPromptsGetEvalRunData = {
+    body?: never;
+    path: {
+        /**
+         * Run Id
+         */
+        run_id: string;
+    };
+    query?: never;
+    url: '/v1/admin/prompts/eval-runs/{run_id}';
+};
+
+export type AdminPromptsGetEvalRunErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminPromptsGetEvalRunError = AdminPromptsGetEvalRunErrors[keyof AdminPromptsGetEvalRunErrors];
+
+export type AdminPromptsGetEvalRunResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalRunView;
+};
+
+export type AdminPromptsGetEvalRunResponse = AdminPromptsGetEvalRunResponses[keyof AdminPromptsGetEvalRunResponses];
+
+export type AdminPromptsListPromptTemplatesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/prompts/templates';
+};
+
+export type AdminPromptsListPromptTemplatesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminPromptsListPromptTemplatesError = AdminPromptsListPromptTemplatesErrors[keyof AdminPromptsListPromptTemplatesErrors];
+
+export type AdminPromptsListPromptTemplatesResponses = {
+    /**
+     * Successful Response
+     */
+    200: TemplateList;
+};
+
+export type AdminPromptsListPromptTemplatesResponse = AdminPromptsListPromptTemplatesResponses[keyof AdminPromptsListPromptTemplatesResponses];
+
+export type AdminPromptsDiffPromptVersionsData = {
+    body?: never;
+    path: {
+        /**
+         * Key
+         */
+        key: string;
+    };
+    query: {
+        from: VersionNumber;
+        to: VersionNumber;
+    };
+    url: '/v1/admin/prompts/templates/{key}/diff';
+};
+
+export type AdminPromptsDiffPromptVersionsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminPromptsDiffPromptVersionsError = AdminPromptsDiffPromptVersionsErrors[keyof AdminPromptsDiffPromptVersionsErrors];
+
+export type AdminPromptsDiffPromptVersionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: DiffView;
+};
+
+export type AdminPromptsDiffPromptVersionsResponse = AdminPromptsDiffPromptVersionsResponses[keyof AdminPromptsDiffPromptVersionsResponses];
+
+export type AdminPromptsRollbackPromptTemplateData = {
+    body?: never;
+    path: {
+        /**
+         * Key
+         */
+        key: string;
+    };
+    query?: never;
+    url: '/v1/admin/prompts/templates/{key}/rollback';
+};
+
+export type AdminPromptsRollbackPromptTemplateErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminPromptsRollbackPromptTemplateError = AdminPromptsRollbackPromptTemplateErrors[keyof AdminPromptsRollbackPromptTemplateErrors];
+
+export type AdminPromptsRollbackPromptTemplateResponses = {
+    /**
+     * Successful Response
+     */
+    200: VersionView;
+};
+
+export type AdminPromptsRollbackPromptTemplateResponse = AdminPromptsRollbackPromptTemplateResponses[keyof AdminPromptsRollbackPromptTemplateResponses];
+
+export type AdminPromptsListPromptVersionsData = {
+    body?: never;
+    path: {
+        /**
+         * Key
+         */
+        key: string;
+    };
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/v1/admin/prompts/templates/{key}/versions';
+};
+
+export type AdminPromptsListPromptVersionsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminPromptsListPromptVersionsError = AdminPromptsListPromptVersionsErrors[keyof AdminPromptsListPromptVersionsErrors];
+
+export type AdminPromptsListPromptVersionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: VersionPage;
+};
+
+export type AdminPromptsListPromptVersionsResponse = AdminPromptsListPromptVersionsResponses[keyof AdminPromptsListPromptVersionsResponses];
+
+export type AdminPromptsCreatePromptDraftData = {
+    body: DraftRequest;
+    path: {
+        /**
+         * Key
+         */
+        key: string;
+    };
+    query?: never;
+    url: '/v1/admin/prompts/templates/{key}/versions';
+};
+
+export type AdminPromptsCreatePromptDraftErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminPromptsCreatePromptDraftError = AdminPromptsCreatePromptDraftErrors[keyof AdminPromptsCreatePromptDraftErrors];
+
+export type AdminPromptsCreatePromptDraftResponses = {
+    /**
+     * Successful Response
+     */
+    201: VersionView;
+};
+
+export type AdminPromptsCreatePromptDraftResponse = AdminPromptsCreatePromptDraftResponses[keyof AdminPromptsCreatePromptDraftResponses];
+
+export type AdminPromptsActivatePromptVersionData = {
+    body?: never;
+    path: {
+        /**
+         * Key
+         */
+        key: string;
+        /**
+         * Version
+         */
+        version: number;
+    };
+    query?: never;
+    url: '/v1/admin/prompts/templates/{key}/versions/{version}/activate';
+};
+
+export type AdminPromptsActivatePromptVersionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminPromptsActivatePromptVersionError = AdminPromptsActivatePromptVersionErrors[keyof AdminPromptsActivatePromptVersionErrors];
+
+export type AdminPromptsActivatePromptVersionResponses = {
+    /**
+     * Successful Response
+     */
+    200: VersionView;
+};
+
+export type AdminPromptsActivatePromptVersionResponse = AdminPromptsActivatePromptVersionResponses[keyof AdminPromptsActivatePromptVersionResponses];
 
 export type AdminRenderTestbedCreateTestbedRenderData = {
     body: {
@@ -8941,6 +11072,175 @@ export type PlatformUpdateSettingResponses = {
 };
 
 export type PlatformUpdateSettingResponse = PlatformUpdateSettingResponses[keyof PlatformUpdateSettingResponses];
+
+export type AdminSkillsListSystemSkillsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Layer
+         */
+        layer?: SkillLayer | null;
+    };
+    url: '/v1/admin/skills';
+};
+
+export type AdminSkillsListSystemSkillsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminSkillsListSystemSkillsError = AdminSkillsListSystemSkillsErrors[keyof AdminSkillsListSystemSkillsErrors];
+
+export type AdminSkillsListSystemSkillsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SkillPage;
+};
+
+export type AdminSkillsListSystemSkillsResponse = AdminSkillsListSystemSkillsResponses[keyof AdminSkillsListSystemSkillsResponses];
+
+export type AdminSkillsReseedSystemSkillsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/skills/reseed';
+};
+
+export type AdminSkillsReseedSystemSkillsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminSkillsReseedSystemSkillsError = AdminSkillsReseedSystemSkillsErrors[keyof AdminSkillsReseedSystemSkillsErrors];
+
+export type AdminSkillsReseedSystemSkillsResponses = {
+    /**
+     * Successful Response
+     */
+    202: ReseedView;
+};
+
+export type AdminSkillsReseedSystemSkillsResponse = AdminSkillsReseedSystemSkillsResponses[keyof AdminSkillsReseedSystemSkillsResponses];
+
+export type AdminSkillsGetSystemSkillData = {
+    body?: never;
+    path: {
+        /**
+         * Slug
+         */
+        slug: string;
+    };
+    query?: never;
+    url: '/v1/admin/skills/{slug}';
+};
+
+export type AdminSkillsGetSystemSkillErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type AdminSkillsGetSystemSkillError = AdminSkillsGetSystemSkillErrors[keyof AdminSkillsGetSystemSkillErrors];
+
+export type AdminSkillsGetSystemSkillResponses = {
+    /**
+     * Successful Response
+     */
+    200: SkillDetailView;
+};
+
+export type AdminSkillsGetSystemSkillResponse = AdminSkillsGetSystemSkillResponses[keyof AdminSkillsGetSystemSkillResponses];
 
 export type AdminUsersAdminUsersData = {
     body?: never;
@@ -11948,6 +14248,816 @@ export type PlatformEvaluatedFlagsResponses = {
 
 export type PlatformEvaluatedFlagsResponse = PlatformEvaluatedFlagsResponses[keyof PlatformEvaluatedFlagsResponses];
 
+export type JobsListJobsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Status
+         */
+        status?: JobStatus | null;
+        /**
+         * Source
+         */
+        source?: JobSource | null;
+        /**
+         * Topicid
+         */
+        topicId?: string | null;
+    };
+    url: '/v1/jobs';
+};
+
+export type JobsListJobsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsListJobsError = JobsListJobsErrors[keyof JobsListJobsErrors];
+
+export type JobsListJobsResponses = {
+    /**
+     * Successful Response
+     */
+    200: JobPage;
+};
+
+export type JobsListJobsResponse = JobsListJobsResponses[keyof JobsListJobsResponses];
+
+export type JobsCreateJobData = {
+    body: JobCreateRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/jobs';
+};
+
+export type JobsCreateJobErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Payment Required
+     */
+    402: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsCreateJobError = JobsCreateJobErrors[keyof JobsCreateJobErrors];
+
+export type JobsCreateJobResponses = {
+    /**
+     * Successful Response
+     */
+    202: JobView;
+};
+
+export type JobsCreateJobResponse = JobsCreateJobResponses[keyof JobsCreateJobResponses];
+
+export type JobsEstimateJobData = {
+    body: EstimateRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/jobs/estimate';
+};
+
+export type JobsEstimateJobErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsEstimateJobError = JobsEstimateJobErrors[keyof JobsEstimateJobErrors];
+
+export type JobsEstimateJobResponses = {
+    /**
+     * Successful Response
+     */
+    200: EstimateView;
+};
+
+export type JobsEstimateJobResponse = JobsEstimateJobResponses[keyof JobsEstimateJobResponses];
+
+export type JobsDeleteJobData = {
+    body?: never;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/jobs/{job_id}';
+};
+
+export type JobsDeleteJobErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsDeleteJobError = JobsDeleteJobErrors[keyof JobsDeleteJobErrors];
+
+export type JobsDeleteJobResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type JobsDeleteJobResponse = JobsDeleteJobResponses[keyof JobsDeleteJobResponses];
+
+export type JobsGetJobData = {
+    body?: never;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/jobs/{job_id}';
+};
+
+export type JobsGetJobErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsGetJobError = JobsGetJobErrors[keyof JobsGetJobErrors];
+
+export type JobsGetJobResponses = {
+    /**
+     * Successful Response
+     */
+    200: JobView;
+};
+
+export type JobsGetJobResponse = JobsGetJobResponses[keyof JobsGetJobResponses];
+
+export type JobsApproveJobData = {
+    body: ApproveRequest;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/jobs/{job_id}/approve';
+};
+
+export type JobsApproveJobErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsApproveJobError = JobsApproveJobErrors[keyof JobsApproveJobErrors];
+
+export type JobsApproveJobResponses = {
+    /**
+     * Successful Response
+     */
+    202: JobView;
+};
+
+export type JobsApproveJobResponse = JobsApproveJobResponses[keyof JobsApproveJobResponses];
+
+export type JobsCancelJobData = {
+    body?: never;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/jobs/{job_id}/cancel';
+};
+
+export type JobsCancelJobErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsCancelJobError = JobsCancelJobErrors[keyof JobsCancelJobErrors];
+
+export type JobsCancelJobResponses = {
+    /**
+     * Successful Response
+     */
+    202: JobView;
+};
+
+export type JobsCancelJobResponse = JobsCancelJobResponses[keyof JobsCancelJobResponses];
+
+export type JobsFollowJobEventsData = {
+    body?: never;
+    headers?: {
+        /**
+         * Last-Event-Id
+         */
+        'Last-Event-ID'?: string | null;
+    };
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/jobs/{job_id}/events';
+};
+
+export type JobsFollowJobEventsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsFollowJobEventsError = JobsFollowJobEventsErrors[keyof JobsFollowJobEventsErrors];
+
+export type JobsFollowJobEventsResponses = {
+    /**
+     * Server-sent events
+     */
+    200: string;
+};
+
+export type JobsFollowJobEventsResponse = JobsFollowJobEventsResponses[keyof JobsFollowJobEventsResponses];
+
+export type JobsReviseJobData = {
+    body: ReviseRequest;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/jobs/{job_id}/revise';
+};
+
+export type JobsReviseJobErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Payment Required
+     */
+    402: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsReviseJobError = JobsReviseJobErrors[keyof JobsReviseJobErrors];
+
+export type JobsReviseJobResponses = {
+    /**
+     * Successful Response
+     */
+    202: JobView;
+};
+
+export type JobsReviseJobResponse = JobsReviseJobResponses[keyof JobsReviseJobResponses];
+
+export type ShareRevokeShareLinksData = {
+    body?: never;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/jobs/{job_id}/share';
+};
+
+export type ShareRevokeShareLinksErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type ShareRevokeShareLinksError = ShareRevokeShareLinksErrors[keyof ShareRevokeShareLinksErrors];
+
+export type ShareRevokeShareLinksResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type ShareRevokeShareLinksResponse = ShareRevokeShareLinksResponses[keyof ShareRevokeShareLinksResponses];
+
+export type ShareCreateShareLinkData = {
+    body: ShareCreateRequest;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/jobs/{job_id}/share';
+};
+
+export type ShareCreateShareLinkErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type ShareCreateShareLinkError = ShareCreateShareLinkErrors[keyof ShareCreateShareLinkErrors];
+
+export type ShareCreateShareLinkResponses = {
+    /**
+     * Successful Response
+     */
+    201: ShareLinkView;
+};
+
+export type ShareCreateShareLinkResponse = ShareCreateShareLinkResponses[keyof ShareCreateShareLinkResponses];
+
+export type JobsGetStoryboardData = {
+    body?: never;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/jobs/{job_id}/storyboard';
+};
+
+export type JobsGetStoryboardErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsGetStoryboardError = JobsGetStoryboardErrors[keyof JobsGetStoryboardErrors];
+
+export type JobsGetStoryboardResponses = {
+    /**
+     * Successful Response
+     */
+    200: StoryboardView;
+};
+
+export type JobsGetStoryboardResponse = JobsGetStoryboardResponses[keyof JobsGetStoryboardResponses];
+
+export type JobsUpdateStoryboardData = {
+    body: StoryboardUpdateRequest;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/jobs/{job_id}/storyboard';
+};
+
+export type JobsUpdateStoryboardErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsUpdateStoryboardError = JobsUpdateStoryboardErrors[keyof JobsUpdateStoryboardErrors];
+
+export type JobsUpdateStoryboardResponses = {
+    /**
+     * Successful Response
+     */
+    200: StoryboardView;
+};
+
+export type JobsUpdateStoryboardResponse = JobsUpdateStoryboardResponses[keyof JobsUpdateStoryboardResponses];
+
+export type JobsRegenerateStoryboardData = {
+    body: RegenerateRequest;
+    path: {
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/v1/jobs/{job_id}/storyboard/regenerate';
+};
+
+export type JobsRegenerateStoryboardErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type JobsRegenerateStoryboardError = JobsRegenerateStoryboardErrors[keyof JobsRegenerateStoryboardErrors];
+
+export type JobsRegenerateStoryboardResponses = {
+    /**
+     * Successful Response
+     */
+    202: JobView;
+};
+
+export type JobsRegenerateStoryboardResponse = JobsRegenerateStoryboardResponses[keyof JobsRegenerateStoryboardResponses];
+
+export type LibraryListLibraryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Q
+         */
+        q?: SearchText | null;
+        /**
+         * Aspect
+         */
+        aspect?: AspectName | null;
+    };
+    url: '/v1/library';
+};
+
+export type LibraryListLibraryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Unprocessable Content
+     */
+    422: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type LibraryListLibraryError = LibraryListLibraryErrors[keyof LibraryListLibraryErrors];
+
+export type LibraryListLibraryResponses = {
+    /**
+     * Successful Response
+     */
+    200: LibraryPage;
+};
+
+export type LibraryListLibraryResponse = LibraryListLibraryResponses[keyof LibraryListLibraryResponses];
+
 export type MediaGetSessionData = {
     body?: never;
     path?: never;
@@ -12133,6 +15243,135 @@ export type PlatformPublicSettingsResponses = {
 };
 
 export type PlatformPublicSettingsResponse = PlatformPublicSettingsResponses[keyof PlatformPublicSettingsResponses];
+
+export type ShareGetSharedVideoData = {
+    body?: never;
+    path: {
+        /**
+         * Slug
+         */
+        slug: string;
+    };
+    query?: never;
+    url: '/v1/share/{slug}';
+};
+
+export type ShareGetSharedVideoErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type ShareGetSharedVideoError = ShareGetSharedVideoErrors[keyof ShareGetSharedVideoErrors];
+
+export type ShareGetSharedVideoResponses = {
+    /**
+     * Successful Response
+     */
+    200: SharedVideoView;
+};
+
+export type ShareGetSharedVideoResponse = ShareGetSharedVideoResponses[keyof ShareGetSharedVideoResponses];
+
+export type ShareRecordShareViewData = {
+    body?: never;
+    path: {
+        /**
+         * Slug
+         */
+        slug: string;
+    };
+    query?: never;
+    url: '/v1/share/{slug}/views';
+};
+
+export type ShareRecordShareViewErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type ShareRecordShareViewError = ShareRecordShareViewErrors[keyof ShareRecordShareViewErrors];
+
+export type ShareRecordShareViewResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type ShareRecordShareViewResponse = ShareRecordShareViewResponses[keyof ShareRecordShareViewResponses];
+
+export type StylesListStylesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/styles';
+};
+
+export type StylesListStylesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
+     * Service Unavailable
+     */
+    503: ProblemDetails;
+};
+
+export type StylesListStylesError = StylesListStylesErrors[keyof StylesListStylesErrors];
+
+export type StylesListStylesResponses = {
+    /**
+     * Successful Response
+     */
+    200: StyleListView;
+};
+
+export type StylesListStylesResponse = StylesListStylesResponses[keyof StylesListStylesResponses];
 
 export type UsersGetProfileData = {
     body?: never;

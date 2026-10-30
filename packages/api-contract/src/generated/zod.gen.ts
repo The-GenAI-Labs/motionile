@@ -31,6 +31,19 @@ export const zAdjustCreditsResponse = z.object({
 });
 
 /**
+ * AdminCostView
+ */
+export const zAdminCostView = z.object({
+    audioCharacters: z.int(),
+    costMicrosUsd: z.int(),
+    creditsCharged: z.int().nullable(),
+    inputTokens: z.int(),
+    outputTokens: z.int(),
+    renderMs: z.int(),
+    usageRecords: z.int()
+});
+
+/**
  * AdminLedgerEntryResponse
  */
 export const zAdminLedgerEntryResponse = z.object({
@@ -73,6 +86,16 @@ export const zAdminLotResponse = z.object({
         'admin',
         'promo'
     ])
+});
+
+/**
+ * AdminStoryboardVersion
+ */
+export const zAdminStoryboardVersion = z.object({
+    approved: z.boolean(),
+    createdAt: z.iso.datetime(),
+    origin: z.string(),
+    version: z.int()
 });
 
 /**
@@ -135,7 +158,21 @@ export const zAspect = z.enum([
     '1:1'
 ]);
 
+export const zAspectName = z.enum([
+    '16:9',
+    '9:16',
+    '1:1'
+]);
+
+export const zAspectChoice = z.array(zAspectName).min(1).max(3);
+
 export const zAttributionText = z.string().min(1).max(500);
+
+export const zAudienceLevel = z.enum([
+    'beginner',
+    'intermediate',
+    'advanced'
+]);
 
 /**
  * AuditEntryResponse
@@ -378,6 +415,16 @@ export const zChangePasswordRequest = z.object({
  */
 export const zChangeSubscriptionRequest = z.object({
     productCode: z.string().min(1).max(60).regex(/^[a-z0-9]+(_[a-z0-9]+)*$/)
+});
+
+/**
+ * ChargingParametersView
+ */
+export const zChargingParametersView = z.object({
+    baseCredits: z.int(),
+    clonedVoicePremium: z.int(),
+    creditsPerSecond: z.int(),
+    extraAspectPercent: z.int()
 });
 
 /**
@@ -626,9 +673,65 @@ export const zAnalyticsResponse = z.object({
 });
 
 /**
+ * DayOutcomeView
+ */
+export const zDayOutcomeView = z.object({
+    cancelled: z.int(),
+    completed: z.int(),
+    day: z.iso.date(),
+    failed: z.int(),
+    successRate: z.number().nullable()
+});
+
+/**
  * DependencyStatus
  */
 export const zDependencyStatus = z.enum(['ok', 'unavailable']);
+
+/**
+ * DiffView
+ */
+export const zDiffView = z.object({
+    added: z.int(),
+    fromVersion: z.int(),
+    key: z.string(),
+    lines: z.array(z.string()),
+    removed: z.int(),
+    toVersion: z.int()
+});
+
+export const zDuration = z.int().gte(10).lte(120);
+
+/**
+ * EmbeddingStatus
+ */
+export const zEmbeddingStatus = z.enum([
+    'ready',
+    'stale',
+    'missing'
+]);
+
+/**
+ * EstimateView
+ */
+export const zEstimateView = z.object({
+    affordable: z.boolean(),
+    aspectCount: z.int(),
+    availableCredits: z.int(),
+    clonedVoice: z.boolean(),
+    credits: z.int(),
+    parameters: zChargingParametersView,
+    seconds: z.int()
+});
+
+/**
+ * EvalStatus
+ */
+export const zEvalStatus = z.enum([
+    'pending',
+    'passed',
+    'failed'
+]);
 
 /**
  * EvaluatedFlagsResponse
@@ -791,6 +894,8 @@ export const zIdentifierRequest = z.object({
     identifier: z.string().min(3).max(254)
 });
 
+export const zInstructions = z.string().min(1).max(2000);
+
 export const zIntervalName = z.enum(['month', 'year']);
 
 /**
@@ -819,12 +924,94 @@ export const zDuplicateProductRequest = z.object({
     pricePaise: z.int().gte(1).lte(10000000000).nullish()
 });
 
+export const zJobSource = z.enum([
+    'catalog',
+    'query',
+    'mcp'
+]);
+
+/**
+ * JobStatus
+ */
+export const zJobStatus = z.enum([
+    'queued',
+    'planning',
+    'awaiting_approval',
+    'voicing',
+    'generating',
+    'validating',
+    'rendering',
+    'completed',
+    'failed',
+    'cancelled'
+]);
+
+/**
+ * AdminJobSummary
+ */
+export const zAdminJobSummary = z.object({
+    completedAt: z.iso.datetime().nullable(),
+    createdAt: z.iso.datetime(),
+    creditsCharged: z.int().nullable(),
+    creditsEstimated: z.int(),
+    creditsReserved: z.int(),
+    currentStage: z.string().nullable(),
+    errorCode: z.string().nullable(),
+    id: z.uuid(),
+    parentJobId: z.uuid().nullable(),
+    query: z.string(),
+    source: zJobSource,
+    status: zJobStatus,
+    userId: z.uuid()
+});
+
+/**
+ * AdminJobPage
+ */
+export const zAdminJobPage = z.object({
+    items: z.array(zAdminJobSummary),
+    nextCursor: z.string().nullish()
+});
+
+export const zJsonValue = z.unknown();
+
+/**
+ * AdminEventView
+ */
+export const zAdminEventView = z.object({
+    createdAt: z.iso.datetime(),
+    id: z.uuid(),
+    payload: z.record(z.string(), zJsonValue),
+    stage: z.string().nullable(),
+    type: z.string()
+});
+
+/**
+ * AdminSceneView
+ */
+export const zAdminSceneView = z.object({
+    actualDurationMs: z.int().nullable(),
+    attemptLog: z.array(z.record(z.string(), zJsonValue)),
+    errorCode: z.string().nullable(),
+    isFallback: z.boolean(),
+    position: z.int(),
+    repairAttempts: z.int(),
+    sceneId: z.string(),
+    status: z.string()
+});
+
 /**
  * JwksResponse
  */
 export const zJwksResponse = z.object({
     keys: z.array(z.record(z.string(), z.string()))
 });
+
+export const zKeyTerm = z.string().min(1).max(60);
+
+export const zLanguageCode = z.string().regex(/^[a-z]{2,3}(-[A-Z]{2})?$/);
+
+export const zLayoutNote = z.string().min(1).max(600);
 
 export const zLedgerReasonName = z.enum([
     'purchase',
@@ -871,6 +1058,8 @@ export const zLedgerPageResponse = z.object({
 });
 
 export const zLicenseName = z.string().min(1).max(120);
+
+export const zLine = z.string().min(1).max(300);
 
 /**
  * LivenessResponse
@@ -956,6 +1145,8 @@ export const zMusicTrackPage = z.object({
     nextCursor: z.string().nullish()
 });
 
+export const zNarration = z.string().min(1).max(2000);
+
 /**
  * OAuthStartQuery
  */
@@ -970,6 +1161,16 @@ export const zOAuthStartQuery = z.object({
 export const zOAuthStartResponse = z.object({
     url: z.string()
 });
+
+/**
+ * OnScreenLimitView
+ */
+export const zOnScreenLimitView = z.object({
+    aspect: zAspectName,
+    characters: z.int()
+});
+
+export const zOnScreenText = z.string().min(1).max(120);
 
 export const zOrderKindName = z.enum(['credit_pack', 'subscription']);
 
@@ -1316,6 +1517,13 @@ export const zRefundResponse = z.object({
 });
 
 /**
+ * RegenerateRequest
+ */
+export const zRegenerateRequest = z.object({
+    instructions: zInstructions
+});
+
+/**
  * RegisterRequest
  */
 export const zRegisterRequest = z.object({
@@ -1413,6 +1621,31 @@ export const zRenditionView = z.object({
 });
 
 /**
+ * LibraryItem
+ */
+export const zLibraryItem = z.object({
+    aspects: z.array(zAspectName),
+    completedAt: z.iso.datetime().nullable(),
+    createdAt: z.iso.datetime(),
+    durationMs: z.int().nullable(),
+    fallbackSceneIds: z.array(z.string()),
+    jobId: z.uuid(),
+    query: z.string(),
+    renditions: z.array(zRenditionView),
+    shareSlug: z.string().nullable(),
+    thumbnailUrl: z.string().nullable(),
+    title: z.string()
+});
+
+/**
+ * LibraryPage
+ */
+export const zLibraryPage = z.object({
+    items: z.array(zLibraryItem),
+    nextCursor: z.string().nullish()
+});
+
+/**
  * RenderBedView
  */
 export const zRenderBedView = z.object({
@@ -1460,6 +1693,16 @@ export const zCatalogReorderRequest = z.object({
 });
 
 /**
+ * ReseedView
+ */
+export const zReseedView = z.object({
+    created: z.int(),
+    embedded: z.int(),
+    unchanged: z.int(),
+    updated: z.int()
+});
+
+/**
  * ResetPasswordRequest
  */
 export const zResetPasswordRequest = z.object({
@@ -1496,6 +1739,66 @@ export const zRevenueAnalyticsResponse = z.object({
     rangeEnd: z.iso.date(),
     rangeStart: z.iso.date(),
     totals: zRevenueDayTotalsResponse
+});
+
+/**
+ * RevisionView
+ */
+export const zRevisionView = z.object({
+    instructions: z.string(),
+    sceneIds: z.array(z.string())
+});
+
+/**
+ * JobOptionsView
+ */
+export const zJobOptionsView = z.object({
+    aspects: z.array(zAspectName),
+    burnInSubtitles: z.boolean(),
+    durationSeconds: z.int(),
+    language: z.string(),
+    musicTrackId: z.uuid().nullable(),
+    reviewStoryboard: z.boolean(),
+    revision: zRevisionView.nullable(),
+    style: z.string(),
+    subtitles: z.boolean(),
+    voiceId: z.uuid(),
+    voiceIsCloned: z.boolean()
+});
+
+/**
+ * JobView
+ */
+export const zJobView = z.object({
+    cancelRequestedAt: z.iso.datetime().nullable(),
+    completedAt: z.iso.datetime().nullable(),
+    createdAt: z.iso.datetime(),
+    creditsCharged: z.int().nullable(),
+    creditsEstimated: z.int(),
+    creditsReserved: z.int(),
+    currentStage: z.string().nullable(),
+    errorCode: z.string().nullable(),
+    errorMessage: z.string().nullable(),
+    errorTitle: z.string().nullable(),
+    fallbackSceneIds: z.array(z.string()),
+    id: z.uuid(),
+    options: zJobOptionsView,
+    parentJobId: z.uuid().nullable(),
+    query: z.string(),
+    renderId: z.uuid().nullable(),
+    source: zJobSource,
+    startedAt: z.iso.datetime().nullable(),
+    status: zJobStatus,
+    topicId: z.uuid().nullable(),
+    updatedAt: z.iso.datetime()
+});
+
+/**
+ * JobPage
+ */
+export const zJobPage = z.object({
+    items: z.array(zJobView),
+    nextCursor: z.string().nullish()
 });
 
 /**
@@ -1540,11 +1843,56 @@ export const zRoleUpdateRequest = z.object({
     permissions: z.array(z.string()).max(100).nullish()
 });
 
+/**
+ * RunStatus
+ */
+export const zRunStatus = z.enum([
+    'running',
+    'finished',
+    'errored'
+]);
+
 export const zRunStatusName = z.enum([
     'running',
     'completed',
     'failed'
 ]);
+
+/**
+ * RunTrigger
+ */
+export const zRunTrigger = z.enum([
+    'ci',
+    'nightly',
+    'admin'
+]);
+
+/**
+ * EvalRunView
+ */
+export const zEvalRunView = z.object({
+    createdBy: z.uuid().nullable(),
+    datasetVersion: z.string(),
+    errorCode: z.string().nullable(),
+    finishedAt: z.iso.datetime().nullable(),
+    id: z.uuid(),
+    modelsUsed: z.record(z.string(), z.unknown()),
+    passed: z.boolean().nullable(),
+    promptVersionIds: z.array(z.uuid()),
+    scores: z.record(z.string(), z.unknown()),
+    startedAt: z.iso.datetime(),
+    status: zRunStatus,
+    suite: z.string(),
+    trigger: zRunTrigger
+});
+
+/**
+ * EvalRunPage
+ */
+export const zEvalRunPage = z.object({
+    items: z.array(zEvalRunView),
+    nextCursor: z.string().nullish()
+});
 
 export const zRunTypeName = z.enum([
     'pending_orders',
@@ -1579,6 +1927,10 @@ export const zAdminRunPageResponse = z.object({
     items: z.array(zAdminRunResponse),
     nextCursor: z.string().nullish()
 });
+
+export const zSceneIdentifier = z.string().regex(/^[a-z][a-z0-9-]{0,31}$/);
+
+export const zSearchText = z.string().min(1).max(100);
 
 /**
  * SessionResponse
@@ -1649,6 +2001,179 @@ export const zSettingUpdateRequest = z.object({
     version: z.int().gte(1)
 });
 
+/**
+ * ShareCreateRequest
+ */
+export const zShareCreateRequest = z.object({
+    allowIndexing: z.boolean().optional().default(false),
+    aspect: zAspectName.nullish(),
+    renditionId: z.uuid().nullish()
+});
+
+/**
+ * ShareLinkView
+ */
+export const zShareLinkView = z.object({
+    allowIndexing: z.boolean(),
+    aspect: zAspectName,
+    createdAt: z.iso.datetime(),
+    renditionId: z.uuid(),
+    slug: z.string(),
+    url: z.string(),
+    viewCount: z.int()
+});
+
+/**
+ * SharedVideoView
+ */
+export const zSharedVideoView = z.object({
+    allowIndexing: z.boolean(),
+    aspect: zAspectName,
+    durationMs: z.int().nullable(),
+    height: z.int(),
+    language: z.string().nullable(),
+    musicAttribution: z.string().nullish(),
+    playbackExpiresInSeconds: z.int(),
+    playbackUrl: z.string(),
+    posterUrl: z.string().nullable(),
+    summary: z.string().nullable(),
+    title: z.string(),
+    uploadedAt: z.iso.datetime(),
+    width: z.int()
+});
+
+/**
+ * SkillLayer
+ */
+export const zSkillLayer = z.enum([
+    'style',
+    'visual',
+    'domain'
+]);
+
+/**
+ * SkillVersionView
+ */
+export const zSkillVersionView = z.object({
+    checksum: z.string(),
+    createdAt: z.iso.datetime(),
+    number: z.int()
+});
+
+/**
+ * SkillDetailView
+ */
+export const zSkillDetailView = z.object({
+    checksum: z.string(),
+    description: z.string(),
+    embeddingStatus: zEmbeddingStatus,
+    layer: zSkillLayer,
+    name: z.string(),
+    slug: z.string(),
+    tokenCount: z.int(),
+    updatedAt: z.iso.datetime(),
+    version: z.int(),
+    versions: z.array(zSkillVersionView)
+});
+
+/**
+ * SkillView
+ */
+export const zSkillView = z.object({
+    checksum: z.string(),
+    description: z.string(),
+    embeddingStatus: zEmbeddingStatus,
+    layer: zSkillLayer,
+    name: z.string(),
+    slug: z.string(),
+    tokenCount: z.int(),
+    updatedAt: z.iso.datetime(),
+    version: z.int()
+});
+
+/**
+ * SkillPage
+ */
+export const zSkillPage = z.object({
+    items: z.array(zSkillView),
+    nextCursor: z.string().nullish()
+});
+
+export const zSlug = z.string().max(64).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+
+/**
+ * JobOptionsOverrides
+ */
+export const zJobOptionsOverrides = z.object({
+    aspects: zAspectChoice.nullish(),
+    burnInSubtitles: z.boolean().nullish(),
+    durationSeconds: zDuration.nullish(),
+    language: zLanguageCode.nullish(),
+    musicTrackId: z.uuid().nullish(),
+    reviewStoryboard: z.boolean().nullish(),
+    style: zSlug.nullish(),
+    subtitles: z.boolean().nullish(),
+    voiceId: z.uuid().nullish()
+});
+
+/**
+ * JobOptionsRequest
+ */
+export const zJobOptionsRequest = z.object({
+    aspects: zAspectChoice.nullish(),
+    burnInSubtitles: z.boolean().optional().default(false),
+    durationSeconds: zDuration,
+    language: zLanguageCode.nullish(),
+    musicTrackId: z.uuid().nullish(),
+    reviewStoryboard: z.boolean().optional().default(false),
+    style: zSlug.nullish(),
+    subtitles: z.boolean().nullish(),
+    voiceId: z.uuid().nullish()
+});
+
+/**
+ * EstimateRequest
+ */
+export const zEstimateRequest = z.object({
+    options: zJobOptionsRequest
+});
+
+/**
+ * ReviseRequest
+ */
+export const zReviseRequest = z.object({
+    instructions: zInstructions,
+    options: zJobOptionsOverrides.nullish(),
+    sceneIds: z.array(zSceneIdentifier).max(12).optional()
+});
+
+export const zStage = z.string().regex(/^[a-z][a-z_]{0,39}$/);
+
+/**
+ * StageDurationView
+ */
+export const zStageDurationView = z.object({
+    averageSeconds: z.number(),
+    samples: z.int(),
+    stage: zStage
+});
+
+/**
+ * JobAnalyticsView
+ */
+export const zJobAnalyticsView = z.object({
+    averageCostMicrosUsd: z.number().nullable(),
+    averageCreditsCharged: z.number().nullable(),
+    dateFrom: z.iso.date(),
+    dateTo: z.iso.date(),
+    days: z.array(zDayOutcomeView),
+    fallbackRate: z.number().nullable(),
+    repairRate: z.number().nullable(),
+    scenes: z.int(),
+    stages: z.array(zStageDurationView),
+    successRate: z.number().nullable()
+});
+
 export const zStatementVersion = z.string().min(1).max(40);
 
 /**
@@ -1657,6 +2182,77 @@ export const zStatementVersion = z.string().min(1).max(40);
 export const zCloneStartRequest = z.object({
     accepted: z.literal(true),
     statementVersion: zStatementVersion
+});
+
+/**
+ * StoryboardIssueCode
+ */
+export const zStoryboardIssueCode = z.enum([
+    'scene_count',
+    'total_duration',
+    'speaking_rate_low',
+    'speaking_rate_high',
+    'on_screen_text_length',
+    'aspects_mismatch',
+    'layout_notes_missing',
+    'language_mismatch',
+    'style_mismatch'
+]);
+
+/**
+ * StoryboardIssue
+ */
+export const zStoryboardIssue = z.object({
+    code: zStoryboardIssueCode,
+    detail: z.record(z.string(), z.union([
+        z.int(),
+        z.number(),
+        z.string()
+    ])).optional(),
+    message: z.string(),
+    sceneId: z.string().nullish()
+});
+
+/**
+ * StoryboardLimitsView
+ */
+export const zStoryboardLimitsView = z.object({
+    durationTolerancePercent: z.int(),
+    maxScenes: z.int(),
+    maxWordsPerSecond: z.number(),
+    minScenes: z.int(),
+    minWordsPerSecond: z.number(),
+    nominalWordsPerSecond: z.number(),
+    onScreenText: z.array(zOnScreenLimitView)
+});
+
+export const zStoryboardVersion = z.int().gte(1).lte(1000000);
+
+/**
+ * ApproveRequest
+ */
+export const zApproveRequest = z.object({
+    expectedVersion: zStoryboardVersion
+});
+
+/**
+ * StyleView
+ */
+export const zStyleView = z.object({
+    accent: z.string(),
+    background: z.string(),
+    description: z.string(),
+    name: z.string(),
+    slug: z.string(),
+    surface: z.string(),
+    text: z.string()
+});
+
+/**
+ * StyleListView
+ */
+export const zStyleListView = z.object({
+    items: z.array(zStyleView)
 });
 
 /**
@@ -1834,6 +2430,34 @@ export const zSubscriptionResponse = z.object({
  */
 export const zCurrentSubscriptionResponse = z.object({
     subscription: zSubscriptionResponse.nullable()
+});
+
+export const zSuiteName = z.string().max(60).regex(/^[a-z][a-z0-9_.-]{0,59}$/);
+
+/**
+ * EvalRunRequest
+ */
+export const zEvalRunRequest = z.object({
+    suite: zSuiteName,
+    versionIds: z.array(z.uuid()).min(1).max(20)
+});
+
+/**
+ * TemplateView
+ */
+export const zTemplateView = z.object({
+    activeVersion: z.int().nullable(),
+    description: z.string().nullable(),
+    key: z.string(),
+    latestEvalStatus: zEvalStatus.nullable(),
+    versionCount: z.int()
+});
+
+/**
+ * TemplateList
+ */
+export const zTemplateList = z.object({
+    items: z.array(zTemplateView)
 });
 
 export const zTitle = z.string().min(1).max(120);
@@ -2062,6 +2686,17 @@ export const zUserProfileUpdateRequest = z.object({
     name: z.string().min(1).max(120).nullish()
 });
 
+export const zUserQuery = z.string().min(1).max(2000);
+
+/**
+ * JobCreateRequest
+ */
+export const zJobCreateRequest = z.object({
+    options: zJobOptionsRequest,
+    query: zUserQuery.nullish(),
+    topicId: z.uuid().nullish()
+});
+
 /**
  * UserRoleMutationRequest
  */
@@ -2085,6 +2720,16 @@ export const zValidationError = z.object({
  */
 export const zHttpValidationError = z.object({
     detail: z.array(zValidationError).optional()
+});
+
+export const zVariableName = z.string().max(64).regex(/^[a-z][a-z0-9_]*$/);
+
+/**
+ * DraftRequest
+ */
+export const zDraftRequest = z.object({
+    body: z.string().min(20).max(60000),
+    variables: z.array(zVariableName).max(32).optional()
 });
 
 /**
@@ -2129,6 +2774,97 @@ export const zVerifySubscriptionRequest = z.object({
     razorpayPaymentId: z.string().min(1).max(64).regex(/^[A-Za-z0-9_]+$/),
     razorpaySignature: z.string().min(1).max(128),
     razorpaySubscriptionId: z.string().min(1).max(64).regex(/^[A-Za-z0-9_]+$/)
+});
+
+export const zVersionNumber = z.int().gte(1).lte(2147483647);
+
+/**
+ * VersionView
+ */
+export const zVersionView = z.object({
+    checksumPrefix: z.string(),
+    createdAt: z.iso.datetime(),
+    createdBy: z.uuid().nullable(),
+    evalStatus: zEvalStatus,
+    id: z.uuid(),
+    isActive: z.boolean(),
+    version: z.int()
+});
+
+/**
+ * VersionPage
+ */
+export const zVersionPage = z.object({
+    items: z.array(zVersionView),
+    nextCursor: z.string().nullish()
+});
+
+export const zVisualBrief = z.string().min(1).max(4000);
+
+/**
+ * StoryboardScene
+ */
+export const zStoryboardScene = z.object({
+    goal: zLine,
+    id: zSceneIdentifier,
+    keyTerms: z.array(zKeyTerm).max(8).optional(),
+    layoutNotes: z.record(z.string(), zLayoutNote),
+    narration: zNarration,
+    onScreenText: z.array(zOnScreenText).max(6).optional(),
+    position: z.int().gte(0).lt(12),
+    targetDurationMs: z.int().gte(1000).lte(120000),
+    visualBrief: zVisualBrief,
+    visualSkills: z.array(zSlug).max(3).optional()
+});
+
+/**
+ * Storyboard
+ */
+export const zStoryboard = z.object({
+    aspects: z.array(zAspectName).min(1).max(3),
+    audienceLevel: zAudienceLevel,
+    language: z.string().regex(/^[a-z]{2,3}(-[A-Z]{2})?$/),
+    scenes: z.array(zStoryboardScene).min(2).max(12),
+    styleSkill: zSlug,
+    summary: z.string().min(1).max(600),
+    targetDurationMs: z.int().gte(10000).lte(120000),
+    title: z.string().min(1).max(120),
+    version: z.literal(1).optional().default(1)
+});
+
+/**
+ * AdminJobDetail
+ */
+export const zAdminJobDetail = z.object({
+    approvedStoryboard: zStoryboard.nullable(),
+    cost: zAdminCostView,
+    events: z.array(zAdminEventView),
+    job: zJobView,
+    reports: z.record(z.string(), zJsonValue),
+    scenes: z.array(zAdminSceneView),
+    storyboardVersions: z.array(zAdminStoryboardVersion),
+    traceUrl: z.string().nullable()
+});
+
+/**
+ * StoryboardUpdateRequest
+ */
+export const zStoryboardUpdateRequest = z.object({
+    content: zStoryboard,
+    expectedVersion: zStoryboardVersion
+});
+
+/**
+ * StoryboardView
+ */
+export const zStoryboardView = z.object({
+    approved: z.boolean(),
+    content: zStoryboard,
+    issues: z.array(zStoryboardIssue),
+    limits: zStoryboardLimitsView,
+    origin: z.string(),
+    updatedAt: z.iso.datetime(),
+    version: z.int()
 });
 
 /**
@@ -2317,6 +3053,8 @@ export const zWebhookReprocessResponse = z.object({
     queued: z.boolean()
 });
 
+export const zAspectChoiceWritable = z.array(zAspectName).min(1).max(3);
+
 /**
  * LoginRequest
  */
@@ -2384,6 +3122,16 @@ export const zHealthReadyResponse = zReadinessResponse;
  * Successful Response
  */
 export const zAdminInsightsGetAnalyticsResponse = zAnalyticsResponse;
+
+export const zAdminJobsGetJobAnalyticsQuery = z.object({
+    dateFrom: z.iso.date().nullish(),
+    dateTo: z.iso.date().nullish()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminJobsGetJobAnalyticsResponse = zJobAnalyticsView;
 
 export const zAdminInsightsListAuditEntriesQuery = z.object({
     cursor: z.string().max(512).nullish(),
@@ -2820,6 +3568,30 @@ export const zPlatformUpdateFlagPath = z.object({
  */
 export const zPlatformUpdateFlagResponse = zFeatureFlagResponse;
 
+export const zAdminJobsListAdminJobsQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    status: zJobStatus.nullish(),
+    source: zJobSource.nullish(),
+    userId: z.uuid().nullish(),
+    createdFrom: z.iso.datetime().nullish(),
+    createdTo: z.iso.datetime().nullish()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminJobsListAdminJobsResponse = zAdminJobPage;
+
+export const zAdminJobsGetAdminJobPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminJobsGetAdminJobResponse = zAdminJobDetail;
+
 export const zAdminMusicListMusicTracksQuery = z.object({
     cursor: z.string().max(512).nullish(),
     limit: z.int().gte(1).lte(100).optional().default(20),
@@ -2876,6 +3648,97 @@ export const zAdminMusicDeactivateMusicTrackPath = z.object({
  * Successful Response
  */
 export const zAdminMusicDeactivateMusicTrackResponse = zMusicTrackView;
+
+export const zAdminPromptsListEvalRunsQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    suite: zSuiteName.nullish(),
+    status: zRunStatus.nullish()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminPromptsListEvalRunsResponse = zEvalRunPage;
+
+export const zAdminPromptsStartEvalRunBody = zEvalRunRequest;
+
+/**
+ * Successful Response
+ */
+export const zAdminPromptsStartEvalRunResponse = zEvalRunView;
+
+export const zAdminPromptsGetEvalRunPath = z.object({
+    run_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminPromptsGetEvalRunResponse = zEvalRunView;
+
+/**
+ * Successful Response
+ */
+export const zAdminPromptsListPromptTemplatesResponse = zTemplateList;
+
+export const zAdminPromptsDiffPromptVersionsPath = z.object({
+    key: z.string().max(64).regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/)
+});
+
+export const zAdminPromptsDiffPromptVersionsQuery = z.object({
+    from: zVersionNumber,
+    to: zVersionNumber
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminPromptsDiffPromptVersionsResponse = zDiffView;
+
+export const zAdminPromptsRollbackPromptTemplatePath = z.object({
+    key: z.string().max(64).regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/)
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminPromptsRollbackPromptTemplateResponse = zVersionView;
+
+export const zAdminPromptsListPromptVersionsPath = z.object({
+    key: z.string().max(64).regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/)
+});
+
+export const zAdminPromptsListPromptVersionsQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20)
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminPromptsListPromptVersionsResponse = zVersionPage;
+
+export const zAdminPromptsCreatePromptDraftBody = zDraftRequest;
+
+export const zAdminPromptsCreatePromptDraftPath = z.object({
+    key: z.string().max(64).regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/)
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminPromptsCreatePromptDraftResponse = zVersionView;
+
+export const zAdminPromptsActivatePromptVersionPath = z.object({
+    key: z.string().max(64).regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/),
+    version: z.int().gte(1).lte(2147483647)
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminPromptsActivatePromptVersionResponse = zVersionView;
 
 export const zAdminRenderTestbedCreateTestbedRenderBody = z.object({
     composition: z.string(),
@@ -2993,6 +3856,31 @@ export const zPlatformUpdateSettingPath = z.object({
  * Successful Response
  */
 export const zPlatformUpdateSettingResponse = zSettingResponse;
+
+export const zAdminSkillsListSystemSkillsQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    layer: zSkillLayer.nullish()
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminSkillsListSystemSkillsResponse = zSkillPage;
+
+/**
+ * Successful Response
+ */
+export const zAdminSkillsReseedSystemSkillsResponse = zReseedView;
+
+export const zAdminSkillsGetSystemSkillPath = z.object({
+    slug: z.string().max(64).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
+});
+
+/**
+ * Successful Response
+ */
+export const zAdminSkillsGetSystemSkillResponse = zSkillDetailView;
 
 export const zAdminUsersAdminUsersQuery = z.object({
     cursor: z.string().max(512).nullish(),
@@ -3468,6 +4356,158 @@ export const zCreditsWalletResponse = zWalletResponse;
  */
 export const zPlatformEvaluatedFlagsResponse = zEvaluatedFlagsResponse;
 
+export const zJobsListJobsQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    status: zJobStatus.nullish(),
+    source: zJobSource.nullish(),
+    topicId: z.uuid().nullish()
+});
+
+/**
+ * Successful Response
+ */
+export const zJobsListJobsResponse = zJobPage;
+
+export const zJobsCreateJobBody = zJobCreateRequest;
+
+/**
+ * Successful Response
+ */
+export const zJobsCreateJobResponse = zJobView;
+
+export const zJobsEstimateJobBody = zEstimateRequest;
+
+/**
+ * Successful Response
+ */
+export const zJobsEstimateJobResponse = zEstimateView;
+
+export const zJobsDeleteJobPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zJobsDeleteJobResponse = z.void();
+
+export const zJobsGetJobPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zJobsGetJobResponse = zJobView;
+
+export const zJobsApproveJobBody = zApproveRequest;
+
+export const zJobsApproveJobPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zJobsApproveJobResponse = zJobView;
+
+export const zJobsCancelJobPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zJobsCancelJobResponse = zJobView;
+
+export const zJobsFollowJobEventsHeaders = z.object({
+    'Last-Event-ID': z.string().max(64).nullish()
+});
+
+export const zJobsFollowJobEventsPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Server-sent events
+ */
+export const zJobsFollowJobEventsResponse = z.string();
+
+export const zJobsReviseJobBody = zReviseRequest;
+
+export const zJobsReviseJobPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zJobsReviseJobResponse = zJobView;
+
+export const zShareRevokeShareLinksPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zShareRevokeShareLinksResponse = z.void();
+
+export const zShareCreateShareLinkBody = zShareCreateRequest;
+
+export const zShareCreateShareLinkPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zShareCreateShareLinkResponse = zShareLinkView;
+
+export const zJobsGetStoryboardPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zJobsGetStoryboardResponse = zStoryboardView;
+
+export const zJobsUpdateStoryboardBody = zStoryboardUpdateRequest;
+
+export const zJobsUpdateStoryboardPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zJobsUpdateStoryboardResponse = zStoryboardView;
+
+export const zJobsRegenerateStoryboardBody = zRegenerateRequest;
+
+export const zJobsRegenerateStoryboardPath = z.object({
+    job_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zJobsRegenerateStoryboardResponse = zJobView;
+
+export const zLibraryListLibraryQuery = z.object({
+    cursor: z.string().max(512).nullish(),
+    limit: z.int().gte(1).lte(100).optional().default(20),
+    q: zSearchText.nullish(),
+    aspect: zAspectName.nullish()
+});
+
+/**
+ * Successful Response
+ */
+export const zLibraryListLibraryResponse = zLibraryPage;
+
 /**
  * Successful Response
  */
@@ -3495,6 +4535,29 @@ export const zRendersListRenditionsResponse = zRenditionListView;
  * Successful Response
  */
 export const zPlatformPublicSettingsResponse = zPublicSettingsResponse;
+
+export const zShareGetSharedVideoPath = z.object({
+    slug: z.string().min(1).max(64)
+});
+
+/**
+ * Successful Response
+ */
+export const zShareGetSharedVideoResponse = zSharedVideoView;
+
+export const zShareRecordShareViewPath = z.object({
+    slug: z.string().min(1).max(64)
+});
+
+/**
+ * Successful Response
+ */
+export const zShareRecordShareViewResponse = z.void();
+
+/**
+ * Successful Response
+ */
+export const zStylesListStylesResponse = zStyleListView;
 
 /**
  * Successful Response

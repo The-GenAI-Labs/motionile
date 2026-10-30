@@ -139,6 +139,16 @@ Operational rules for any coding agent working in this repository. `docs/context
 - Drive status changes through explicit state machines and record stale events as `ignored`; never ignore money received.
 - Correct credits through `adjust` with a reason, never by editing rows.
 
+## AI generation
+
+- Every model call goes through `engine/ai/llm` with a task, a structured Pydantic output, a timeout, bounded retries, a `usage_records` row and a trace span. Never call a provider SDK from anywhere else, and never let LiteLLM read keys from the environment.
+- System prompts and system skills never leave the server through a response, a log or an error. The only exception is the admin prompt diff for `prompts.manage` holders. Carry codes and IDs, never text, in events and errors.
+- User text (queries, storyboard edits, revision instructions) enters prompts only as delimited data through `engine/ai/prompts/delimit.py`, and passes the input guard first. Check model output with the output scanner before it is stored or shown.
+- The model writes `scene-module@1`; code composes the document. Every composed document goes through the Phase 8 sanitizer, sandbox and validator. Browser work runs on the `render` queue, never in the API image.
+- Move job status only through the transition table in `modules/generation/domain.py` with a conditional update. Reserve credits at creation with the published estimate, commit `min(formula, reservation)` on completion and release everything on failure or cancellation.
+- Activate a prompt version only through the eval gate. `seed_prompts` never activates, except with `--bootstrap-fake-providers` in local and CI.
+- Skill content for system skills lives in `engine/ai/skills/library` and is seeded, never edited in the database. Keep skills within the size budgets the loader enforces.
+
 ## Render, audio and media
 
 - Generated HTML is untrusted code. The sandbox is the control and the sanitizer is an extra layer: launch Chromium with its own sandbox on, never `--no-sandbox`, in a fresh context per render, with every request intercepted and only the virtual runtime origin and `data:` fulfilled. Any attempted outbound request fails the render with `network_violation`.

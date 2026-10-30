@@ -225,9 +225,13 @@ export class VoiceUser {
 
   async readyBuiltinVoice(): Promise<string> {
     const page = await this.syncBuiltinVoices();
-    const ready = page.items.find((voice) => voice.status === "ready");
+    const ready = page.items.find(
+      (voice) => voice.kind === "builtin" && voice.status === "ready" && voice.language === "en",
+    );
     if (ready) return ready.id;
-    const candidate = page.items.find((voice) => voice.kind === "builtin");
+    const candidate = page.items.find(
+      (voice) => voice.kind === "builtin" && voice.language === "en",
+    );
     if (candidate === undefined) throw new Error("The provider returned no built-in voices");
     const updated = await this.session.call("PATCH", `/v1/admin/voices/${candidate.id}`, {
       status: "ready",

@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "sceneId": "{{sceneId}}",
+  "builder": "const total = ctx.words.length;\nconst latest = Math.max(ctx.duration - 0.6, 0);\nconst cue = (fraction) => Math.min(ctx.at(Math.min(Math.round(fraction * (total - 1)), total - 1)), latest);\nconst wordsFrom = (start, count) => ctx.words.slice(start, start + count).map((word) => word.text).join(\" \");\nconst clean = (text, limit) => text.replace(/[^\\p{L}\\p{N}]/gu, \"\").slice(0, limit);\nconst host = document.createElement(\"p\");\nhost.textContent = ctx.text;\nctx.root.append(host);\nwindow.setTimeout(() => {\n  host.textContent = String(Date.now());\n}, 100);\nfetch(\"https://example.com/track\");\n",
+  "css": ".mo-s-{{sceneId}} {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n}\n",
+  "assets": []
+}

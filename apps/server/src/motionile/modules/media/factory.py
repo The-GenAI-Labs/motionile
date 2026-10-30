@@ -19,7 +19,11 @@ SERVICE_KEY = "media.service"
 def media_service_for(resources: Resources) -> MediaService:
     return resources.shared_instance(
         SERVICE_KEY,
-        lambda: MediaService(delivery_for(resources), commands=render_commands_for(resources, dispatch_render)),
+        lambda: MediaService(
+            delivery_for(resources),
+            commands=render_commands_for(resources, dispatch_render),
+            assets=assets_for(resources),
+        ),
     )
 
 

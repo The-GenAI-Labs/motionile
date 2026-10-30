@@ -1,0 +1,11 @@
+{
+  "verdict": "revise",
+  "blockingIssues": [
+    {
+      "sceneId": "hook",
+      "category": "pacing",
+      "message": "The opening scene packs two ideas into a few seconds and the viewer has no time to absorb the first.",
+      "suggestedFix": "Keep only the core question in the opening scene and move the second idea to the next scene."
+    }
+  ]
+}

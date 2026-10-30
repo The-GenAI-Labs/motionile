@@ -1,0 +1,1554 @@
+version: "2026-10-24.1"
+cases:
+  - id: edu-math-01
+    subcategory: mathematics
+    query: "Explain what a derivative is and why it is the slope of a curve"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "instantaneous rate of change",
+          synonyms: ["rate of change", "how fast something changes at one moment"],
+        }
+      - {
+          name: "slope of the tangent line",
+          synonyms: ["tangent slope", "gradient of the curve at a point"],
+        }
+      - {
+          name: "limit of the difference quotient",
+          synonyms: ["limit as h approaches zero", "(f(x+h)-f(x))/h"],
+        }
+      - { name: "derivative notation", synonyms: ["f prime", "dy/dx"] }
+    misconceptions:
+      - "The derivative is the average slope between two far-apart points."
+      - "The derivative of a constant function is the constant itself."
+    referenceNotes: "The derivative of a function f at x is the limit, as h approaches zero, of (f(x+h) - f(x)) / h. Geometrically it is the slope of the tangent line to the graph at that point, so it measures the instantaneous rate of change. Velocity is the derivative of position with respect to time. For f(x) = x squared the derivative is 2x, so the slope at x = 3 is 6. The derivative of a constant is zero because a constant does not change. Where the derivative is zero the tangent is horizontal, which is where a smooth function can have a local maximum or minimum."
+  - id: edu-math-02
+    subcategory: mathematics
+    query: "Why can't you divide by zero?"
+    durationSeconds: 30
+    aspects: ["9:16"]
+    language: en
+    keyConcepts:
+      - {
+          name: "division as the inverse of multiplication",
+          synonyms: ["a/b is the number c with b times c equal to a", "undo multiplication"],
+        }
+      - {
+          name: "no number times zero gives a nonzero result",
+          synonyms: ["zero times anything is zero", "no solution to 0 times x equals 1"],
+        }
+      - {
+          name: "zero divided by zero is indeterminate",
+          synonyms: ["0/0", "any number would work"],
+        }
+      - {
+          name: "limits near zero",
+          synonyms: ["1/x blows up", "approaching zero from the left and right differ"],
+        }
+    misconceptions:
+      - "Any number divided by zero equals zero."
+      - "Dividing by zero gives infinity as a defined number."
+    referenceNotes: "Division is defined as the inverse of multiplication: a divided by b is the number c such that b times c equals a. For b = 0 and a not zero, no number c works, because zero times any number is zero. For 0 divided by 0, every number c works, so the result is indeterminate rather than a single value. Looking at 1/x as x approaches zero, the values grow without bound toward positive infinity from the right and negative infinity from the left, so there is no single limit. Infinity is not a real number, so the expression stays undefined in standard arithmetic."
+  - id: edu-math-03
+    subcategory: mathematics
+    query: "What is the probability of getting at least one six when you roll two dice? I keep adding 1/6 + 1/6 and it feels wrong."
+    durationSeconds: 45
+    aspects: ["16:9", "1:1"]
+    language: en
+    keyConcepts:
+      - {
+          name: "sample space of 36 outcomes",
+          synonyms: ["36 equally likely outcomes", "all pairs of dice"],
+        }
+      - {
+          name: "complement rule",
+          synonyms: ["one minus the probability of no sixes", "1 - P(not A)"],
+        }
+      - {
+          name: "independent events multiply",
+          synonyms: ["multiply probabilities", "5/6 times 5/6"],
+        }
+      - { name: "the answer is 11/36", synonyms: ["about 30.6 percent", "0.3056"] }
+    misconceptions:
+      - "The probability is 2/6 because you add the two chances of 1/6."
+      - "After several rolls without a six, a six becomes more likely."
+    referenceNotes: "Two fair dice give 36 equally likely outcomes. The easiest route is the complement: the chance that neither die shows a six is 5/6 times 5/6, which is 25/36, so the chance of at least one six is 1 - 25/36 = 11/36, about 30.6 percent. Adding 1/6 + 1/6 = 1/3 counts the outcome double six twice, because the events are not mutually exclusive. Counting directly gives 11 outcomes: six on the first die and any second value (6), plus a six on the second die with a non-six first value (5). Dice have no memory, so past rolls do not change the odds."
+  - id: edu-math-04
+    subcategory: mathematics
+    query: "मैट्रिक्स ट्रांसफ़ॉर्मेशन क्या होता है? आसान भाषा में समझाओ।"
+    durationSeconds: 60
+    aspects: ["16:9", "9:16"]
+    language: hi-IN
+    keyConcepts:
+      - {
+          name: "matrix as a linear transformation",
+          synonyms: ["मैट्रिक्स से स्पेस का बदलाव", "linear map"],
+        }
+      - { name: "columns show where basis vectors land", synonyms: ["basis vectors", "आधार सदिश"] }
+      - { name: "rotation, scaling and shear", synonyms: ["घुमाना", "खींचना", "स्केलिंग"] }
+      - {
+          name: "matrix multiplication composes transformations",
+          synonyms: ["एक के बाद एक ट्रांसफ़ॉर्मेशन", "composition"],
+        }
+    misconceptions:
+      - "Matrix multiplication is commutative, so the order of two transformations never matters."
+      - "A matrix transformation can move the origin to a different point."
+    referenceNotes: "A matrix can be read as a linear transformation of space: it takes every vector and moves it to a new place while keeping grid lines straight and evenly spaced and keeping the origin fixed. The columns of a two by two matrix are the new positions of the basis vectors, and every other vector follows from them. Rotations, scalings, reflections and shears are all matrices. Multiplying two matrices applies the right-hand transformation first and then the left-hand one, and since the order changes the result, matrix multiplication is generally not commutative. Translation is not a linear transformation because it moves the origin."
+  - id: edu-physics-01
+    subcategory: physics
+    query: "If every force has an equal and opposite reaction, why does anything ever move?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "third law forces act on different objects",
+          synonyms: ["action-reaction pair", "force pair on two bodies"],
+        }
+      - {
+          name: "net force on a single object decides acceleration",
+          synonyms: ["second law", "F = ma"],
+        }
+      - {
+          name: "equal magnitude and opposite direction",
+          synonyms: ["same size opposite direction", "equal and opposite"],
+        }
+      - {
+          name: "walking or pushing off the ground",
+          synonyms: ["friction pushes you forward", "rocket exhaust"],
+        }
+    misconceptions:
+      - "Action and reaction forces cancel each other, so nothing could accelerate."
+      - "In a collision a heavier object pushes harder on a lighter one than the lighter one pushes back."
+    referenceNotes: "Newton's third law says that when object A exerts a force on object B, B exerts a force of equal magnitude and opposite direction on A. These two forces act on different objects, so they never cancel each other. Whether an object accelerates depends on the net force on that object alone, from the second law. When you walk, your foot pushes backward on the ground and the ground pushes you forward by friction. A truck and a bicycle in a collision exert equal forces on each other, but the bicycle accelerates far more because its mass is much smaller."
+  - id: edu-physics-02
+    subcategory: physics
+    query: "Why do heavy and light things fall at the same speed in a vacuum?"
+    durationSeconds: 45
+    aspects: ["16:9", "9:16"]
+    language: en
+    keyConcepts:
+      - {
+          name: "gravitational acceleration is the same for all masses",
+          synonyms: ["g about 9.8 meters per second squared", "free fall acceleration"],
+        }
+      - {
+          name: "mass cancels out",
+          synonyms: ["gravitational mass and inertial mass", "weight is proportional to mass"],
+        }
+      - {
+          name: "air resistance causes the difference on Earth",
+          synonyms: ["drag", "feather falls slowly because of air"],
+        }
+      - {
+          name: "Apollo 15 hammer and feather demonstration",
+          synonyms: ["Moon demonstration", "David Scott"],
+        }
+    misconceptions:
+      - "Heavier objects accelerate faster toward the Earth than light ones, even in a vacuum."
+      - "A feather and a hammer fall at the same rate in ordinary air."
+    referenceNotes: "The gravitational force on an object is proportional to its mass, but so is its inertia, the resistance to acceleration. When you divide force by mass, the mass cancels and every object near Earth's surface accelerates at about 9.8 meters per second squared, ignoring air. In everyday life a feather falls slower than a hammer only because air drag matters more for it. In a vacuum chamber they fall together. In 1971 Apollo 15 commander David Scott dropped a hammer and a falcon feather on the Moon, where there is almost no atmosphere, and they landed at the same time."
+  - id: edu-physics-03
+    subcategory: physics
+    query: "Special relativity in plain language, covering time dilation and the speed of light"
+    durationSeconds: 90
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "speed of light is the same for all inertial observers",
+          synonyms: ["constant speed of light", "c is invariant"],
+        }
+      - {
+          name: "laws of physics are the same in all inertial frames",
+          synonyms: ["principle of relativity", "no preferred frame"],
+        }
+      - { name: "time dilation", synonyms: ["moving clocks run slow", "twin paradox"] }
+      - {
+          name: "length contraction",
+          synonyms: ["moving objects shorten along the direction of motion", "Lorentz contraction"],
+        }
+      - { name: "mass-energy equivalence", synonyms: ["E = mc squared", "rest energy"] }
+    misconceptions:
+      - "Special relativity says everything is relative, including the speed of light."
+      - "Time dilation is only an illusion caused by how signals travel; the moving clock actually ticks at the normal rate."
+    referenceNotes: "Special relativity rests on two postulates from Einstein in 1905: the laws of physics are the same in every inertial frame, and the speed of light in vacuum, about 300,000 kilometers per second, is the same for all inertial observers. From these follow time dilation, where a clock moving relative to an observer is measured to tick more slowly, and length contraction along the direction of motion. Time dilation is real: muons made in the upper atmosphere survive long enough to reach the ground because of it. Mass and energy are related by E = mc squared, and no object with mass can be accelerated to the speed of light."
+  - id: edu-physics-04
+    subcategory: physics
+    query: "How do I work out how far a ball thrown at an angle will travel?"
+    durationSeconds: 75
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "horizontal and vertical motion are independent",
+          synonyms: ["components of velocity", "split into x and y"],
+        }
+      - {
+          name: "constant horizontal velocity",
+          synonyms: ["no horizontal acceleration", "ignoring air resistance"],
+        }
+      - {
+          name: "constant downward acceleration g",
+          synonyms: ["gravity acts vertically", "9.8 meters per second squared"],
+        }
+      - {
+          name: "range formula v squared sin 2 theta over g",
+          synonyms: ["range equation", "R = v^2 sin(2θ)/g"],
+        }
+      - {
+          name: "45 degrees gives maximum range on level ground",
+          synonyms: ["optimal launch angle", "complementary angles give the same range"],
+        }
+    misconceptions:
+      - "Gravity slows the horizontal motion of a projectile."
+      - "A projectile needs a continuing forward force to keep moving after it leaves the hand."
+      - "45 degrees is always the best angle, even when launching from a cliff."
+    referenceNotes: "Ignoring air resistance, a projectile has constant horizontal velocity and a constant downward acceleration g of about 9.8 meters per second squared. Split the launch speed v at angle theta into v cos theta horizontally and v sin theta vertically. Time of flight on level ground is 2 v sin theta over g, and the range is v squared times sin of 2 theta, divided by g. The range is largest at 45 degrees, and complementary angles such as 30 and 60 degrees give equal ranges. After release, no forward force acts; only gravity does. Launching from a height above the landing level makes the best angle less than 45 degrees."
+  - id: edu-chem-01
+    subcategory: chemistry
+    query: "What's the difference between ionic and covalent bonds?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "ionic bond is electron transfer and electrostatic attraction",
+          synonyms: ["cation and anion attract", "metal gives electrons to non-metal"],
+        }
+      - {
+          name: "covalent bond is sharing of electron pairs",
+          synonyms: ["shared electrons", "non-metals bond"],
+        }
+      - {
+          name: "electronegativity difference",
+          synonyms: ["polar covalent bond", "bond polarity spectrum"],
+        }
+      - {
+          name: "crystal lattice versus molecules",
+          synonyms: ["sodium chloride lattice", "discrete molecules"],
+        }
+    misconceptions:
+      - "Ionic compounds consist of separate molecules, like NaCl molecules."
+      - "Every bond is either perfectly ionic or perfectly covalent with nothing in between."
+    referenceNotes: "In an ionic bond, one atom, typically a metal, gives up electrons to another, typically a non-metal, forming positive and negative ions that attract each other electrostatically. In a covalent bond, two atoms share one or more pairs of electrons. Bond character lies on a spectrum set by the electronegativity difference: a large difference is ionic, a small difference is polar covalent, and none is nonpolar covalent. Sodium chloride is a lattice of ions, not separate molecules, with a high melting point, and it conducts electricity when molten or dissolved but not as a solid. Water is a molecule with polar covalent bonds."
+  - id: edu-chem-02
+    subcategory: chemistry
+    query: "How do you balance H2 + O2 -> H2O?"
+    durationSeconds: 45
+    aspects: ["9:16"]
+    language: en
+    keyConcepts:
+      - {
+          name: "conservation of mass",
+          synonyms: ["atoms are neither created nor destroyed", "same atoms on both sides"],
+        }
+      - {
+          name: "adjust coefficients, not subscripts",
+          synonyms: ["put numbers in front of formulas", "do not change H2O into H2O2"],
+        }
+      - {
+          name: "count atoms of each element on both sides",
+          synonyms: ["atom inventory", "tally the atoms"],
+        }
+      - {
+          name: "balanced result 2H2 + O2 -> 2H2O",
+          synonyms: ["two hydrogen molecules and one oxygen molecule", "2:1:2 ratio"],
+        }
+    misconceptions:
+      - "You balance an equation by changing the subscripts in the formulas."
+      - "Atoms of the reactants are destroyed and new atoms are created during a reaction."
+    referenceNotes: "A balanced chemical equation shows the same number of atoms of each element on both sides, because atoms are rearranged in a reaction, not created or destroyed. For H2 + O2 -> H2O, the left has two oxygen atoms and the right has one. Put a 2 in front of H2O to get two oxygen atoms and four hydrogen atoms on the right, then put a 2 in front of H2 to match the four hydrogen atoms. The balanced equation is 2H2 + O2 -> 2H2O. Only coefficients are adjusted; changing a subscript would change the substance, since H2O2 is hydrogen peroxide, not water."
+  - id: edu-chem-03
+    subcategory: chemistry
+    query: "What does pH actually measure, and why is the scale logarithmic?"
+    durationSeconds: 60
+    aspects: ["16:9", "1:1"]
+    language: en
+    keyConcepts:
+      - {
+          name: "pH is the negative log of hydrogen ion concentration",
+          synonyms: ["-log10 [H+]", "hydrogen ion activity"],
+        }
+      - {
+          name: "each pH unit is a tenfold change",
+          synonyms: ["logarithmic scale", "factor of ten"],
+        }
+      - {
+          name: "acid below 7, base above 7 at 25 degrees Celsius",
+          synonyms: ["neutral is 7", "acidic and basic"],
+        }
+      - {
+          name: "examples such as lemon juice and bleach",
+          synonyms: ["stomach acid", "pure water"],
+        }
+    misconceptions:
+      - "A solution of pH 4 is twice as acidic as a solution of pH 8, because each unit is a doubling."
+      - "pH values can only range from 0 to 14."
+    referenceNotes: "pH is the negative base-10 logarithm of the hydrogen ion concentration (more precisely its activity) in a solution. Because the scale is logarithmic, a drop of one pH unit means ten times more hydrogen ions, and a drop of two units means one hundred times more. At 25 degrees Celsius pure water has a pH of 7, acids are below 7 and bases above 7. Lemon juice is around pH 2, and household bleach is around 12 to 13. The range of 0 to 14 is a convenient span for dilute solutions, but concentrated strong acids can have a negative pH and concentrated strong bases can exceed 14."
+  - id: edu-chem-04
+    subcategory: chemistry
+    query: "Explain chemical equilibrium and Le Chatelier's principle. Does the reaction just stop?"
+    durationSeconds: 90
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "dynamic equilibrium",
+          synonyms: ["forward and reverse reactions continue", "no net change"],
+        }
+      - {
+          name: "equal forward and reverse rates",
+          synonyms: ["rates balance", "constant concentrations"],
+        }
+      - {
+          name: "Le Chatelier's principle",
+          synonyms: ["system shifts to counteract a change", "shift left or right"],
+        }
+      - { name: "equilibrium constant K", synonyms: ["ratio of products to reactants", "Kc"] }
+      - {
+          name: "catalyst speeds up approach without changing position",
+          synonyms: ["lowers activation energy for both directions", "does not shift equilibrium"],
+        }
+    misconceptions:
+      - "At equilibrium the reaction has stopped."
+      - "At equilibrium the concentrations of reactants and products are equal."
+      - "A catalyst shifts the equilibrium toward the products."
+    referenceNotes: "A reversible reaction reaches dynamic equilibrium when the forward and reverse reaction rates are equal. The reactions keep happening, but the concentrations stay constant. They are generally not equal; their ratio is given by the equilibrium constant K, which depends on temperature. Le Chatelier's principle says that if you disturb a system at equilibrium, by changing concentration, pressure or temperature, it shifts to partly counteract the change. Adding reactant shifts the equilibrium toward products. A catalyst speeds up both directions equally, so it brings the system to equilibrium faster but does not change its position or K."
+  - id: edu-bio-01
+    subcategory: biology
+    query: "How does DNA replication work, step by step?"
+    durationSeconds: 75
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "helicase unwinds the double helix",
+          synonyms: ["replication fork", "origin of replication"],
+        }
+      - {
+          name: "DNA polymerase adds nucleotides in the 5' to 3' direction",
+          synonyms: ["DNA polymerase", "base pairing A-T and G-C"],
+        }
+      - {
+          name: "leading and lagging strands",
+          synonyms: ["Okazaki fragments", "discontinuous synthesis"],
+        }
+      - { name: "primase and ligase", synonyms: ["RNA primer", "DNA ligase joins fragments"] }
+      - {
+          name: "semiconservative replication",
+          synonyms: ["each new molecule keeps one old strand", "Meselson and Stahl"],
+        }
+    misconceptions:
+      - "Both new strands are made continuously in the same direction as the fork moves."
+      - "The original double helix stays intact and a completely new copy is built beside it."
+    referenceNotes: "Replication starts at an origin, where helicase unwinds the double helix to form a replication fork. Primase makes short RNA primers, and DNA polymerase extends them by adding nucleotides complementary to the template, always in the 5' to 3' direction. On the leading strand synthesis is continuous toward the fork. The lagging strand is made away from the fork in short Okazaki fragments, which DNA ligase joins together. The process is semiconservative: each daughter molecule contains one original strand and one new strand, as shown by the Meselson and Stahl experiment in 1958. Proofreading by polymerase keeps errors rare."
+  - id: edu-bio-02
+    subcategory: biology
+    query: "Do animals evolve because they need to?"
+    durationSeconds: 30
+    aspects: ["9:16"]
+    language: en
+    keyConcepts:
+      - {
+          name: "heritable variation exists in a population",
+          synonyms: ["genetic variation", "mutation produces new variants"],
+        }
+      - {
+          name: "differential survival and reproduction",
+          synonyms: ["some individuals leave more offspring", "fitness"],
+        }
+      - {
+          name: "populations evolve, individuals do not",
+          synonyms: ["change across generations", "allele frequencies shift"],
+        }
+      - {
+          name: "no foresight or goal",
+          synonyms: ["not directed by need", "selection acts on existing variation"],
+        }
+    misconceptions:
+      - "Individual animals change their traits during their lifetime because they need to, and then pass those changes on."
+      - "Natural selection always produces more perfect organisms."
+      - "Survival of the fittest means survival of the strongest."
+    referenceNotes: "Natural selection works on variation that already exists in a population. Mutations arise randomly with respect to need, and some variants are inherited. Individuals with traits that suit their environment tend to survive and reproduce more, so those heritable traits become more common over generations. Individuals do not evolve; populations change over time. Nothing aims at a goal: selection has no foresight, and the result is only fit for the current environment, not perfect. Fitness means reproductive success, not strength. Antibiotic resistance in bacteria is an example: resistant variants already present survive treatment and multiply."
+  - id: edu-bio-03
+    subcategory: biology
+    query: "How does photosynthesis turn sunlight into sugar? Where does the oxygen come from?"
+    durationSeconds: 60
+    aspects: ["16:9", "1:1"]
+    language: en
+    keyConcepts:
+      - {
+          name: "light-dependent reactions",
+          synonyms: ["thylakoid membranes", "ATP and NADPH production"],
+        }
+      - {
+          name: "water is split and releases oxygen",
+          synonyms: ["photolysis", "oxygen comes from water"],
+        }
+      - { name: "Calvin cycle fixes carbon dioxide", synonyms: ["stroma", "Rubisco"] }
+      - {
+          name: "overall equation",
+          synonyms: ["6CO2 + 6H2O -> C6H12O6 + 6O2", "glucose and oxygen"],
+        }
+      - { name: "chlorophyll absorbs light", synonyms: ["pigment", "chloroplast"] }
+    misconceptions:
+      - "The oxygen released by photosynthesis comes from carbon dioxide."
+      - "Plants build most of their mass from nutrients taken out of the soil."
+    referenceNotes: "Photosynthesis happens in chloroplasts. In the light-dependent reactions, chlorophyll in the thylakoid membranes absorbs light, splits water and releases oxygen, and produces ATP and NADPH. In the Calvin cycle, in the stroma, the enzyme Rubisco attaches carbon dioxide to a five-carbon sugar and the cycle uses ATP and NADPH to make three-carbon sugars, which build glucose. The overall equation is 6CO2 + 6H2O -> C6H12O6 + 6O2. The released oxygen comes from water, not carbon dioxide. Most of a plant's dry mass comes from carbon fixed from the carbon dioxide in air, with water providing the hydrogen."
+  - id: edu-bio-04
+    subcategory: biology
+    query: "हमारा इम्यून सिस्टम वायरस से कैसे लड़ता है?"
+    durationSeconds: 60
+    aspects: ["16:9", "9:16"]
+    language: hi-IN
+    keyConcepts:
+      - {
+          name: "innate immunity is the first fast defense",
+          synonyms: ["जन्मजात प्रतिरक्षा", "macrophages and natural killer cells"],
+        }
+      - {
+          name: "adaptive immunity with B cells and T cells",
+          synonyms: ["अनुकूली प्रतिरक्षा", "lymphocytes"],
+        }
+      - { name: "antibodies are made by B cells", synonyms: ["एंटीबॉडी", "plasma cells"] }
+      - {
+          name: "memory cells give faster response next time",
+          synonyms: ["मेमोरी सेल", "immunological memory"],
+        }
+      - { name: "vaccines train the immune system", synonyms: ["टीका", "वैक्सीन"] }
+    misconceptions:
+      - "Antibiotics are effective against viral infections."
+      - "Antibodies are produced by T cells."
+    referenceNotes: "The immune system has two linked parts. Innate immunity acts within hours and is not specific: barriers such as skin, inflammation, and cells such as macrophages and natural killer cells, which destroy virus-infected cells. Adaptive immunity takes days on first exposure but is specific. B cells differentiate into plasma cells that release antibodies binding the virus. Cytotoxic T cells kill infected cells, and helper T cells coordinate the response. Memory B and T cells remain after infection, so a second exposure is handled faster. Vaccines present harmless parts or weakened forms of a pathogen to create this memory. Antibiotics act on bacteria, not viruses."
+  - id: edu-cs-01
+    subcategory: computer-science-fundamentals
+    query: "How do computers store numbers using only 0s and 1s?"
+    durationSeconds: 45
+    aspects: ["16:9", "9:16"]
+    language: en
+    keyConcepts:
+      - { name: "binary place values are powers of two", synonyms: ["base 2", "1, 2, 4, 8, 16"] }
+      - { name: "bits and bytes", synonyms: ["8 bits make a byte", "byte holds 256 values"] }
+      - {
+          name: "converting decimal to binary",
+          synonyms: ["13 is 1101", "repeated division by two"],
+        }
+      - { name: "two's complement for negative numbers", synonyms: ["signed integers", "sign bit"] }
+    misconceptions:
+      - "Computers store each decimal digit directly as a separate symbol."
+      - "A byte can hold the values 1 to 256."
+    referenceNotes: "Binary is a base-2 system where each position is a power of two: 1, 2, 4, 8, 16 and so on, from right to left. The decimal number 13 is 8 + 4 + 1, written 1101. A bit is one binary digit and eight bits make a byte, which can represent 256 different values, from 0 to 255 when unsigned. Hardware uses two voltage levels because they are reliable to distinguish. Negative integers are usually stored in two's complement, where an 8-bit signed byte covers -128 to 127. Text, images and sound are also stored as numbers, with an agreed encoding such as UTF-8 for characters."
+  - id: edu-cs-02
+    subcategory: computer-science-fundamentals
+    query: "Explain Big O notation without too much math"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "growth rate of work as input size grows",
+          synonyms: ["how running time scales", "scalability"],
+        }
+      - {
+          name: "common classes O(1), O(log n), O(n), O(n log n), O(n^2)",
+          synonyms: ["constant, linear, quadratic", "complexity classes"],
+        }
+      - {
+          name: "drop constants and lower-order terms",
+          synonyms: ["ignore constant factors", "dominant term"],
+        }
+      - {
+          name: "upper bound, often for the worst case",
+          synonyms: ["worst-case analysis", "asymptotic"],
+        }
+    misconceptions:
+      - "Big O tells you the exact running time in seconds."
+      - "An O(n) algorithm is faster than an O(n^2) algorithm for every input size."
+    referenceNotes: "Big O notation describes how the number of steps an algorithm needs grows as the input size n grows, ignoring constant factors and lower-order terms. Looking up an array element by index is O(1), scanning a list is O(n), binary search on sorted data is O(log n), good sorting algorithms such as merge sort are O(n log n), and comparing every pair of items is O(n squared). It is an upper bound on growth, often quoted for the worst case. It does not give seconds: an O(n squared) routine with a tiny constant can beat an O(n) routine with a large constant on small inputs, but the linear one wins once n is large enough."
+  - id: edu-cs-03
+    subcategory: computer-science-fundamentals
+    query: "What is recursion, and why does it need a base case?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "a function that calls itself on a smaller problem",
+          synonyms: ["self-reference", "recursive case"],
+        }
+      - {
+          name: "base case stops the recursion",
+          synonyms: ["termination condition", "stopping condition"],
+        }
+      - {
+          name: "call stack frames",
+          synonyms: ["stack of calls", "each call has its own variables"],
+        }
+      - { name: "stack overflow without a base case", synonyms: ["infinite recursion", "too deep"] }
+      - {
+          name: "factorial or Fibonacci example",
+          synonyms: ["n! = n times (n-1)!", "tree recursion"],
+        }
+    misconceptions:
+      - "Recursion is always faster than a loop."
+      - "Recursive calls do not use extra memory."
+    referenceNotes: "Recursion solves a problem by having a function call itself on a smaller version of the same problem. Every recursive function needs a base case that returns directly without another call, and recursive steps that move toward it. For factorial, factorial(0) is 1 and factorial(n) is n times factorial(n minus 1). Each call gets its own frame on the call stack holding its parameters and local variables, so depth uses memory. Without a base case, the calls never stop and the program eventually fails with a stack overflow. A naive recursive Fibonacci repeats work and takes exponential time, while memoization or a loop avoids that."
+  - id: edu-cs-04
+    subcategory: computer-science-fundamentals
+    query: "Why do database indexes make queries faster, and what do they cost?"
+    durationSeconds: 60
+    aspects: ["16:9", "1:1"]
+    language: en
+    keyConcepts:
+      - {
+          name: "index is a separate sorted structure",
+          synonyms: ["B-tree", "lookup table from value to row location"],
+        }
+      - { name: "avoids a full table scan", synonyms: ["sequential scan", "reads fewer rows"] }
+      - { name: "logarithmic lookup", synonyms: ["O(log n)", "tree traversal"] }
+      - {
+          name: "cost of writes and storage",
+          synonyms: ["slower inserts and updates", "extra disk space"],
+        }
+    misconceptions:
+      - "Adding an index to every column always makes a database faster."
+      - "Indexes are free to maintain."
+    referenceNotes: "Without an index, finding rows that match a condition means a sequential scan: reading every row of the table. An index is a separate data structure, most commonly a B-tree, that keeps the values of one or more columns in sorted order with pointers to the rows, so the database can find a value in logarithmic time and read only the matching rows. The price is paid on writes: every insert, update or delete must also update each affected index, and indexes take extra disk space. Indexing every column therefore slows writes and wastes storage. Indexes should target the columns used in filters, joins and sorting."
+  - id: edu-econ-01
+    subcategory: economics
+    query: "How are prices actually set? Explain supply and demand"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "demand curve slopes downward",
+          synonyms: ["law of demand", "higher price lowers quantity demanded"],
+        }
+      - {
+          name: "supply curve slopes upward",
+          synonyms: ["law of supply", "higher price raises quantity supplied"],
+        }
+      - {
+          name: "equilibrium price and quantity",
+          synonyms: ["market clearing", "where the curves cross"],
+        }
+      - { name: "shortage and surplus", synonyms: ["excess demand", "excess supply"] }
+      - { name: "shifts of the curves", synonyms: ["change in demand", "change in supply"] }
+    misconceptions:
+      - "A change in the price of a good shifts its demand curve."
+      - "Prices are set by sellers alone."
+    referenceNotes: "In a competitive market, buyers' willingness to pay forms a downward-sloping demand curve and sellers' costs form an upward-sloping supply curve. The market price settles where quantity demanded equals quantity supplied, the equilibrium. Above it there is a surplus that pushes the price down, and below it a shortage that pushes the price up. A change in the good's own price moves along the curve. A shift of the curve happens when something else changes, such as consumer income, tastes, input costs or technology. For example, a poor harvest shifts supply left and raises the equilibrium price. Neither side alone sets the price."
+  - id: edu-econ-02
+    subcategory: economics
+    query: "महंगाई क्यों बढ़ती है, और थोड़ी महंगाई को सामान्य क्यों माना जाता है?"
+    durationSeconds: 75
+    aspects: ["16:9", "9:16"]
+    language: hi-IN
+    keyConcepts:
+      - {
+          name: "inflation is a general rise in the price level",
+          synonyms: ["महंगाई", "purchasing power falls"],
+        }
+      - { name: "demand-pull inflation", synonyms: ["मांग बढ़ने से महंगाई", "too much spending"] }
+      - { name: "cost-push inflation", synonyms: ["लागत बढ़ने से महंगाई", "supply shocks"] }
+      - {
+          name: "central banks aim for low and stable inflation",
+          synonyms: ["मौद्रिक नीति", "inflation target"],
+        }
+    misconceptions:
+      - "Inflation means every price rises at the same rate."
+      - "Inflation means prices are high, rather than that prices are rising."
+    referenceNotes: "Inflation is a sustained rise in the general level of prices, which lowers what each unit of money can buy. It is a rate of change, not a level: prices can be high while inflation is low. Demand-pull inflation happens when total spending grows faster than the economy can supply, and cost-push inflation happens when input costs such as fuel or wages rise and firms pass them on. Not all prices move together; some rise fast and others fall. Many central banks aim for low, steady inflation, often around 2 percent, because it leaves room to cut interest rates in a downturn and avoids the risks of falling prices, while high inflation erodes savings and makes planning difficult."
+  - id: edu-econ-03
+    subcategory: economics
+    query: "Comparative advantage explained with a simple example. Why would a country that's better at everything still trade?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - { name: "opportunity cost", synonyms: ["what you give up", "trade-off"] }
+      - {
+          name: "comparative advantage is the lower opportunity cost",
+          synonyms: ["relative efficiency", "specialize in what you give up least to make"],
+        }
+      - {
+          name: "absolute advantage is different",
+          synonyms: ["more output per hour", "better at making everything"],
+        }
+      - { name: "gains from trade for both sides", synonyms: ["win-win", "more total output"] }
+    misconceptions:
+      - "A country that is worse at producing everything cannot gain from trade."
+      - "Comparative advantage simply means being able to produce more of a good than another country."
+    referenceNotes: "Absolute advantage means producing more of a good with the same resources. Comparative advantage means producing it at a lower opportunity cost, that is, giving up less of something else. Even if one country is better at making everything, it cannot specialize in everything, and each country has a lower opportunity cost in a different good. If each specializes in the good with the lower opportunity cost and they trade, total output rises and both can consume more than they could alone. David Ricardo used wine and cloth for England and Portugal in 1817. The gains depend on the terms of trade lying between the two countries' opportunity costs."
+  - id: edu-econ-04
+    subcategory: economics
+    query: "What is GDP and what doesn't it capture?"
+    durationSeconds: 60
+    aspects: ["1:1", "16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "market value of final goods and services produced in a country in a period",
+          synonyms: ["total output", "gross domestic product"],
+        }
+      - {
+          name: "expenditure approach C + I + G + NX",
+          synonyms:
+            ["consumption, investment, government spending, net exports", "spending formula"],
+        }
+      - { name: "nominal versus real GDP", synonyms: ["adjusted for inflation", "constant prices"] }
+      - {
+          name: "what GDP leaves out",
+          synonyms: ["unpaid household work", "informal economy", "inequality and wellbeing"],
+        }
+    misconceptions:
+      - "GDP directly measures people's happiness or standard of living."
+      - "GDP counts the full value of intermediate goods and the resale of used goods."
+    referenceNotes: "Gross domestic product is the total market value of all final goods and services produced within a country in a given period. By expenditure it equals consumption plus investment plus government spending plus net exports (exports minus imports). Only final goods are counted to avoid double counting intermediate inputs, and the resale of used goods is excluded because it is not new production. Nominal GDP uses current prices, while real GDP adjusts for inflation so growth reflects output. GDP leaves out unpaid work such as caring for family, most informal activity, environmental damage and how income is distributed, so it is not a direct measure of wellbeing."
+  - id: tech-frontend-01
+    subcategory: frontend
+    query: "What does the browser do between receiving my HTML and showing pixels on screen?"
+    durationSeconds: 90
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - { name: "HTML parsed into the DOM", synonyms: ["document object model", "DOM tree"] }
+      - { name: "CSS parsed into the CSSOM", synonyms: ["style rules", "CSS object model"] }
+      - {
+          name: "render tree combines DOM and styles",
+          synonyms: ["visible nodes only", "computed styles"],
+        }
+      - { name: "layout, paint and composite", synonyms: ["reflow", "rasterization and layers"] }
+      - {
+          name: "render-blocking CSS and parser-blocking scripts",
+          synonyms: ["async and defer", "critical rendering path"],
+        }
+    misconceptions:
+      - "JavaScript never delays page rendering because it runs after the page is drawn."
+      - "CSS does not block rendering."
+    referenceNotes: "The browser parses HTML into the Document Object Model and CSS into the CSS Object Model. It combines them into a render tree of visible elements with computed styles, then runs layout to compute each element's size and position, paints the pixels into layers, and composites the layers, often on the GPU, to the screen. CSS is render-blocking: the browser will not paint until it has the stylesheets it needs. A classic script without async or defer blocks the HTML parser while it downloads and runs. Changing geometry triggers layout again, while changes to transform and opacity can often be handled only by compositing."
+  - id: tech-frontend-02
+    subcategory: frontend
+    query: "How does React decide what to update on the page when state changes?"
+    durationSeconds: 75
+    aspects: ["16:9", "9:16"]
+    language: en
+    keyConcepts:
+      - {
+          name: "state change schedules a re-render of the component",
+          synonyms: ["setState", "useState update"],
+        }
+      - {
+          name: "rendering produces a description of the UI",
+          synonyms: ["React elements", "virtual DOM"],
+        }
+      - {
+          name: "reconciliation compares old and new output",
+          synonyms: ["diffing", "tree comparison"],
+        }
+      - {
+          name: "commit phase updates only changed DOM nodes",
+          synonyms: ["minimal DOM mutations", "browser DOM updates"],
+        }
+      - { name: "keys identify list items", synonyms: ["stable keys", "key prop"] }
+    misconceptions:
+      - "React rebuilds the entire real DOM from scratch on every state change."
+      - "A component re-rendering always means the browser DOM was changed."
+      - "Using the array index as a key is always safe."
+    referenceNotes: "When state changes, React re-renders the component, calling it again to produce a new tree of React elements, a lightweight description of the UI. In reconciliation, React compares the new tree to the previous one and works out what changed. In the commit phase it applies only the necessary changes to the real DOM, so a render can finish with no DOM mutation at all. For lists, a stable key lets React match items between renders; using an index as a key can mix up state when items are reordered, inserted or removed. Child components re-render with their parent by default unless the compiler or memoization skips them."
+  - id: tech-frontend-03
+    subcategory: frontend
+    query: "Flexbox or CSS grid? How do I choose?"
+    durationSeconds: 60
+    aspects: ["16:9", "1:1"]
+    language: en
+    keyConcepts:
+      - {
+          name: "flexbox is one-dimensional layout",
+          synonyms: ["row or column", "main axis and cross axis"],
+        }
+      - {
+          name: "grid is two-dimensional layout",
+          synonyms: ["rows and columns together", "grid-template-columns"],
+        }
+      - {
+          name: "content-driven versus layout-driven",
+          synonyms: ["items size the layout in flexbox", "template defines tracks in grid"],
+        }
+      - { name: "alignment properties", synonyms: ["justify-content", "align-items"] }
+      - { name: "combining both", synonyms: ["grid for page, flex for components", "nesting"] }
+    misconceptions:
+      - "CSS grid replaced flexbox, so flexbox is obsolete."
+      - "You have to choose either flexbox or grid for the entire page."
+    referenceNotes: "Flexbox lays items out along a single axis, a row or a column, and distributes space and alignment among them. It suits navigation bars, toolbars and small components where the content determines sizing. CSS grid defines rows and columns together, so it can place items in both dimensions, as in page layouts, galleries and dashboards, using tracks, fr units and areas. They are not rivals: a common pattern is a grid for the overall page structure and flexbox inside components. Both support the gap property for spacing and powerful alignment, and both are widely supported in all current browsers."
+  - id: tech-frontend-04
+    subcategory: frontend
+    query: "My site feels slow. What are Core Web Vitals and what counts as good?"
+    durationSeconds: 60
+    aspects: ["9:16", "16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "Largest Contentful Paint measures loading",
+          synonyms: ["LCP", "main content visible"],
+        }
+      - {
+          name: "Interaction to Next Paint measures responsiveness",
+          synonyms: ["INP", "input latency"],
+        }
+      - {
+          name: "Cumulative Layout Shift measures visual stability",
+          synonyms: ["CLS", "content jumping"],
+        }
+      - {
+          name: "good thresholds",
+          synonyms: ["LCP 2.5 seconds or less", "INP 200 milliseconds or less", "CLS 0.1 or less"],
+        }
+    misconceptions:
+      - "First Input Delay is still one of the three Core Web Vitals."
+      - "Cumulative Layout Shift measures how long the page takes to load."
+    referenceNotes: "Core Web Vitals are Google's user-centered metrics for page experience. Largest Contentful Paint measures loading, how long until the main content is visible, and is good at 2.5 seconds or less. Interaction to Next Paint measures responsiveness, the delay between user interactions and the next frame, and is good at 200 milliseconds or less. INP replaced First Input Delay as a Core Web Vital in March 2024. Cumulative Layout Shift measures visual stability, how much content unexpectedly moves, and is good at 0.1 or less. These are assessed at the 75th percentile of real user visits. Optimizing images and avoiding long tasks help."
+  - id: tech-backend-01
+    subcategory: backend
+    query: "What actually makes an API RESTful?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - { name: "resources identified by URLs", synonyms: ["nouns not verbs", "/orders/42"] }
+      - {
+          name: "HTTP methods have meaning",
+          synonyms: ["GET, POST, PUT, PATCH, DELETE", "safe and idempotent methods"],
+        }
+      - {
+          name: "stateless requests",
+          synonyms:
+            ["each request carries what the server needs", "no server-side session required"],
+        }
+      - {
+          name: "representations and status codes",
+          synonyms: ["JSON representation", "200, 201, 404"],
+        }
+    misconceptions:
+      - "REST requires JSON as the data format."
+      - "Any API that uses HTTP is automatically RESTful."
+    referenceNotes: "REST is an architectural style described by Roy Fielding in his 2000 dissertation. A RESTful API models things as resources identified by URLs, such as /orders/42, and uses HTTP methods with their standard meaning: GET reads and is safe, PUT replaces and is idempotent, DELETE removes and is idempotent, and POST creates or triggers processing and is not idempotent. Requests are stateless: each one carries all the information the server needs to handle it. Responses use status codes, such as 201 Created and 404 Not Found, and a representation of the resource. JSON is common but not required. Using HTTP alone does not make an API RESTful."
+  - id: tech-backend-02
+    subcategory: backend
+    query: "What is a database transaction? What does ACID stand for?"
+    durationSeconds: 75
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "atomicity: all or nothing",
+          synonyms: ["commit or rollback", "no partial updates"],
+        }
+      - {
+          name: "consistency: valid state to valid state",
+          synonyms: ["constraints preserved", "invariants hold"],
+        }
+      - {
+          name: "isolation between concurrent transactions",
+          synonyms: ["isolation levels", "dirty reads and phantoms"],
+        }
+      - { name: "durability after commit", synonyms: ["write-ahead log", "survives a crash"] }
+      - { name: "bank transfer example", synonyms: ["debit and credit together", "money transfer"] }
+    misconceptions:
+      - "Atomicity means transactions run one at a time."
+      - "The C in ACID means the same thing as the C in the CAP theorem."
+    referenceNotes: "A transaction groups several operations into one unit of work. ACID stands for atomicity, consistency, isolation and durability. Atomicity means all the operations take effect or none do; a failure triggers a rollback. Consistency means a transaction moves the database from one valid state to another, respecting constraints. Isolation controls how concurrent transactions see each other's changes, with levels such as read committed and serializable trading strictness for throughput. Durability means that once committed, changes survive a crash, typically via a write-ahead log. In a money transfer, debit and credit must succeed together. Consistency in ACID is not the same as the consistency in the CAP theorem."
+  - id: tech-backend-03
+    subcategory: backend
+    query: "How does a website remember that I'm logged in?"
+    durationSeconds: 60
+    aspects: ["16:9", "9:16"]
+    language: en
+    keyConcepts:
+      - {
+          name: "HTTP is stateless",
+          synonyms: ["each request is independent", "no built-in memory"],
+        }
+      - {
+          name: "session ID stored on the server",
+          synonyms: ["session store", "server-side session"],
+        }
+      - {
+          name: "cookie carries the session ID",
+          synonyms: ["Set-Cookie header", "browser sends it automatically"],
+        }
+      - { name: "cookie security flags", synonyms: ["HttpOnly, Secure, SameSite", "expiry"] }
+      - {
+          name: "logout invalidates the session",
+          synonyms: ["session expiry", "server deletes the record"],
+        }
+    misconceptions:
+      - "The cookie stores your password so the site can log you in again."
+      - "HTTP automatically remembers who you are between requests."
+    referenceNotes: "HTTP is stateless, so the server does not remember earlier requests by itself. After a successful login the server creates a session record and generates a long, random session ID. It sends the ID to the browser in a Set-Cookie header, and the browser returns the cookie on every later request so the server can look up who you are. The password is not stored in the cookie. Cookie flags matter: HttpOnly hides it from JavaScript, Secure restricts it to HTTPS and SameSite limits cross-site sending. Logging out or expiry deletes or invalidates the server-side session, making the cookie worthless."
+  - id: tech-backend-04
+    subcategory: backend
+    query: "How does a token bucket rate limiter work?"
+    durationSeconds: 45
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - { name: "bucket with a capacity of tokens", synonyms: ["burst size", "maximum tokens"] }
+      - { name: "refill at a steady rate", synonyms: ["tokens per second", "leaky refill"] }
+      - { name: "each request consumes a token", synonyms: ["cost per request", "take one token"] }
+      - {
+          name: "empty bucket rejects with 429",
+          synonyms: ["Too Many Requests", "Retry-After header"],
+        }
+    misconceptions:
+      - "A token bucket forbids bursts of requests."
+      - "Rate limiting only exists to stop malicious attackers."
+    referenceNotes: "A token bucket holds up to a fixed capacity of tokens and is refilled at a constant rate, for example ten tokens per second. Each request removes a token. If a token is available, the request proceeds; if the bucket is empty, the server rejects the request, usually with HTTP status 429 Too Many Requests and often a Retry-After header. The capacity allows short bursts, while the refill rate sets the long-run average. Rate limiting also protects against accidental overload, such as a buggy client in a retry loop, and shares capacity fairly between users, so it is not only for attackers. Limits are commonly kept per user or per API key in a shared store."
+  - id: tech-sysdesign-01
+    subcategory: system-design
+    query: "What does a load balancer do?"
+    durationSeconds: 45
+    aspects: ["16:9", "9:16"]
+    language: en
+    keyConcepts:
+      - {
+          name: "distributes requests across multiple servers",
+          synonyms: ["spreads traffic", "horizontal scaling"],
+        }
+      - { name: "balancing algorithms", synonyms: ["round robin", "least connections"] }
+      - {
+          name: "health checks remove failed servers",
+          synonyms: ["failover", "removes unhealthy instances"],
+        }
+      - { name: "layer 4 versus layer 7", synonyms: ["TCP level", "HTTP-aware routing"] }
+    misconceptions:
+      - "A load balancer makes each individual server faster."
+      - "A load balancer can never be a single point of failure."
+    referenceNotes: "A load balancer sits in front of a group of servers and spreads incoming requests across them, so no single machine is overloaded and capacity grows by adding servers. Simple algorithms include round robin and least connections, and some use hashing for sticky routing. It runs health checks and stops sending traffic to servers that fail, giving higher availability. Layer 4 balancers route on TCP and IP information, while layer 7 balancers understand HTTP and can route by path, header or cookie. A single load balancer can itself be a point of failure, so production setups run redundant load balancers. It does not speed up any one server."
+  - id: tech-sysdesign-02
+    subcategory: system-design
+    query: "How does database sharding work, and when is it a bad idea?"
+    durationSeconds: 75
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "horizontal partitioning across servers",
+          synonyms: ["split rows between databases", "shards"],
+        }
+      - { name: "shard key", synonyms: ["partition key", "choosing the key"] }
+      - {
+          name: "hash-based versus range-based sharding",
+          synonyms: ["hash sharding", "range sharding"],
+        }
+      - {
+          name: "cross-shard queries and hot shards",
+          synonyms: ["joins across shards", "uneven load"],
+        }
+      - {
+          name: "sharding differs from replication",
+          synonyms: ["replicas hold copies", "each shard holds different data"],
+        }
+    misconceptions:
+      - "Sharding and replication are the same thing."
+      - "Sharding should be the first step whenever a database becomes slow."
+    referenceNotes: "Sharding splits a large dataset horizontally, so each database server, or shard, holds a subset of the rows. A shard key, such as user ID, decides where a row lives. Hash-based sharding spreads data evenly, while range-based sharding keeps neighbours together but can create hot shards. Queries that touch several shards, including joins and transactions across shards, become complex and slow, and changing the number of shards means moving data. Replication is different: it keeps full copies of the same data for availability and read scaling. Because of the complexity, indexing, caching, read replicas and vertical scaling are usually tried before sharding."
+  - id: tech-sysdesign-03
+    subcategory: system-design
+    query: "What problem does consistent hashing solve?"
+    durationSeconds: 90
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "hash mod N remaps most keys when N changes",
+          synonyms: ["modulo hashing problem", "cache invalidation storm"],
+        }
+      - { name: "hash ring", synonyms: ["circular key space", "clockwise lookup"] }
+      - {
+          name: "only a fraction of keys move",
+          synonyms: ["about K/N keys", "minimal redistribution"],
+        }
+      - { name: "virtual nodes balance load", synonyms: ["vnodes", "multiple points per server"] }
+      - {
+          name: "used by distributed caches and databases",
+          synonyms: ["Dynamo-style stores", "Cassandra"],
+        }
+    misconceptions:
+      - "Consistent hashing guarantees perfectly equal load across all nodes."
+      - "With hash(key) mod N, adding a server only moves a few keys."
+    referenceNotes: "With simple hashing, a key goes to server hash(key) mod N. When N changes because a server is added or fails, almost every key maps to a different server, which empties caches or forces a massive data move. Consistent hashing places both servers and keys on a circular hash space, the ring, and assigns each key to the first server found moving clockwise. Adding or removing a server then moves only the keys in a neighboring segment, about K divided by N of K keys. With few servers the segments can be uneven, so each server is placed at many virtual points on the ring to even out the load, though balance is statistical, not perfect."
+  - id: tech-sysdesign-04
+    subcategory: system-design
+    query: "Why use a message queue instead of just calling the other service?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "decouples producers from consumers",
+          synonyms: ["asynchronous communication", "loose coupling"],
+        }
+      - { name: "absorbs traffic spikes", synonyms: ["buffering", "load leveling"] }
+      - { name: "retries and dead-letter queues", synonyms: ["failed messages", "poison messages"] }
+      - {
+          name: "at-least-once delivery needs idempotent consumers",
+          synonyms: ["duplicates possible", "idempotency"],
+        }
+    misconceptions:
+      - "A message queue guarantees every message is processed exactly once by default."
+      - "A message queue guarantees global ordering across all consumers."
+    referenceNotes: "A message queue sits between a producer and a consumer. The producer hands over a message and continues, so a slow or down consumer does not block it, and a burst of work is buffered and processed at the consumer's pace. Messages can be retried, and ones that keep failing are moved to a dead-letter queue for inspection. Most systems deliver at least once, so a message may arrive twice after a failure, which means consumers should be idempotent. Ordering is usually guaranteed only within a partition or a single consumer, not across many parallel consumers. The trade-off is added complexity and eventual rather than immediate results."
+  - id: tech-devops-01
+    subcategory: devops
+    query: "How do containers work? Are they just tiny virtual machines?"
+    durationSeconds: 75
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "containers share the host kernel",
+          synonyms: ["no guest operating system", "process-level isolation"],
+        }
+      - {
+          name: "namespaces isolate what a process sees",
+          synonyms: ["PID, network and mount namespaces", "isolated view"],
+        }
+      - { name: "cgroups limit resources", synonyms: ["control groups", "CPU and memory limits"] }
+      - { name: "images are layered filesystems", synonyms: ["image layers", "union filesystem"] }
+      - {
+          name: "virtual machines use a hypervisor and their own kernel",
+          synonyms: ["full guest OS", "heavier"],
+        }
+    misconceptions:
+      - "Each container runs its own full operating system kernel."
+      - "Containers are lightweight virtual machines that use a hypervisor."
+    referenceNotes: "A container is an ordinary process on the host with restrictions. On Linux, namespaces give it its own view of process IDs, network interfaces, mount points and hostnames, and control groups limit how much CPU, memory and I/O it can use. All containers on a host share the host's kernel, which is why they start quickly and use little memory. A virtual machine, by contrast, runs a full guest operating system with its own kernel on virtualized hardware provided by a hypervisor. A container image is a stack of read-only filesystem layers, shared between containers, with a thin writable layer added at run time. Because the kernel is shared, isolation is weaker than for a virtual machine."
+  - id: tech-devops-02
+    subcategory: devops
+    query: "What's a CI/CD pipeline? I always mix up delivery and deployment."
+    durationSeconds: 45
+    aspects: ["16:9", "9:16"]
+    language: en
+    keyConcepts:
+      - {
+          name: "continuous integration",
+          synonyms: ["merge often", "automated build and test on each change"],
+        }
+      - {
+          name: "continuous delivery keeps software releasable",
+          synonyms: ["manual approval to release", "release-ready artifact"],
+        }
+      - {
+          name: "continuous deployment releases automatically",
+          synonyms: ["no manual gate", "every passing change goes live"],
+        }
+      - { name: "pipeline stages", synonyms: ["build, test, deploy", "automated checks"] }
+    misconceptions:
+      - "Continuous delivery and continuous deployment mean exactly the same thing."
+      - "Continuous delivery means every commit goes to production automatically with no approval step."
+    referenceNotes: "Continuous integration means developers merge small changes into a shared branch frequently, and each change is automatically built and tested. Continuous delivery extends this so that every passing change produces a release-ready artifact that can be deployed at any time, usually with a manual decision to release. Continuous deployment goes one step further: every change that passes the automated checks is deployed to production automatically, with no human gate. A pipeline is the automated sequence of stages, such as build, unit tests, integration tests, security scans and deployment to staging and production. Fast feedback and small releases lower the risk of each deployment."
+  - id: tech-devops-03
+    subcategory: devops
+    query: "Explain blue-green deployments and how they differ from canary releases"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "two identical environments",
+          synonyms: ["blue and green", "old and new version side by side"],
+        }
+      - {
+          name: "switch traffic all at once",
+          synonyms: ["router or load balancer cutover", "instant switch"],
+        }
+      - { name: "fast rollback", synonyms: ["switch back", "keep old environment ready"] }
+      - {
+          name: "canary releases shift traffic gradually",
+          synonyms: ["small percentage of users", "progressive rollout"],
+        }
+      - {
+          name: "database schema compatibility",
+          synonyms: ["expand and contract migrations", "shared database"],
+        }
+    misconceptions:
+      - "Blue-green deployment gradually shifts a small percentage of users to the new version."
+      - "Blue-green deployment removes any concern about database schema compatibility."
+    referenceNotes: "In a blue-green deployment you run two identical production environments. One, say blue, serves live traffic while you deploy and test the new version in the other, green. When ready, you switch the router or load balancer so all traffic goes to green. If something goes wrong, switching back to blue is a fast rollback. This differs from a canary release, which sends a small share of traffic to the new version first and increases it gradually while watching metrics. Blue-green still has a catch: both environments usually share the same database, so schema changes must work with both versions, typically through backward-compatible expand and contract migrations."
+  - id: tech-devops-04
+    subcategory: devops
+    query: "How does Kubernetes decide which node a pod runs on?"
+    durationSeconds: 90
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "scheduler assigns unscheduled pods to nodes",
+          synonyms: ["kube-scheduler", "pod binding"],
+        }
+      - { name: "filtering then scoring", synonyms: ["feasible nodes", "ranking nodes"] }
+      - {
+          name: "resource requests",
+          synonyms: ["CPU and memory requests", "allocatable resources"],
+        }
+      - { name: "constraints", synonyms: ["node selectors and affinity", "taints and tolerations"] }
+      - { name: "kubelet starts the containers", synonyms: ["node agent", "runs the pod"] }
+    misconceptions:
+      - "The kubelet on each node chooses which pods to run by competing for them."
+      - "The scheduler places pods based on the live CPU usage of each node."
+    referenceNotes: "A new pod without a node is placed by the kube-scheduler. It first filters out nodes that cannot run the pod, for example nodes with too little allocatable CPU or memory compared with the pod's resource requests, nodes with taints the pod does not tolerate, or nodes that do not match its node selector or affinity rules. It then scores the remaining nodes with scoring plugins, for example to spread pods or balance resources, and picks the best one. The scheduler binds the pod to the node by recording the choice in the API server, and the kubelet on that node then starts the containers. Scheduling relies on declared requests rather than live usage."
+  - id: tech-concepts-01
+    subcategory: concepts
+    query: "Concurrency vs parallelism: what is the real difference?"
+    durationSeconds: 60
+    aspects: ["16:9", "1:1"]
+    language: en
+    keyConcepts:
+      - {
+          name: "concurrency is structuring work as overlapping tasks",
+          synonyms: ["dealing with many things at once", "interleaving"],
+        }
+      - {
+          name: "parallelism is executing simultaneously",
+          synonyms: ["doing many things at once", "multiple cores"],
+        }
+      - {
+          name: "a single core can be concurrent but not parallel",
+          synonyms: ["time slicing", "context switching"],
+        }
+      - { name: "examples", synonyms: ["async I/O", "thread pool on many cores"] }
+    misconceptions:
+      - "Concurrency and parallelism are two names for the same thing."
+      - "Concurrency requires more than one CPU core."
+    referenceNotes: "Concurrency is about structuring a program as several tasks that make progress in overlapping time periods, even if only one runs at any instant, for example by switching between them while one waits for the network. Parallelism is about literally executing multiple computations at the same moment on multiple cores or machines. A single-core machine can run a concurrent program through time slicing but cannot run anything in parallel. Concurrency mainly helps with waiting on I/O and with responsiveness, while parallelism speeds up computation that can be divided. A program can be concurrent, parallel, both or neither. Rob Pike summarized it as dealing with many things at once versus doing many things at once."
+  - id: tech-concepts-02
+    subcategory: concepts
+    query: "How can two strangers communicate securely over the internet? Explain public-key cryptography."
+    durationSeconds: 75
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "key pair of public and private keys",
+          synonyms: ["asymmetric cryptography", "RSA and elliptic curves"],
+        }
+      - {
+          name: "encrypt with public key, decrypt with private key",
+          synonyms: ["confidentiality", "lockbox analogy"],
+        }
+      - {
+          name: "digital signatures",
+          synonyms: ["sign with private key, verify with public key", "authenticity"],
+        }
+      - {
+          name: "key exchange then symmetric encryption",
+          synonyms: ["hybrid encryption", "TLS handshake"],
+        }
+      - {
+          name: "certificates bind keys to identities",
+          synonyms: ["certificate authority", "trust chain"],
+        }
+    misconceptions:
+      - "The public key must be kept secret."
+      - "HTTPS encrypts all page data directly with public-key algorithms because they are the fastest."
+    referenceNotes: "In public-key cryptography each party has a key pair: a public key that can be shared with anyone and a private key that is kept secret. Data encrypted with someone's public key can only be decrypted with their private key. Signing works the other way around: the private key creates a signature and anyone can verify it with the public key, proving who sent the data and that it was not altered. Public-key operations are slow, so protocols such as TLS use them to authenticate and agree on a shared secret, then switch to fast symmetric encryption for the data. Certificates issued by certificate authorities bind a public key to a domain name."
+  - id: tech-concepts-03
+    subcategory: concepts
+    query: "जब मैं ब्राउज़र में वेबसाइट का नाम डालता हूँ तो DNS कैसे काम करता है?"
+    durationSeconds: 60
+    aspects: ["16:9", "9:16"]
+    language: hi-IN
+    keyConcepts:
+      - {
+          name: "DNS translates names into IP addresses",
+          synonyms: ["डोमेन नाम से आईपी एड्रेस", "name resolution"],
+        }
+      - { name: "recursive resolver", synonyms: ["ISP resolver", "रिज़ॉल्वर"] }
+      - { name: "root, TLD and authoritative servers", synonyms: ["रूट सर्वर", ".com name server"] }
+      - { name: "caching with TTL", synonyms: ["कैश", "time to live"] }
+      - {
+          name: "record types such as A and AAAA",
+          synonyms: ["IPv4 and IPv6 records", "DNS records"],
+        }
+    misconceptions:
+      - "DNS is what downloads and displays the web page."
+      - "The root servers store the IP address of every website."
+    referenceNotes: "DNS translates a domain name into an IP address. The browser first checks its own cache and the operating system, then asks a recursive resolver, usually run by the internet provider or a public service. If it has no cached answer, the resolver asks a root server, which does not know the site's address but points to the servers for the top-level domain such as .com. The TLD server points to the domain's authoritative name server, which returns the record, such as an A record for IPv4 or an AAAA record for IPv6. Each answer has a time to live that sets how long it may be cached. Only after that does the browser connect to the web server."
+  - id: tech-concepts-04
+    subcategory: concepts
+    query: "Virtual memory: why does every program think it has its own memory?"
+    durationSeconds: 90
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "virtual addresses translate to physical addresses",
+          synonyms: ["address translation", "memory management unit"],
+        }
+      - { name: "pages and page tables", synonyms: ["4 KB pages", "mapping"] }
+      - { name: "isolation between processes", synonyms: ["private address space", "protection"] }
+      - { name: "page faults and swapping to disk", synonyms: ["demand paging", "swap space"] }
+      - {
+          name: "TLB caches translations",
+          synonyms: ["translation lookaside buffer", "fast lookups"],
+        }
+    misconceptions:
+      - "Virtual memory means using the hard drive as if it were RAM, and nothing else."
+      - "The same virtual address in two different processes refers to the same physical memory."
+    referenceNotes: "With virtual memory, every process sees its own private address space. The CPU's memory management unit translates each virtual address to a physical address using page tables maintained by the operating system, which map fixed-size pages, commonly 4 kilobytes. Because mappings are per process, the same virtual address in two processes normally points to different physical memory, which isolates processes from each other. A recently used translation is cached in the translation lookaside buffer. If a page is not in RAM, the access causes a page fault and the kernel loads it from disk, which lets a system use swap space, but that is only one benefit. Virtual memory also enables memory-mapped files and shared libraries."
+  - id: tech-ai-01
+    subcategory: applied-ai
+    query: "What is retrieval-augmented generation and why do people use it?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "retrieve relevant documents at question time",
+          synonyms: ["lookup before answering", "search step"],
+        }
+      - { name: "add retrieved text to the prompt", synonyms: ["context injection", "grounding"] }
+      - {
+          name: "embeddings and vector search",
+          synonyms: ["vector database", "semantic retrieval"],
+        }
+      - { name: "chunking documents", synonyms: ["splitting into passages", "chunk size"] }
+      - {
+          name: "reduces but does not eliminate hallucination",
+          synonyms: ["citations", "source-grounded answers"],
+        }
+    misconceptions:
+      - "RAG retrains the model on your documents."
+      - "RAG completely eliminates hallucinations."
+    referenceNotes: "Retrieval-augmented generation connects a language model to an external knowledge source at question time. Documents are split into chunks and indexed, often as embeddings in a vector store. When a user asks a question, the system retrieves the most relevant chunks and puts them into the prompt, so the model answers from that text and can cite it. The model's weights are not changed, so no retraining is needed, and the knowledge can be updated by changing the index. RAG reduces hallucination and keeps answers current, but it does not remove it: poor retrieval or a model that ignores the context can still produce wrong answers."
+  - id: tech-ai-02
+    subcategory: applied-ai
+    query: "How do I know if my LLM app is actually good? How are AI systems evaluated?"
+    durationSeconds: 75
+    aspects: ["16:9", "1:1"]
+    language: en
+    keyConcepts:
+      - {
+          name: "a fixed evaluation dataset with expected behavior",
+          synonyms: ["golden set", "test cases"],
+        }
+      - {
+          name: "metrics such as accuracy, faithfulness and relevance",
+          synonyms: ["groundedness", "quality scores"],
+        }
+      - {
+          name: "LLM-as-judge needs calibration",
+          synonyms: ["model-graded evaluation", "agreement with human labels"],
+        }
+      - {
+          name: "regression testing for prompt and model changes",
+          synonyms: ["run evals before shipping", "CI gates"],
+        }
+      - { name: "production monitoring and human review", synonyms: ["tracing", "user feedback"] }
+    misconceptions:
+      - "Trying a handful of prompts by hand is enough to know an AI system works."
+      - "An LLM used as a judge is unbiased and needs no validation against humans."
+    referenceNotes: "Evaluating an AI system means measuring its behavior on a representative, versioned dataset instead of relying on a few manual tries. Each case has an input and either a reference answer or criteria. Scores can come from exact checks, programmatic rules, human reviewers or a language model acting as a judge. Judge models have biases, such as favouring longer answers, so they should be calibrated against human labels. Evals run on every change to prompts, models or retrieval, so regressions are caught before release, and results are compared against thresholds. After launch, tracing, sampling real traffic and user feedback show failures the dataset missed."
+  - id: tech-ai-03
+    subcategory: applied-ai
+    query: "What's an AI agent and how is it different from a chatbot?"
+    durationSeconds: 60
+    aspects: ["16:9", "9:16"]
+    language: en
+    keyConcepts:
+      - { name: "loop of reasoning, acting and observing", synonyms: ["agent loop", "ReAct"] }
+      - { name: "tools the model can call", synonyms: ["function calling", "APIs and search"] }
+      - { name: "memory and state", synonyms: ["context", "scratchpad"] }
+      - { name: "limits and human oversight", synonyms: ["guardrails", "approval steps"] }
+    misconceptions:
+      - "An agent is a fundamentally different kind of model rather than a model used in a loop with tools."
+      - "Agents always act correctly, so no oversight or limits are needed."
+    referenceNotes: "An AI agent uses a language model in a loop: it decides on the next step, calls a tool such as search, code execution or an API, observes the result, and repeats until it finishes the task or hits a limit. A simple chatbot just answers one message at a time from the text it has. The agent's abilities come from the tools it is given, its memory of earlier steps and the instructions guiding it, not from a different type of model. Because errors compound over many steps, agents need limits on steps and spending, permissions that restrict what tools can do, logging, and human approval for risky actions."
+  - id: tech-ai-04
+    subcategory: applied-ai
+    query: "How does semantic search find results that don't share any words with my query?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "embeddings map text to vectors",
+          synonyms: ["vector representation", "dense vectors"],
+        }
+      - {
+          name: "similar meaning gives nearby vectors",
+          synonyms: ["cosine similarity", "distance in embedding space"],
+        }
+      - {
+          name: "nearest-neighbor search over an index",
+          synonyms: ["approximate nearest neighbor", "vector index"],
+        }
+      - { name: "hybrid search with keywords", synonyms: ["BM25", "lexical plus semantic"] }
+    misconceptions:
+      - "Semantic search only matches documents that contain the exact words of the query."
+      - "Embeddings from different models can be compared directly with each other."
+    referenceNotes: "Semantic search converts the query and each document into embeddings, lists of numbers produced by an embedding model so that texts with similar meaning end up close together. Closeness is measured with a metric such as cosine similarity. For large collections, an approximate nearest-neighbor index finds the closest vectors quickly without comparing against everything. A query like cheap places to sleep in Paris can match a page about budget hotels without sharing words. Embeddings from different models live in different spaces and cannot be compared, so queries and documents must use the same model. Many systems combine semantic results with keyword search such as BM25."
+  - id: tech-ai-05
+    subcategory: applied-ai
+    query: "What are guardrails for an LLM application, and what do they actually catch?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - { name: "input guardrails", synonyms: ["input filtering", "request screening"] }
+      - { name: "output guardrails", synonyms: ["response validation", "output moderation"] }
+      - { name: "rules plus classifier models", synonyms: ["deterministic checks", "guard model"] }
+      - {
+          name: "schema validation and structured output",
+          synonyms: ["JSON schema", "typed responses"],
+        }
+      - { name: "defense in depth", synonyms: ["layered controls", "least privilege for tools"] }
+    misconceptions:
+      - "A single guardrail prompt makes an LLM application completely safe."
+      - "Guardrails are only needed for the user's input, not for model output."
+    referenceNotes: "Guardrails are checks placed around a language model. Input guardrails screen requests for disallowed topics, personal data or attempts to override instructions. Output guardrails check responses for policy violations, leaked secrets or invalid structure before they reach the user or trigger an action. They combine deterministic rules, such as length limits, patterns and schema validation, with classifier or guard models for judgments that rules cannot capture. No single layer is reliable alone, so applications use defense in depth, including least-privilege tools and human approval for risky actions, and they measure guardrail quality with test sets of attacks and harmless near-misses."
+  - id: tech-ml-01
+    subcategory: machine-learning
+    query: "Explain gradient descent like I'm a beginner"
+    durationSeconds: 75
+    aspects: ["16:9", "9:16"]
+    language: en
+    keyConcepts:
+      - { name: "loss function measures error", synonyms: ["cost function", "objective"] }
+      - {
+          name: "gradient points toward steepest increase",
+          synonyms: ["slope in many dimensions", "partial derivatives"],
+        }
+      - { name: "step in the opposite direction", synonyms: ["downhill", "update parameters"] }
+      - { name: "learning rate", synonyms: ["step size", "too big overshoots, too small is slow"] }
+      - {
+          name: "local minima and convergence",
+          synonyms: ["minimum of the loss", "stopping criterion"],
+        }
+    misconceptions:
+      - "A larger learning rate always makes training converge faster."
+      - "Gradient descent always finds the global minimum of the loss."
+    referenceNotes: "Gradient descent is an iterative method for minimizing a loss function that measures how wrong a model's predictions are. The gradient is the vector of partial derivatives of the loss with respect to the parameters and points in the direction of steepest increase. The algorithm repeatedly updates each parameter by subtracting the learning rate times the gradient, moving downhill. A learning rate that is too small makes progress slow, while one that is too large can overshoot and diverge. For convex problems, such as linear regression with squared error, it reaches the global minimum; for neural networks the loss is non-convex and it can end in a local minimum or flat region."
+  - id: tech-ml-02
+    subcategory: machine-learning
+    query: "What is overfitting? My model has 99% training accuracy but does badly on new data."
+    durationSeconds: 60
+    aspects: ["16:9", "1:1"]
+    language: en
+    keyConcepts:
+      - {
+          name: "model memorizes noise in the training data",
+          synonyms: ["fits training set too closely", "high variance"],
+        }
+      - {
+          name: "training error low, validation error high",
+          synonyms: ["generalization gap", "train-test gap"],
+        }
+      - {
+          name: "train, validation and test splits",
+          synonyms: ["hold-out data", "cross-validation"],
+        }
+      - {
+          name: "remedies",
+          synonyms: ["regularization", "more data", "early stopping", "simpler model"],
+        }
+    misconceptions:
+      - "Higher training accuracy always means a better model."
+      - "Overfitting only happens with neural networks."
+    referenceNotes: "A model overfits when it learns the noise and quirks of its training set instead of the underlying pattern, so it scores very well on the data it was trained on but poorly on new data. The sign is a large gap between training and validation performance. To detect it, hold out data the model never trains on: a validation set for tuning and a test set for the final estimate, or use cross-validation. It can happen with any flexible model, including decision trees and polynomial regression. Remedies include getting more data, simplifying the model, regularization such as L2 penalties or dropout, and early stopping."
+  - id: tech-ml-03
+    subcategory: machine-learning
+    query: "How does a decision tree decide where to split the data?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - { name: "split on a feature threshold", synonyms: ["yes/no question", "node test"] }
+      - { name: "impurity measures", synonyms: ["Gini impurity", "entropy"] }
+      - { name: "information gain", synonyms: ["impurity reduction", "best split"] }
+      - { name: "greedy recursive construction", synonyms: ["top-down", "CART"] }
+      - {
+          name: "depth limits and pruning",
+          synonyms: ["avoid overfitting", "minimum samples per leaf"],
+        }
+    misconceptions:
+      - "Decision trees require features to be scaled or normalized first."
+      - "Deeper trees always generalize better."
+    referenceNotes: "A decision tree classifies by asking a sequence of questions about features, such as is age greater than 30, with each question sending examples down a branch. At each node the algorithm tries candidate splits and chooses the one that makes the resulting groups purest, measured by Gini impurity or entropy; the drop in impurity is the information gain. It chooses greedily one node at a time, repeating on each branch until a stopping rule such as a maximum depth is met. Because splits depend only on thresholds on single features, no feature scaling is needed. Very deep trees memorize training data, so depth limits, pruning or ensembles such as random forests are used."
+  - id: tech-ml-04
+    subcategory: machine-learning
+    query: "How do neural networks learn? Explain backpropagation."
+    durationSeconds: 90
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "layers of neurons with weights and biases",
+          synonyms: ["parameters", "weighted sums"],
+        }
+      - { name: "activation functions add non-linearity", synonyms: ["ReLU", "sigmoid"] }
+      - { name: "forward pass and loss", synonyms: ["prediction", "error measurement"] }
+      - {
+          name: "backpropagation computes gradients with the chain rule",
+          synonyms: ["backward pass", "error propagation"],
+        }
+      - { name: "optimizer updates weights", synonyms: ["gradient descent step", "learning rate"] }
+    misconceptions:
+      - "Backpropagation is the optimizer that updates the weights."
+      - "Artificial neural networks work exactly like the neurons in a human brain."
+    referenceNotes: "A neural network is made of layers; each neuron computes a weighted sum of its inputs plus a bias and passes it through an activation function such as ReLU, which lets the network model non-linear relationships. In the forward pass an input flows through the layers to produce a prediction, and a loss function measures the error against the true answer. Backpropagation then applies the chain rule from the output back to the input to compute the gradient of the loss with respect to every weight. A separate optimizer, such as gradient descent or Adam, uses these gradients to update the weights. Repeating this over many batches reduces the loss. The comparison with biological neurons is only loose."
+  - id: tech-ml-05
+    subcategory: machine-learning
+    query: "What does k-means clustering do?"
+    durationSeconds: 30
+    aspects: ["9:16"]
+    language: en
+    keyConcepts:
+      - {
+          name: "groups unlabeled data into k clusters",
+          synonyms: ["unsupervised learning", "partitioning"],
+        }
+      - {
+          name: "assign points to the nearest centroid",
+          synonyms: ["distance to cluster center", "Euclidean distance"],
+        }
+      - {
+          name: "recompute centroids and repeat",
+          synonyms: ["iterate until stable", "mean of cluster"],
+        }
+      - { name: "k must be chosen", synonyms: ["elbow method", "silhouette score"] }
+    misconceptions:
+      - "K-means automatically discovers the correct number of clusters."
+      - "K-means needs labeled examples to train."
+    referenceNotes: "K-means is an unsupervised algorithm that splits unlabeled data into k groups. It starts with k initial centroids, then alternates two steps: assign every point to its nearest centroid, usually by Euclidean distance, and move each centroid to the mean of the points assigned to it. It repeats until assignments stop changing. You must choose k yourself, with help from methods such as the elbow method or silhouette score. The result depends on the starting centroids, so implementations run several initializations, and it works best for roughly round, similarly sized clusters. Features should be scaled because distance drives the assignment."
+  - id: tech-web3-01
+    subcategory: blockchain-and-web3
+    query: "How does a blockchain work, in simple terms?"
+    durationSeconds: 75
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - { name: "transactions grouped into blocks", synonyms: ["ledger entries", "batches"] }
+      - {
+          name: "each block contains the hash of the previous block",
+          synonyms: ["hash chain", "linked blocks"],
+        }
+      - {
+          name: "tamper evidence",
+          synonyms: ["changing old data breaks later hashes", "immutability by cost"],
+        }
+      - {
+          name: "distributed copies on many nodes",
+          synonyms: ["peer-to-peer network", "replicated ledger"],
+        }
+      - {
+          name: "consensus decides the next block",
+          synonyms: ["agreement among nodes", "proof of work or stake"],
+        }
+    misconceptions:
+      - "Blockchain and Bitcoin are the same thing."
+      - "Blockchain transactions are fully anonymous."
+    referenceNotes: "A blockchain is a ledger stored by many computers. Transactions are collected into blocks, and each block includes the cryptographic hash of the previous block, so the blocks form a chain. Changing an old transaction would change that block's hash and break every later link, which makes tampering evident and, on large networks, extremely costly. Nodes follow a consensus mechanism, such as proof of work or proof of stake, to agree on which block comes next. Bitcoin is one application of blockchain technology, not the technology itself. Addresses on public chains are pseudonymous: transactions are visible to everyone, and addresses can sometimes be linked to real identities."
+  - id: tech-web3-02
+    subcategory: blockchain-and-web3
+    query: "Proof of work vs proof of stake: what's the difference and why did Ethereum switch?"
+    durationSeconds: 90
+    aspects: ["16:9", "9:16"]
+    language: en
+    keyConcepts:
+      - {
+          name: "proof of work searches for a nonce",
+          synonyms: ["mining", "hash below a difficulty target"],
+        }
+      - { name: "proof of stake locks up coins", synonyms: ["validators", "staking"] }
+      - {
+          name: "slashing penalizes misbehavior",
+          synonyms: ["lose staked funds", "economic penalty"],
+        }
+      - {
+          name: "energy consumption",
+          synonyms: ["electricity use", "Merge cut energy use by over 99 percent"],
+        }
+      - {
+          name: "Ethereum switched to proof of stake in 2022",
+          synonyms: ["the Merge", "September 2022"],
+        }
+    misconceptions:
+      - "Proof-of-work miners solve useful, complicated math problems."
+      - "Proof of stake uses about as much energy as proof of work."
+    referenceNotes: "In proof of work, miners repeatedly hash a candidate block with different nonce values until the hash falls below a difficulty target. This is a brute-force search with no other use, and its cost is what makes rewriting history expensive. In proof of stake, validators lock up coins as collateral and are chosen to propose and attest to blocks; dishonest behavior can be punished by slashing part of the stake. Ethereum moved from proof of work to proof of stake in September 2022, in an event called the Merge, which cut its energy use by more than 99 percent. Bitcoin still uses proof of work, with difficulty adjusted every 2016 blocks to keep blocks about ten minutes apart."
+  - id: tech-web3-03
+    subcategory: blockchain-and-web3
+    query: "What is a smart contract? Is it really a contract?"
+    durationSeconds: 45
+    aspects: ["16:9", "1:1"]
+    language: en
+    keyConcepts:
+      - {
+          name: "program stored and run on a blockchain",
+          synonyms: ["on-chain code", "Ethereum Virtual Machine"],
+        }
+      - {
+          name: "deterministic execution when called",
+          synonyms: ["every node gets the same result", "state transitions"],
+        }
+      - { name: "gas pays for computation", synonyms: ["transaction fees", "execution cost"] }
+      - { name: "oracles bring off-chain data", synonyms: ["price feeds", "external data"] }
+      - {
+          name: "not automatically a legal contract",
+          synonyms: ["code, not legal agreement", "legal status varies"],
+        }
+    misconceptions:
+      - "A smart contract is a legally binding contract by default."
+      - "Smart contracts can directly fetch data from websites and external APIs."
+    referenceNotes: "A smart contract is a program deployed to a blockchain such as Ethereum. Anyone can call its functions in a transaction, and every node runs the same code and must reach the same result, so the program has to be deterministic. It can hold funds and state, and execution costs gas, a fee that pays for computation. Because of determinism, a contract cannot call a website directly; it relies on oracles to supply outside data such as prices. The name comes from computer scientist Nick Szabo in the 1990s. A smart contract is code, not a legal agreement by default, and bugs in the code can be costly because deployed code is hard to change."
+  - id: tech-web3-04
+    subcategory: blockchain-and-web3
+    query: "What are layer two rollups and how do optimistic and zero-knowledge rollups differ?"
+    durationSeconds: 75
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "execute transactions off layer one",
+          synonyms: ["off-chain execution", "batching"],
+        }
+      - {
+          name: "post compressed data to layer one",
+          synonyms: ["data availability", "inherit security of layer one"],
+        }
+      - {
+          name: "optimistic rollups use fraud proofs",
+          synonyms: ["challenge period", "assume valid unless challenged"],
+        }
+      - {
+          name: "zero-knowledge rollups use validity proofs",
+          synonyms: ["ZK proofs", "proof verified on layer one"],
+        }
+      - { name: "lower fees and higher throughput", synonyms: ["cheaper transactions", "scaling"] }
+    misconceptions:
+      - "Rollups are independent blockchains with their own separate security."
+      - "Optimistic rollups use zero-knowledge proofs to verify transactions."
+    referenceNotes: "A rollup processes many transactions off the main chain, layer one, and posts compressed transaction data and a commitment to the new state back to layer one. Because the data and the verification live on layer one, a rollup inherits its security and spreads the cost of one layer-one transaction over many users, giving lower fees. Optimistic rollups assume batches are valid and allow a challenge period, commonly around a week, in which anyone can submit a fraud proof. Zero-knowledge rollups post a cryptographic validity proof that layer one verifies, so withdrawals do not need a long challenge window. Both approaches aim to scale throughput without weakening decentralization."
+  - id: tech-security-01
+    subcategory: cybersecurity
+    query: "How does SQL injection work, and how do developers prevent it?"
+    durationSeconds: 75
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "untrusted input is concatenated into a query",
+          synonyms: ["string building of SQL", "user input becomes code"],
+        }
+      - {
+          name: "input changes the structure of the query",
+          synonyms: ["injected SQL syntax", "data treated as commands"],
+        }
+      - {
+          name: "parameterized queries separate code from data",
+          synonyms: ["prepared statements", "bind variables"],
+        }
+      - {
+          name: "least privilege database accounts",
+          synonyms: ["limited permissions", "reduce impact"],
+        }
+      - { name: "validation as a secondary defense", synonyms: ["input validation", "allow lists"] }
+    misconceptions:
+      - "Manually escaping quote characters is the best and sufficient defense."
+      - "SQL injection only affects login forms."
+    referenceNotes: "SQL injection happens when an application builds an SQL statement by concatenating untrusted input, so an attacker's text is interpreted as SQL syntax and changes the meaning of the query, possibly exposing or altering data. Any place that feeds input into a query is exposed, including search boxes, URL parameters and headers, not only login forms. The primary defense is parameterized queries, or prepared statements, where the SQL text is fixed and values are sent separately, so input is always treated as data. Defense in depth adds database accounts with least privilege, allow-list validation, and an ORM used safely. Hand-written escaping is error-prone and not a substitute for parameterization."
+  - id: tech-security-02
+    subcategory: cybersecurity
+    query: "What is cross-site scripting and how do I stop it?"
+    durationSeconds: 60
+    aspects: ["16:9", "9:16"]
+    language: en
+    keyConcepts:
+      - {
+          name: "attacker-controlled script runs in the victim's browser",
+          synonyms: ["script injection", "runs in the site's origin"],
+        }
+      - {
+          name: "stored, reflected and DOM-based XSS",
+          synonyms: ["types of XSS", "persistent and non-persistent"],
+        }
+      - { name: "output encoding by context", synonyms: ["escaping HTML", "safe templating"] }
+      - { name: "Content Security Policy", synonyms: ["CSP", "restrict script sources"] }
+      - { name: "HttpOnly cookies limit theft", synonyms: ["cookie flags", "session protection"] }
+    misconceptions:
+      - "XSS attacks the web server directly rather than the users' browsers."
+      - "Serving the site over HTTPS prevents XSS."
+    referenceNotes: "Cross-site scripting occurs when a site includes untrusted input in a page without proper handling, so an attacker's script runs in a victim's browser with the privileges of the vulnerable site's origin. It can read page content, act as the user or, if cookies are not protected, steal them. Stored XSS saves the payload on the server, reflected XSS sends it in a request that is echoed back, and DOM-based XSS happens in client-side code. The main defense is encoding output for the context it appears in, using frameworks that escape by default. A Content Security Policy and HttpOnly cookies reduce the damage. HTTPS protects traffic in transit and does not prevent XSS."
+  - id: tech-security-03
+    subcategory: cybersecurity
+    query: "How should passwords be stored? What are hashing and salting?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - { name: "hashing is one-way", synonyms: ["cannot be decrypted", "hash function"] }
+      - {
+          name: "salt is unique per password",
+          synonyms: ["random value", "defeats rainbow tables"],
+        }
+      - { name: "slow, memory-hard password hashes", synonyms: ["bcrypt", "scrypt", "Argon2"] }
+      - {
+          name: "never store plaintext passwords",
+          synonyms: ["breach impact", "verify by hashing the attempt"],
+        }
+    misconceptions:
+      - "Hashing and encryption are the same thing, so a hash can be decrypted."
+      - "A fast general-purpose hash like SHA-256 alone is ideal for storing passwords."
+      - "The salt must be kept secret like a key."
+    referenceNotes: "A site should never store a password itself. It stores the output of a one-way hash function, and at login hashes the attempt and compares. Unlike encryption, a hash cannot be reversed with a key. A random salt, unique per user and stored with the hash, makes identical passwords hash differently and defeats precomputed rainbow tables; the salt need not be secret. General-purpose hashes such as SHA-256 are very fast, which helps attackers guess billions of passwords per second, so passwords use deliberately slow, tunable algorithms such as bcrypt, scrypt or Argon2, the winner of the Password Hashing Competition in 2015. Breaches then reveal much less."
+  - id: tech-security-04
+    subcategory: cybersecurity
+    query: "How do phishing attacks work and how can I spot one?"
+    durationSeconds: 45
+    aspects: ["9:16", "16:9"]
+    language: en
+    keyConcepts:
+      - {
+          name: "impersonation of a trusted sender",
+          synonyms: ["spoofed email", "fake bank or company"],
+        }
+      - { name: "urgency and fear", synonyms: ["pressure tactics", "social engineering"] }
+      - {
+          name: "lookalike links and fake login pages",
+          synonyms: ["typosquatting", "credential harvesting"],
+        }
+      - {
+          name: "defenses",
+          synonyms: ["multi-factor authentication", "passkeys", "check the sender and URL"],
+        }
+    misconceptions:
+      - "Phishing only happens through email."
+      - "A padlock and HTTPS in the address bar prove a site is legitimate."
+    referenceNotes: "Phishing is a social engineering attack in which someone impersonates a trusted party to trick you into revealing credentials, paying money or installing malware. Messages often create urgency or fear, such as claiming your account will be locked, and contain links to lookalike domains and fake login pages that capture what you type. It happens through email, text messages, phone calls and social media, not only email. A padlock only shows an encrypted connection, and attackers can get certificates for their own sites. Useful defenses are checking the real domain, going to the site directly, multi-factor authentication, and phishing-resistant passkeys that will not work on a fake domain."
+  - id: tech-security-05
+    subcategory: cybersecurity
+    query: "What is zero trust security? Is it a product I can buy?"
+    durationSeconds: 60
+    aspects: ["16:9"]
+    language: en
+    keyConcepts:
+      - { name: "never trust, always verify", synonyms: ["no implicit trust", "assume breach"] }
+      - {
+          name: "verify identity, device and context on every request",
+          synonyms: ["continuous verification", "conditional access"],
+        }
+      - { name: "least privilege access", synonyms: ["minimal permissions", "just enough access"] }
+      - {
+          name: "network location does not grant trust",
+          synonyms: ["beyond the perimeter", "microsegmentation"],
+        }
+    misconceptions:
+      - "Zero trust is a single product that you can buy and install."
+      - "Zero trust means nobody is trusted, so nobody gets access to anything."
+    referenceNotes: "Zero trust is a security model, not a single product. Instead of trusting everything inside a corporate network perimeter, it assumes a breach is possible and treats every request as untrusted until verified. Each access decision checks who the user is, the health of the device and the context, such as location and sensitivity of the resource, and grants only the least privilege needed for that task, often for a short time. Techniques include strong authentication, device posture checks, microsegmentation of the network, and continuous monitoring. NIST describes it in Special Publication 800-207. Users still get access, but it is granted per request according to policy."

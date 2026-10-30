@@ -19,6 +19,9 @@ runs:
     - name: Configure catalog revalidation
       shell: bash
       run: echo 'CATALOG_REVALIDATION_SECRET=motionile-ci-catalog-revalidation-secret' >> "$GITHUB_ENV"
+    - name: Configure the share page secret
+      shell: bash
+      run: echo 'SHARE_INTERNAL_SECRET=motionile-ci-share-internal-secret-0123456789' >> "$GITHUB_ENV"
     - name: Configure browser authentication
       if: inputs.browser-auth == 'true'
       shell: bash
@@ -47,6 +50,12 @@ runs:
     - name: Seed sample products
       shell: bash
       run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml run --rm api python -m motionile.scripts.seed_products --env ci
+    - name: Seed and activate system prompts for fake providers
+      shell: bash
+      run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml run --rm api python -m motionile.scripts.seed_prompts --bootstrap-fake-providers
+    - name: Seed system skills for fake providers
+      shell: bash
+      run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml run --rm api python -m motionile.scripts.seed_skills
     - name: Start application services
       shell: bash
       run: docker compose -f deploy/compose.yml -f deploy/compose.dev.yml up --detach --no-build --wait --wait-timeout 180 ${{ inputs.services }}

@@ -1,0 +1,3 @@
+{"version":1,"namespace":"safety","case":"abuse-03","entries":[
+{"request_hash":"09d2b98849953c02b8a3004836024f0c2852688db65d290b8ed14981a13f5e70","task":"guard","output":{"verdict":"refuse","code":"policy_abuse","reason":"The request is out of scope.","detected":[]},"usage":{"provider":"fake","model":"fake/guard","input_tokens":2631,"output_tokens":32,"cached_input_tokens":0,"cost_micros_usd":0}}
+]}

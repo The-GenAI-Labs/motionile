@@ -97,14 +97,14 @@ Resetting the password invalidates the old one immediately, so new connections f
 
    ```bash
    curl -fsS https://<API_DOMAIN>/health/ready
-   /srv/motionile/bundle/scripts/compose.sh logs --since 5m worker-default worker-render | grep -i -c 'authentication failed'
+   /srv/motionile/bundle/scripts/compose.sh logs --since 5m worker-default worker-generation worker-render | grep -i -c 'authentication failed'
    ```
 
    Expected result: readiness `ok` and a count of `0` for log lines after the redeploy. Update the password manager entry.
 
 ## 2. Redis password
 
-`REDIS_PASSWORD` appears in the Redis `command` (`--requirepass`), in its `REDISCLI_AUTH` environment and in every application container's `REDIS_URL`. Changing it changes the configuration of `redis`, `api`, `mcp`, `worker-default`, `worker-render` and `migrate`, so Compose recreates all of them together; the data on `/srv/motionile/data/redis` stays. Requests fail for a few seconds while the containers are recreated.
+`REDIS_PASSWORD` appears in the Redis `command` (`--requirepass`), in its `REDISCLI_AUTH` environment and in every application container's `REDIS_URL`. Changing it changes the configuration of `redis`, `api`, `mcp`, `worker-default`, `worker-generation`, `worker-render` and `migrate`, so Compose recreates all of them together; the data on `/srv/motionile/data/redis` stays. Requests fail for a few seconds while the containers are recreated.
 
 1. Take a fresh backup on the instance (as `ssm-user`): `sudo systemctl start motionile-redis-backup.service`.
 2. Create `infra/parameters/<ENV>-rotation.env`:
@@ -123,7 +123,7 @@ Resetting the password invalidates the old one immediately, so new connections f
    /srv/motionile/bundle/scripts/compose.sh --dry-run up --detach
    ```
 
-   Expected result: `Recreate` lines for the `redis`, `api`, `mcp`, `worker-default` and `worker-render` containers. If `redis` is not listed, the parameter did not change; stop and check SSM.
+   Expected result: `Recreate` lines for the `redis`, `api`, `mcp`, `worker-default`, `worker-generation` and `worker-render` containers. If `redis` is not listed, the parameter did not change; stop and check SSM.
 
 4. Redeploy with Option A or B ([Redeploy with the current tag](#redeploy-with-the-current-tag)).
 5. Verify:
@@ -397,7 +397,7 @@ Keep the new values in the password manager under `Motionile / Speech providers 
    printf 'ELEVENLABS_API_KEY=%s\n' '<NEW_ELEVENLABS_KEY>' > infra/parameters/<ENV>-rotation.env
    ```
 
-3. Redeploy with Option B ([Redeploy with the current tag](#redeploy-with-the-current-tag)). Compose recreates every service whose environment changed, which includes `api`, `worker-default` and `worker-render`.
+3. Redeploy with Option B ([Redeploy with the current tag](#redeploy-with-the-current-tag)). Compose recreates every service whose environment changed, which includes `api`, `worker-default`, `worker-generation` and `worker-render`.
 4. Verify with a synthesized render: sign in to the admin console as a user with `render.testbed`, open **Render test bed**, render a golden composition with a built-in voice and text that is not cached yet, and confirm the render finishes. A cached narration does not call the provider, so use fresh text. In CloudWatch Logs Insights confirm no authentication failures after the redeploy time:
 
    ```text

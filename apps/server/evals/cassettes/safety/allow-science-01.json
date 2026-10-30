@@ -1,0 +1,3 @@
+{"version":1,"namespace":"safety","case":"allow-science-01","entries":[
+{"request_hash":"7f5e5fcfee0734d10a9971c416c48351e1217c0c85286d661fdcb172bebd896d","task":"guard","output":{"verdict":"allow","code":null,"reason":"The request asks for an educational explanation.","detected":[]},"usage":{"provider":"fake","model":"fake/guard","input_tokens":2628,"output_tokens":35,"cached_input_tokens":0,"cost_micros_usd":0}}
+]}

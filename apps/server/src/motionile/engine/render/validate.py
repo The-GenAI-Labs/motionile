@@ -8,6 +8,7 @@ from typing import Any, Protocol, cast
 from PIL import Image
 
 from motionile.engine.audio.narration_models import NarrationDocument, NarrationScene
+from motionile.engine.render.contrast import contrast_ratio, relative_luminance
 from motionile.engine.render.models import (
     Aspect,
     AspectSpec,
@@ -40,7 +41,6 @@ CONTRAST_SAMPLE_COLUMNS = 40
 CONTRAST_SAMPLE_ROWS = 10
 CONTRAST_PERCENTILE = 0.01
 BLANK_CHANNEL_SPREAD = 2
-SRGB_THRESHOLD = 0.04045
 TEXT_TRANSPARENT_STYLE = (
     "*, *::before, *::after { color: transparent !important; -webkit-text-fill-color: transparent !important; "
     "text-shadow: none !important; -webkit-text-stroke: 0 !important; caret-color: transparent !important; } "
@@ -223,24 +223,6 @@ def animating_keys(first: Probe, second: Probe) -> frozenset[str]:
         ):
             moving.add(before_important.selector)
     return frozenset(moving)
-
-
-def srgb_to_linear(channel: int) -> float:
-    value = channel / 255
-    return value / 12.92 if value <= SRGB_THRESHOLD else ((value + 0.055) / 1.055) ** 2.4
-
-
-def relative_luminance(red: float, green: float, blue: float) -> float:
-    return (
-        0.2126 * srgb_to_linear(round(red))
-        + 0.7152 * srgb_to_linear(round(green))
-        + 0.0722 * srgb_to_linear(round(blue))
-    )
-
-
-def contrast_ratio(first: float, second: float) -> float:
-    lighter, darker = (first, second) if first >= second else (second, first)
-    return (lighter + 0.05) / (darker + 0.05)
 
 
 def required_contrast(item: TextItem) -> float:

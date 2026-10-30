@@ -20,3 +20,4 @@ apps/server/.pytest-tmp/
 docs/context.md
 **/.import_linter_cache/
 apps/server/src/motionile/engine/render/runtime/v1/vendor/
+apps/server/evals/cassettes/

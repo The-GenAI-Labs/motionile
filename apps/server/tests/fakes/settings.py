@@ -3,6 +3,7 @@ import base64
 from pydantic import SecretStr
 
 from motionile.core.config import (
+    AiSettings,
     AppEnv,
     AppSettings,
     AuthSettings,
@@ -15,16 +16,19 @@ from motionile.core.config import (
     MediaDeliveryMode,
     MediaSettings,
     NotificationSettings,
+    OpenAISettings,
     ProvidersMode,
     RateLimitSettings,
     RedisSettings,
     SecuritySettings,
     Settings,
+    ShareSettings,
     StorageSettings,
     TurnstileSettings,
 )
 
 STRONG_SECRET = SecretStr("s" * 48)
+SHARE_INTERNAL_SECRET = "integration-share-internal-secret-0123456789"  # noqa: S105
 ENCRYPTION_KEY = SecretStr(base64.b64encode(b"k" * 32).decode())
 
 
@@ -60,6 +64,7 @@ def deployed_settings(env: AppEnv = AppEnv.PRODUCTION) -> Settings:
             microsoft_client_secret=STRONG_SECRET,
         ),
         catalog=CatalogSettings(revalidation_secret=STRONG_SECRET),
+        share=ShareSettings(internal_secret=STRONG_SECRET),
         billing=BillingSettings(
             razorpay_key_id="rzp_live_key",
             razorpay_key_secret=STRONG_SECRET,
@@ -72,6 +77,12 @@ def deployed_settings(env: AppEnv = AppEnv.PRODUCTION) -> Settings:
             whatsapp_phone_number_id="1234",
         ),
         elevenlabs=ElevenLabsSettings(api_key=STRONG_SECRET),
+        openai=OpenAISettings(api_key=STRONG_SECRET),
+        ai=AiSettings(
+            anthropic_api_key=STRONG_SECRET,
+            langfuse_public_key=SecretStr("pk-lf-test"),
+            langfuse_secret_key=SecretStr("sk-lf-test"),
+        ),
         media=MediaSettings(delivery_mode=MediaDeliveryMode.PRESIGNED),
         database=DatabaseSettings(url="postgresql://app@db.internal/motionile"),
         redis=RedisSettings(url="rediss://:secret@redis.internal:6379/0"),

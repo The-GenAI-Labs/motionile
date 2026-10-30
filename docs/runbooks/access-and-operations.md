@@ -4,12 +4,12 @@ Day-to-day access to a Motionile environment: shell access, logs, service restar
 
 Placeholders:
 
-| Placeholder     | Meaning                                                                  |
-| --------------- | ------------------------------------------------------------------------ |
-| `<ENV>`         | `staging` or `production`                                                |
-| `<INSTANCE_ID>` | EC2 instance ID, found in step 1.2                                       |
-| `<SERVICE>`     | One of `proxy`, `api`, `mcp`, `worker-default`, `worker-render`, `redis` |
-| `<API_DOMAIN>`  | `api.<DOMAIN>` or `api.<STAGING_DOMAIN>`                                 |
+| Placeholder     | Meaning                                                                                       |
+| --------------- | --------------------------------------------------------------------------------------------- |
+| `<ENV>`         | `staging` or `production`                                                                     |
+| `<INSTANCE_ID>` | EC2 instance ID, found in step 1.2                                                            |
+| `<SERVICE>`     | One of `proxy`, `api`, `mcp`, `worker-default`, `worker-generation`, `worker-render`, `redis` |
+| `<API_DOMAIN>`  | `api.<DOMAIN>` or `api.<STAGING_DOMAIN>`                                                      |
 
 All AWS commands run on your machine with credentials for the account and `--region ap-south-1`. On the instance, `compose.sh` and `docker` commands run as the `deploy` user; commands that start with `sudo` run in the `ssm-user` shell Session Manager opens, because `deploy` has no sudo rights. Type `exit` once to leave the `deploy` shell and return to `ssm-user`.
 
@@ -159,7 +159,7 @@ Check status:
 /srv/motionile/bundle/scripts/compose.sh ps
 ```
 
-Expected result: `proxy`, `api`, `mcp`, `worker-default`, `worker-render` and `redis` are `running`; `api`, `mcp` and `redis` show `(healthy)`. The `migrate` service only runs during deployments.
+Expected result: `proxy`, `api`, `mcp`, `worker-default`, `worker-generation`, `worker-render` and `redis` are `running`; `api`, `mcp` and `redis` show `(healthy)`. The `migrate` service only runs during deployments.
 
 Read logs locally (Docker dual logging keeps a local copy next to `awslogs`):
 

@@ -390,9 +390,9 @@ class CreditsService:
         return result
 
     async def active_reservation(
-        self, session: AsyncSession, user_id: UUID, ref_type: str, ref_id: UUID
+        self, session: AsyncSession, user_id: UUID, ref_type: str, ref_id: UUID, *, for_update: bool = False
     ) -> ReservationView | None:
-        record = await self._store(session).active_reservation_of(user_id, ref_type, ref_id)
+        record = await self._store(session).active_reservation_of(user_id, ref_type, ref_id, lock=for_update)
         if record is None:
             return None
         return ReservationView(

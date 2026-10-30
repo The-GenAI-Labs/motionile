@@ -1,0 +1,263 @@
+{
+  "version": 1,
+  "title": "How Photosynthesis Works",
+  "summary": "How plants turn light, water and carbon dioxide into sugar and oxygen through the light reactions and the Calvin cycle.",
+  "audienceLevel": "beginner",
+  "language": "en",
+  "targetDurationMs": 120000,
+  "aspects": [
+    "16:9"
+  ],
+  "styleSkill": "minimal-dark",
+  "scenes": [
+    {
+      "id": "hook",
+      "position": 0,
+      "goal": "Open with the leaf as a factory",
+      "narration": "Every leaf you see is a quiet factory powered by sunlight. It builds food from nothing but light, water, and air. That process, photosynthesis, feeds nearly every living thing on Earth.",
+      "visualBrief": "A single green leaf glowing in sunlight, shown as a tiny factory with a smokeless roof.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "concept-metaphor",
+        "flow-diagram"
+      ],
+      "keyTerms": [
+        "photosynthesis"
+      ],
+      "onScreenText": [
+        "Light",
+        "Water",
+        "Air"
+      ],
+      "targetDurationMs": 12917
+    },
+    {
+      "id": "ingredients",
+      "position": 1,
+      "goal": "Name the three ingredients",
+      "narration": "Plants need three ingredients: sunlight, water, and carbon dioxide. Roots pull water from the soil and send it up to the leaves. Tiny pores called stomata let carbon dioxide drift in from the air.",
+      "visualBrief": "A plant with arrows for sunlight from above, water from the roots and carbon dioxide into the leaf.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "concept-metaphor",
+        "flow-diagram"
+      ],
+      "keyTerms": [
+        "stomata",
+        "carbon dioxide"
+      ],
+      "onScreenText": [
+        "Sunlight",
+        "H2O",
+        "CO2"
+      ],
+      "targetDurationMs": 14167
+    },
+    {
+      "id": "chloroplast",
+      "position": 2,
+      "goal": "Zoom into the chloroplast",
+      "narration": "Inside each leaf cell are green structures called chloroplasts. They hold chlorophyll, the pigment that captures energy from sunlight. Chlorophyll reflects green light, which is why leaves look green to us.",
+      "visualBrief": "A zoom from the leaf into a cell and then into a chloroplast with stacked discs.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "concept-metaphor",
+        "flow-diagram"
+      ],
+      "keyTerms": [
+        "chloroplast",
+        "chlorophyll"
+      ],
+      "onScreenText": [
+        "Chloroplast"
+      ],
+      "targetDurationMs": 12917
+    },
+    {
+      "id": "light-reactions",
+      "position": 3,
+      "goal": "Explain the light reactions",
+      "narration": "The first stage, the light reactions, happens in the thylakoid membranes. Light energy splits water molecules, releasing oxygen as a byproduct. That oxygen drifts out through the stomata and into the air we breathe.",
+      "visualBrief": "Sunlight hitting a membrane, a water molecule splitting and bubbles of oxygen leaving the leaf.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "concept-metaphor",
+        "flow-diagram"
+      ],
+      "keyTerms": [
+        "light reactions",
+        "oxygen"
+      ],
+      "onScreenText": [
+        "Light reactions",
+        "O2 out"
+      ],
+      "targetDurationMs": 14167
+    },
+    {
+      "id": "energy-carriers",
+      "position": 4,
+      "goal": "Show the energy carriers",
+      "narration": "The captured energy is stored in two small carrier molecules. These are ATP, the cell's energy currency, and NADPH, a charged courier. Both are used up quickly, so they move straight to the next stage.",
+      "visualBrief": "Two small battery icons labelled ATP and NADPH travelling to the right.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "concept-metaphor",
+        "flow-diagram"
+      ],
+      "keyTerms": [
+        "ATP",
+        "NADPH"
+      ],
+      "onScreenText": [
+        "ATP",
+        "NADPH"
+      ],
+      "targetDurationMs": 14583
+    },
+    {
+      "id": "calvin",
+      "position": 5,
+      "goal": "Explain the Calvin cycle",
+      "narration": "The second stage, the Calvin cycle, takes place in the stroma. Here the plant uses ATP and NADPH to fix carbon dioxide into sugar. No light is needed directly, but the cycle stops when the supply runs out.",
+      "visualBrief": "A circular diagram with carbon dioxide entering and a sugar molecule leaving.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "concept-metaphor",
+        "flow-diagram"
+      ],
+      "keyTerms": [
+        "Calvin cycle",
+        "glucose"
+      ],
+      "onScreenText": [
+        "Calvin cycle",
+        "Sugar out"
+      ],
+      "targetDurationMs": 15833
+    },
+    {
+      "id": "equation",
+      "position": 6,
+      "goal": "Present the overall equation",
+      "narration": "The whole process fits into one balanced chemical equation. Six carbon dioxide and six water, plus light, make one glucose and six oxygen. Atoms are simply rearranged, never created or destroyed.",
+      "visualBrief": "The balanced equation appearing term by term with colour coded atoms.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "concept-metaphor",
+        "flow-diagram"
+      ],
+      "keyTerms": [
+        "glucose",
+        "equation"
+      ],
+      "onScreenText": [
+        "6CO2 + 6H2O",
+        "C6H12O6 + 6O2"
+      ],
+      "targetDurationMs": 12917
+    },
+    {
+      "id": "factors",
+      "position": 7,
+      "goal": "Show what limits the rate",
+      "narration": "How fast a plant makes sugar depends on light, carbon dioxide, and temperature. More light helps only until another ingredient becomes the limit. Too much heat damages the enzymes and slows the whole factory.",
+      "visualBrief": "A rate curve that rises and then flattens, with a thermometer turning red at the end.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "concept-metaphor",
+        "flow-diagram"
+      ],
+      "keyTerms": [
+        "limiting factor"
+      ],
+      "onScreenText": [
+        "Light",
+        "CO2",
+        "Heat"
+      ],
+      "targetDurationMs": 14167
+    },
+    {
+      "id": "importance",
+      "position": 8,
+      "goal": "Explain why it matters",
+      "narration": "Photosynthesis produces the oxygen that most life depends on. It also locks away carbon, which helps keep the climate in balance. Even the energy in the food you eat started as sunlight.",
+      "visualBrief": "A globe with green regions, oxygen arrows leaving and carbon arrows entering.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "concept-metaphor",
+        "flow-diagram"
+      ],
+      "keyTerms": [
+        "oxygen",
+        "carbon"
+      ],
+      "onScreenText": [
+        "Oxygen",
+        "Carbon store"
+      ],
+      "targetDurationMs": 13333
+    },
+    {
+      "id": "recap",
+      "position": 9,
+      "goal": "Recap the process",
+      "narration": "Plants turn light, water, and carbon dioxide into sugar and fresh oxygen. Light reactions capture energy and the Calvin cycle builds the sugar. Next time you pass a tree, you will know what it is doing.",
+      "visualBrief": "The leaf factory again, now with labelled inputs and outputs.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "concept-metaphor",
+        "flow-diagram"
+      ],
+      "keyTerms": [
+        "photosynthesis"
+      ],
+      "onScreenText": [
+        "In: light, water, CO2",
+        "Out: sugar, O2"
+      ],
+      "targetDurationMs": 15000
+    }
+  ]
+}

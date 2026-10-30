@@ -324,8 +324,13 @@ def test_usage_records_reject_negative_counters_and_duplicate_keys(connection: C
         make_usage_record(connection, user_id, idempotency_key="stage:1")
 
 
-def test_usage_records_accept_job_and_publication_ids_without_foreign_keys(connection: Connection) -> None:
-    record_id = make_usage_record(connection, make_user(connection), job_id=uuid4(), publication_id=uuid4())
+def test_usage_records_reference_existing_jobs_but_not_yet_publications(connection: Connection) -> None:
+    user_id = make_user(connection)
+    job_id = insert(connection, "jobs", user_id=user_id, source="query", query="How do vaccines work?")
+
+    with rejected(connection, "fk_usage_records_job_id_jobs"):
+        make_usage_record(connection, user_id, job_id=uuid4())
+    record_id = make_usage_record(connection, user_id, job_id=job_id, publication_id=uuid4())
 
     assert isinstance(record_id, UUID)
 

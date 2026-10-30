@@ -45,6 +45,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=api-build --chown=app:app /app /app
 COPY --chown=app:app tests/fixtures/compositions /app/golden
+COPY --chown=app:app tests/fixtures/llm /app/fixtures/llm
+COPY --chown=app:app evals /app/evals
+ENV PYTHONPATH=/app
 USER app
 EXPOSE 8000
 CMD ["uvicorn", "motionile.entrypoints.api:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--no-server-header"]
@@ -56,6 +59,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=worker-build --chown=app:app /app /app
 COPY --chown=app:app tests/fixtures/compositions /app/golden
+COPY --chown=app:app evals /app/evals
+ENV PYTHONPATH=/app
 RUN playwright install --with-deps chromium \
     && chown -R app:app /ms-playwright \
     && rm -rf /var/lib/apt/lists/*

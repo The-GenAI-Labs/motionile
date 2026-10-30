@@ -30,6 +30,9 @@ DOCKER_STUB = """#!/usr/bin/env bash
 printf '%s\\n' "$*" >> "$STUB_LOG"
 images=$(cat "$MOTIONILE_ROOT/state/images.env" 2>/dev/null || true)
 case "$*" in
+  *"motionile.scripts.seed_skills"*)
+    [[ -n "${FAIL_SEED_SKILLS:-}" ]] && exit 1
+    ;;
   *" run --rm --no-deps migrate"*)
     [[ -n "${FAIL_MIGRATE:-}" ]] && exit 1
     ;;
@@ -178,6 +181,28 @@ def test_deploy_migrates_starts_and_records_tags(server: Server) -> None:
     up_index = next(index for index, call in enumerate(calls) if "up --detach --remove-orphans --wait" in call)
     assert migrate_index < up_index
     assert "deployed def456" in (server.root / "logs" / "deploy.log").read_text(encoding="utf-8")
+
+
+def test_deploy_syncs_system_skills_between_migrations_and_startup(server: Server) -> None:
+    result = server.run("deploy.sh", "abc123")
+
+    calls = server.log
+    migrate_index = next(index for index, call in enumerate(calls) if call.endswith("run --rm --no-deps migrate"))
+    skills_index = next(index for index, call in enumerate(calls) if "motionile.scripts.seed_skills" in call)
+    up_index = next(index for index, call in enumerate(calls) if "up --detach --remove-orphans --wait" in call)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert migrate_index < skills_index < up_index
+
+
+def test_failed_skill_sync_rolls_back_and_fails(server: Server) -> None:
+    assert server.run("deploy.sh", "good").returncode == 0
+
+    result = server.run("deploy.sh", "next", extra_env={"FAIL_SEED_SKILLS": "1"})
+
+    assert result.returncode == 1
+    assert "failed while syncing system skills" in result.stdout
+    assert "rolling back from next to good" in result.stdout
+    assert (server.root / "state" / "current-tag").read_text(encoding="utf-8").strip() == "good"
 
 
 def test_failed_health_check_rolls_back_to_the_previous_tag(server: Server) -> None:

@@ -73,7 +73,7 @@ A single dark monochrome theme. There is no light mode, no theme toggle and no t
 | Backend style | Python modular monolith: one codebase, three entrypoints (`api`, `worker`, `mcp`) |
 | Frontend | Next.js App Router on Vercel, also runnable from its own Dockerfile |
 | Background jobs | `procrastinate`, a Postgres-backed queue. No separate broker. |
-| Queues | `default`, `billing`, `publishing` (run by `worker-default`); `render` (run by `worker-render`) |
+| Queues | `default`, `billing`, `publishing` (run by `worker-default`); `generation` (run by `worker-generation`, [ADR 0034](adr/0034-generation-queue-for-long-running-graphs.md)); `render` (run by `worker-render`) |
 | Database | PostgreSQL 17 with pgvector. Local Docker in development; Neon or RDS in staging and production, chosen only by `DATABASE_URL` |
 | Redis | Rate limits, OTP, OAuth state, revocation denylist, verification tickets, cache, SSE pub/sub. `maxmemory-policy noeviction`, every key has a TTL |
 | Auth | Custom, in FastAPI: cookie-based JWT access tokens plus rotating opaque refresh tokens |
@@ -410,9 +410,14 @@ Password login uses argon2id and a dummy verification for unknown accounts. Ten 
 | `auth.refresh` | 30/min per session |
 | `api.default` | 120/min per user, 60/min per IP when unauthenticated |
 | `catalog.read` | 600/min per IP for cached public catalog and billing product reads and static generation |
-| `jobs.create` | 5/min per user, at most 2 concurrent jobs |
+| `jobs.create` | 5/min per user; at most `jobs.max_active_per_user` (2) active jobs |
+| `jobs.write` | 30/min per user (storyboard edits, approve, regenerate, cancel, delete) |
+| `share.view` | 120/min per IP (public share page; requests carrying the internal secret skip it) |
+| `share.count` | 60/min per IP (browser view counter) |
+| `share.manage` | 30/hour per user (create and revoke share links) |
 | `billing.order.create` | 10/min per user |
 | `skills.write` | 20/hour per user |
+| `prompts.write` | 20/hour per user (prompt drafts, activations, rollbacks and evaluation starts) |
 | `media.session` | 60/min per user |
 | `media.upload` | 30/hour per user |
 | `music.write` | 20/hour per user |
@@ -488,10 +493,24 @@ query or topic
   → S3 → job completed → SSE event
 ```
 
-- System prompts are versioned (`prompt_templates`, `prompt_versions`), contain canary strings and are never returned by any API. A new version is activated only after its eval run passes.
+- System prompts are versioned (`prompt_templates`, `prompt_versions`), contain canary strings and are never returned by any API, with one documented exception: the admin prompt diff, available to `prompts.manage` holders only. A new version is activated only after finished, passing eval runs cover it for every required suite ([ADR 0033](adr/0033-eval-gated-prompt-activation.md)).
 - User skills enter the prompt inside a delimited `<user_skill>` block below the system rules and cannot override policy.
 - The MCP path enters the pipeline at sanitization, running TTS first when only narration text is submitted.
 - Every stage writes a `usage_records` row.
+
+### AI generation pipeline (Phase 9)
+
+The pipeline is specified in [`ai-pipeline.md`](ai-pipeline.md) (graph, nodes, contracts, model layer, prompts, skills, repair, charging, settings), [`ai-policy.md`](ai-policy.md) (content policy and refusal codes) and [`evals.md`](evals.md) (datasets, suites, thresholds, CI and nightly runs).
+
+- **Scene builders, assembled by code** ([ADR 0029](adr/0029-scene-builders-assembled-by-code.md)): the model returns a `scene-module@1` per scene; a deterministic composer builds the `runtime@1` document. `storyboard@1` is the plan the user reviews.
+- **Graceful degradation** ([ADR 0030](adr/0030-graceful-degradation-with-fallback-scenes.md)): a scene that cannot be repaired within `ai.max_repairs` becomes a kinetic-typography fallback; the job still completes.
+- **Predictable charging** ([ADR 0031](adr/0031-predictable-charging.md)): the reservation equals the published estimate and the charge never exceeds it; true costs live in `usage_records`.
+- **Revisions are child jobs** ([ADR 0032](adr/0032-revisions-as-child-jobs.md)) with `jobs.parent_job_id`; unchanged narration comes from `tts_cache`.
+- **Queue and runtime**: graph runs execute on the `generation` queue (`worker-generation`); the API image has ffmpeg but no browser, so composition validation and frame sampling run on the `render` queue ([ADR 0035](adr/0035-composition-checks-run-on-the-render-queue.md)); the `scenes` and `sync` eval suites, which also need Chromium, run there too ([ADR 0036](adr/0036-browser-eval-suites-run-on-the-render-queue.md)).
+- **Modules**: `generation` owns `jobs`, `storyboards`, `scenes`, `job_events` and `share_links` (moved here from `media` because it joins jobs); `prompts` owns `prompt_templates`, `prompt_versions` and `eval_runs`; `skills` owns the skill tables (system skills only until Phase 10). Phase 10 adds user skills, pinning and the memory, RAG and search context providers.
+- **Streams**: `GET /v1/jobs/{id}/events` sends `snapshot` then `job_event` frames with `Last-Event-ID` replay from `job_events`; live frames come from the Redis channel `<prefix>:job:<id>`.
+- **Permissions**: `jobs.read_all`, `skills.manage` (admin and super_admin), `prompts.manage` and `evals.run` (super_admin by default).
+- **Settings**: runtime `ai.*`, `charging.*`, `jobs.max_active_per_user`, `evals.ci_live_budget_micros_usd`; environment `AI_*`, `EMBEDDING_*` (see `ai-pipeline.md` section 11).
 
 ### Render and audio engine (Phase 8)
 
@@ -533,7 +552,8 @@ One server Dockerfile with two targets produces two images.
 | `proxy` | `caddy` | Reverse proxy and automatic TLS (not used in local development) |
 | `api` | `motionile-api` | uvicorn `motionile.entrypoints.api:app` |
 | `mcp` | `motionile-api` | uvicorn `motionile.entrypoints.mcp:app` |
-| `worker-default` | `motionile-api` | procrastinate worker on `default`, `billing`, `publishing` |
+| `worker-default` | `motionile-api` | procrastinate worker on `default`, `billing`, `publishing`, concurrency 4 |
+| `worker-generation` | `motionile-api` | procrastinate worker on `generation`, concurrency 4 |
 | `worker-render` | `motionile-worker` | procrastinate worker on `render`, concurrency 1; non-root, read-only root file system, Playwright's seccomp profile, all capabilities dropped, Chromium and ffmpeg inside |
 | `migrate` | `motionile-api` | `alembic upgrade head` (one-off) |
 | `redis` | `redis` | AOF on, `noeviction`, password |

@@ -15,8 +15,11 @@ from motionile.modules.billing import (
 )
 from motionile.modules.catalog import CatalogSlugHistory, Category, Topic
 from motionile.modules.credits import CreditLedgerEntry, CreditLot, CreditReservation, CreditWallet, UsageRecord
+from motionile.modules.generation import Job, JobEvent, Scene, ShareLink, Storyboard
 from motionile.modules.media import Asset, MusicTrack, Render, Rendition, TtsCacheEntry
 from motionile.modules.platform import FeatureFlag, SystemSetting
+from motionile.modules.prompts import EvalRun, PromptTemplate, PromptVersion
+from motionile.modules.skills import Skill, SkillEmbedding, SkillFile, SkillVersion
 from motionile.modules.users import User, UserContact, UserPreference
 from motionile.modules.voices import Voice, VoiceConsent
 
@@ -33,21 +36,33 @@ __all__ = [
     "CreditLot",
     "CreditReservation",
     "CreditWallet",
+    "EvalRun",
     "FeatureFlag",
     "IdempotencyRecord",
+    "Job",
+    "JobEvent",
     "MusicTrack",
     "OAuthIdentity",
     "Order",
     "Payment",
     "Permission",
     "Product",
+    "PromptTemplate",
+    "PromptVersion",
     "ReconciliationRun",
     "Refund",
     "Render",
     "Rendition",
     "Role",
     "RolePermission",
+    "Scene",
     "Session",
+    "ShareLink",
+    "Skill",
+    "SkillEmbedding",
+    "SkillFile",
+    "SkillVersion",
+    "Storyboard",
     "Subscription",
     "SystemSetting",
     "Topic",

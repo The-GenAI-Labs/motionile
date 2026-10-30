@@ -6,6 +6,8 @@ from motionile.core.storage.base import validate_key
 from motionile.modules.media.domain import Aspect
 from motionile.modules.media.keys import (
     aspect_slug,
+    composition_check_key,
+    composition_check_prefix,
     composition_key,
     consent_recording_key,
     mixed_audio_key,
@@ -25,10 +27,13 @@ from motionile.modules.media.keys import (
 
 USER = UUID("0199eb00-0000-7000-8000-0000000000a1")
 RENDER = UUID("0199eb00-0000-7000-8000-0000000000b2")
+JOB = UUID("0199eb00-0000-7000-8000-0000000000e5")
 VOICE = UUID("0199eb00-0000-7000-8000-0000000000c3")
 TRACK = UUID("0199eb00-0000-7000-8000-0000000000d4")
 HASH = "ab" + "0123456789abcdef" * 3 + "cdcdcdcdcdcdcd"
 RENDER_PREFIX = f"media/u/{USER}/renders/{RENDER}/"
+CHECK_ID = "9f" * 32
+CHECK_PREFIX = f"work/jobs/{JOB}/checks/{CHECK_ID}/"
 
 
 def all_keys() -> list[str]:
@@ -44,6 +49,8 @@ def all_keys() -> list[str]:
         composition_key(USER, RENDER),
         render_work_key(RENDER, "composition.clean.html"),
         render_work_key(RENDER, "segments", "16x9", "0003.mp4"),
+        composition_check_key(JOB, CHECK_ID, "request.json"),
+        composition_check_key(JOB, CHECK_ID, "frames", "0001.png"),
         voice_sample_key(USER, VOICE, 0),
         consent_recording_key(USER, VOICE),
         tts_key(HASH, "mp3"),
@@ -90,6 +97,7 @@ def test_prefixes_end_with_a_slash_and_are_valid_when_trimmed() -> None:
         user_media_prefix(USER),
         render_media_prefix(USER, RENDER),
         render_work_prefix(RENDER),
+        composition_check_prefix(JOB, CHECK_ID),
         voice_prefix(USER, VOICE),
     ):
         assert prefix.endswith("/")
@@ -110,6 +118,9 @@ def test_the_documented_layout_is_produced() -> None:
     assert composition_key(USER, RENDER) == f"{RENDER_PREFIX}composition.html"
     assert render_work_prefix(RENDER) == f"work/renders/{RENDER}/"
     assert render_work_key(RENDER, "segments", "16x9", "0001.mp4") == f"work/renders/{RENDER}/segments/16x9/0001.mp4"
+    assert composition_check_prefix(JOB, CHECK_ID) == CHECK_PREFIX
+    assert composition_check_key(JOB, CHECK_ID, "result.json") == f"{CHECK_PREFIX}result.json"
+    assert composition_check_key(JOB, CHECK_ID, "frames", "0002.png") == f"{CHECK_PREFIX}frames/0002.png"
     assert voice_prefix(USER, VOICE) == f"voice/u/{USER}/{VOICE}/"
     assert voice_sample_key(USER, VOICE, 2) == f"voice/u/{USER}/{VOICE}/sample-2.wav"
     assert consent_recording_key(USER, VOICE) == f"voice/u/{USER}/{VOICE}/consent.wav"
@@ -136,6 +147,8 @@ def test_no_key_outside_media_can_start_with_media() -> None:
     private = [
         render_work_key(RENDER, "media", "x"),
         render_work_prefix(RENDER),
+        composition_check_prefix(JOB, CHECK_ID),
+        composition_check_key(JOB, CHECK_ID, "result.json"),
         voice_prefix(USER, VOICE),
         voice_sample_key(USER, VOICE, 0),
         consent_recording_key(USER, VOICE),
@@ -184,3 +197,20 @@ def test_tts_keys_need_a_lowercase_sha256_hex_digest(value: str) -> None:
 def test_sample_indexes_cannot_be_negative() -> None:
     with pytest.raises(ValueError, match="negative"):
         voice_sample_key(USER, VOICE, -1)
+
+
+@pytest.mark.parametrize("part", ["", "..", "a/b", "-start", "sp ace"])
+def test_composition_check_parts_are_validated(part: str) -> None:
+    with pytest.raises(ValueError, match="invalid key segment"):
+        composition_check_key(JOB, CHECK_ID, "frames", part)
+
+
+@pytest.mark.parametrize("check_id", ["", "../x", "a/b", "sp ace"])
+def test_composition_check_ids_are_validated(check_id: str) -> None:
+    with pytest.raises(ValueError, match="invalid key segment"):
+        composition_check_prefix(JOB, check_id)
+
+
+def test_a_composition_check_key_needs_parts() -> None:
+    with pytest.raises(ValueError, match="at least one part"):
+        composition_check_key(JOB, CHECK_ID)

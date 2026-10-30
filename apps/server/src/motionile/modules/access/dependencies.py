@@ -48,3 +48,6 @@ BillingWebhooksManageDep = Annotated[Principal, Depends(RequirePermission("billi
 RenderTestbedDep = Annotated[Principal, Depends(RequirePermission("render.testbed"))]
 VoicesManageDep = Annotated[Principal, Depends(RequirePermission("voices.manage"))]
 MusicManageDep = Annotated[Principal, Depends(RequirePermission("music.manage"))]
+PromptsManageDep = Annotated[Principal, Depends(RequirePermission("prompts.manage"))]
+EvalsRunDep = Annotated[Principal, Depends(RequirePermission("evals.run"))]
+SkillsManageDep = Annotated[Principal, Depends(RequirePermission("skills.manage"))]

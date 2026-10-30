@@ -1,0 +1,6 @@
+{
+  "verdict": "refuse",
+  "code": "policy_personal_data",
+  "reason": "The text contains contact details of a person.",
+  "detected": ["policy_personal_data"]
+}

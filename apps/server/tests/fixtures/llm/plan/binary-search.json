@@ -1,0 +1,251 @@
+{
+  "version": 1,
+  "title": "Binary Search in Twenty Steps",
+  "summary": "How halving a sorted list again and again finds any item in logarithmic time.",
+  "audienceLevel": "beginner",
+  "language": "en",
+  "targetDurationMs": 120000,
+  "aspects": [
+    "16:9"
+  ],
+  "styleSkill": "minimal-dark",
+  "scenes": [
+    {
+      "id": "hook",
+      "position": 0,
+      "goal": "Pose the search problem",
+      "narration": "Finding one name among a million sorted names should be quick, right? Checking every name one by one could take a million steps. Binary search finds it in about twenty steps instead.",
+      "visualBrief": "A long strip of sorted names fading into the distance with a magnifier at the start.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "data-structure-operations",
+        "math-equation"
+      ],
+      "keyTerms": [
+        "linear search",
+        "binary search"
+      ],
+      "onScreenText": [
+        "1,000,000 names",
+        "20 steps"
+      ],
+      "targetDurationMs": 13333
+    },
+    {
+      "id": "sorted",
+      "position": 1,
+      "goal": "Explain why sorting matters",
+      "narration": "Binary search only works when the data is already sorted. Think of a dictionary, where the words are in alphabetical order. That order is what lets us throw away huge parts of the list at once.",
+      "visualBrief": "A dictionary page with words in order and a sorted array of numbers beside it.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "data-structure-operations",
+        "math-equation"
+      ],
+      "keyTerms": [
+        "sorted"
+      ],
+      "onScreenText": [
+        "Sorted data"
+      ],
+      "targetDurationMs": 15000
+    },
+    {
+      "id": "middle",
+      "position": 2,
+      "goal": "Show the middle comparison",
+      "narration": "Start by looking at the middle item of the list. If it is the value you want, you are done immediately. If not, the middle item tells you which half to keep.",
+      "visualBrief": "An array of fifteen cells with the middle cell highlighted and a target value shown.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "data-structure-operations",
+        "math-equation"
+      ],
+      "keyTerms": [
+        "middle",
+        "target"
+      ],
+      "onScreenText": [
+        "Check the middle"
+      ],
+      "targetDurationMs": 13333
+    },
+    {
+      "id": "halve",
+      "position": 3,
+      "goal": "Show discarding half",
+      "narration": "When the target is smaller, everything on the right can be ignored. When the target is larger, the left half is thrown away instead. Either way, half of the remaining candidates vanish with a single comparison.",
+      "visualBrief": "One half of the array dimming out while the other half stays bright.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "data-structure-operations",
+        "math-equation"
+      ],
+      "keyTerms": [
+        "discard"
+      ],
+      "onScreenText": [
+        "Smaller: go left",
+        "Larger: go right"
+      ],
+      "targetDurationMs": 15000
+    },
+    {
+      "id": "repeat",
+      "position": 4,
+      "goal": "Show the loop",
+      "narration": "Now repeat the same move on the half that is left. Pick the new middle, compare, and discard half again. Each round shrinks the search space until one item or none remains.",
+      "visualBrief": "The highlighted window shrinking round after round with a step counter.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "data-structure-operations",
+        "math-equation"
+      ],
+      "keyTerms": [
+        "loop"
+      ],
+      "onScreenText": [
+        "Repeat",
+        "Step 3"
+      ],
+      "targetDurationMs": 13333
+    },
+    {
+      "id": "example",
+      "position": 5,
+      "goal": "Walk through a concrete example",
+      "narration": "Search for thirty seven in a sorted list of fifteen numbers. The first middle is forty two, which is too big, so the right side goes. Two more comparisons land exactly on thirty seven.",
+      "visualBrief": "A numeric array with three comparison arrows ending on thirty seven.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "data-structure-operations",
+        "math-equation"
+      ],
+      "keyTerms": [
+        "comparison"
+      ],
+      "onScreenText": [
+        "Find 37"
+      ],
+      "targetDurationMs": 14167
+    },
+    {
+      "id": "speed",
+      "position": 6,
+      "goal": "Explain logarithmic growth",
+      "narration": "Doubling the list adds only one extra step to the search. A thousand items need ten steps, and a million need about twenty. This slow growth is called logarithmic time, written as log n.",
+      "visualBrief": "A flat curve of log n beside a steep line of n on shared axes.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "data-structure-operations",
+        "math-equation"
+      ],
+      "keyTerms": [
+        "logarithmic time"
+      ],
+      "onScreenText": [
+        "O(log n)"
+      ],
+      "targetDurationMs": 14167
+    },
+    {
+      "id": "pitfalls",
+      "position": 7,
+      "goal": "Warn about common bugs",
+      "narration": "The idea is simple, but the details are famously easy to get wrong. Off by one mistakes can skip the target or loop forever. Careful boundaries and a clear loop condition keep the search honest.",
+      "visualBrief": "Two boundary markers low and high with a warning icon on a wrong update.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "data-structure-operations",
+        "math-equation"
+      ],
+      "keyTerms": [
+        "off by one"
+      ],
+      "onScreenText": [
+        "Off by one"
+      ],
+      "targetDurationMs": 14583
+    },
+    {
+      "id": "where",
+      "position": 8,
+      "goal": "Show where the idea appears",
+      "narration": "You use the same idea whenever you guess a number higher or lower. Databases, version control, and debugging tools all rely on halving a range. Anywhere there is order, there is a shortcut.",
+      "visualBrief": "Three small icons for a guessing game, a database and a bug hunt, each splitting a range.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "data-structure-operations",
+        "math-equation"
+      ],
+      "keyTerms": [
+        "bisection"
+      ],
+      "onScreenText": [
+        "Higher or lower?"
+      ],
+      "targetDurationMs": 13750
+    },
+    {
+      "id": "recap",
+      "position": 9,
+      "goal": "Recap the algorithm",
+      "narration": "Binary search checks the middle and discards half, again and again. It needs sorted data, and it turns a million steps into twenty. Remember it as the art of asking smarter questions.",
+      "visualBrief": "The array window collapsing to a single highlighted cell.",
+      "layoutNotes": {
+        "16:9": "Place the main visual on the left two thirds and the short labels on the right, inside the safe area.",
+        "9:16": "Stack the visual above the labels, keep the text large and centred, and stay inside the safe area.",
+        "1:1": "Centre the visual with the labels below it and keep generous margins on every side."
+      },
+      "visualSkills": [
+        "data-structure-operations",
+        "math-equation"
+      ],
+      "keyTerms": [
+        "binary search"
+      ],
+      "onScreenText": [
+        "Check",
+        "Discard",
+        "Repeat"
+      ],
+      "targetDurationMs": 13333
+    }
+  ]
+}

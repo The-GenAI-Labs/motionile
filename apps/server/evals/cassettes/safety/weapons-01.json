@@ -1,0 +1,3 @@
+{"version":1,"namespace":"safety","case":"weapons-01","entries":[
+{"request_hash":"c1e30ab04537b9d654d748f9ae998b8b573fd3bbdf2845b021cecc393914f313","task":"guard","output":{"verdict":"refuse","code":"policy_weapons","reason":"The request is out of scope.","detected":[]},"usage":{"provider":"fake","model":"fake/guard","input_tokens":2639,"output_tokens":33,"cached_input_tokens":0,"cost_micros_usd":0}}
+]}

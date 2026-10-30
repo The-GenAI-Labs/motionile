@@ -301,7 +301,7 @@ Stripped elements and attributes are removed from the cleaned document and repor
 }
 ```
 
-`valid` is false when any issue has severity `error`. Errors block the render with `validation_failed`; warnings are reported. `kind` is `sanitize`, `contract`, `layout` or `runtime`. Phase 9 adds the vision-model review and automatic repair on top of this report.
+`valid` is false when any issue has severity `error`. Errors block the render with `validation_failed`; warnings are reported. `kind` is `sanitize`, `contract`, `layout` or `runtime`. Phase 9 adds the vision-model review and automatic repair on top of this report. The generation pipeline runs the same sanitizer, sandbox and validator through the task `media.check_composition` on the `render` queue (ADR 0035): the submitter writes the composition and narration to `work/jobs/<jobId>/checks/<checkId>/request.json`, where `checkId` is the SHA-256 of the composition, the narration, the aspects and the mode, and polls for `result.json`, which holds this report and, when frames were wanted, a manifest of PNG frames sampled at 25 % and 75 % of every scene in every aspect and downscaled to at most 768 pixels wide.
 
 ### 9.1 Contract checks
 
@@ -363,14 +363,15 @@ Contract and layout validation need the narration, so they run at the start of `
 
 Only `media/` is served by the CDN.
 
-| Prefix                                 | Contents                                                                                                                                |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `media/u/<userId>/renders/<renderId>/` | `16x9.mp4`, `9x16.mp4`, `1x1.mp4`; `poster-<aspect>.webp` and `.jpg`; `subtitles.vtt`, `subtitles.srt`; `audio.m4a`; `composition.html` |
-| `work/renders/<renderId>/`             | Stage checkpoints and intermediate files; a bucket lifecycle rule expires them after 7 days                                             |
-| `voice/u/<userId>/<voiceId>/`          | Voice samples and the consent recording; private, never on the CDN                                                                      |
-| `tts/`                                 | Cached narration audio (`tts/<hash-prefix>/<hash>.<ext>`)                                                                               |
-| `music/`                               | Licensed tracks                                                                                                                         |
-| `voice-preview/`                       | Cached voice preview clips of built-in voices and cloned voices                                                                         |
+| Prefix                                 | Contents                                                                                                                                                                                                      |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `media/u/<userId>/renders/<renderId>/` | `16x9.mp4`, `9x16.mp4`, `1x1.mp4`; `poster-<aspect>.webp` and `.jpg`; `subtitles.vtt`, `subtitles.srt`; `audio.m4a`; `composition.html`                                                                       |
+| `work/renders/<renderId>/`             | Stage checkpoints and intermediate files; a bucket lifecycle rule expires them after 7 days                                                                                                                   |
+| `work/jobs/<jobId>/checks/<checkId>/`  | Composition checks of the generation pipeline: `request.json`, `result.json` and `frames/<n>.png` ([ADR 0035](adr/0035-composition-checks-run-on-the-render-queue.md)); the same 7-day lifecycle rule applies |
+| `voice/u/<userId>/<voiceId>/`          | Voice samples and the consent recording; private, never on the CDN                                                                                                                                            |
+| `tts/`                                 | Cached narration audio (`tts/<hash-prefix>/<hash>.<ext>`)                                                                                                                                                     |
+| `music/`                               | Licensed tracks                                                                                                                                                                                               |
+| `voice-preview/`                       | Cached voice preview clips of built-in voices and cloned voices                                                                                                                                               |
 
 The composition is stored as `text/plain`, so a browser that opens its CDN URL shows the text and never executes it on the CDN origin. Aspect labels in keys use `x` instead of `:` (`16x9`).
 

@@ -1,0 +1,29 @@
+{
+  "frames": [
+    {
+      "sceneId": "hook",
+      "aspect": "16:9",
+      "legibility": 2,
+      "layout": 4,
+      "relevance": 5,
+      "styleConsistency": 4,
+      "visualErrors": 4
+    }
+  ],
+  "issues": [
+    {
+      "sceneId": "hook",
+      "aspect": "16:9",
+      "category": "legibility",
+      "severity": "blocking",
+      "description": "The caption text is too small and low in contrast against the background, so it cannot be read."
+    },
+    {
+      "sceneId": "hook",
+      "aspect": "16:9",
+      "category": "style",
+      "severity": "minor",
+      "description": "The accent colour differs slightly from the style tokens."
+    }
+  ]
+}

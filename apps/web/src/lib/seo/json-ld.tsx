@@ -48,8 +48,8 @@ export interface VideoObjectInput {
   description: string;
   path: string;
   thumbnailUrls: readonly string[];
-  uploadDate: Date | string;
-  durationSeconds: number;
+  uploadDate?: Date | string;
+  durationSeconds?: number;
   contentUrl?: string;
   embedUrl?: string;
 }
@@ -60,8 +60,8 @@ export interface VideoObjectJsonLd extends JsonLdBase {
   description: string;
   url: string;
   thumbnailUrl: string[];
-  uploadDate: string;
-  duration: string;
+  uploadDate?: string;
+  duration?: string;
   contentUrl?: string;
   embedUrl?: string;
   publisher: { "@type": "Organization"; name: string; url: string };
@@ -177,9 +177,15 @@ export const buildVideoObjectJsonLd = (video: VideoObjectInput): VideoObjectJson
   description: video.description,
   url: absoluteUrl(video.path),
   thumbnailUrl: video.thumbnailUrls.map(absoluteUrl),
-  uploadDate:
-    typeof video.uploadDate === "string" ? video.uploadDate : video.uploadDate.toISOString(),
-  duration: toIsoDuration(video.durationSeconds),
+  ...(video.uploadDate === undefined
+    ? {}
+    : {
+        uploadDate:
+          typeof video.uploadDate === "string" ? video.uploadDate : video.uploadDate.toISOString(),
+      }),
+  ...(video.durationSeconds === undefined
+    ? {}
+    : { duration: toIsoDuration(video.durationSeconds) }),
   ...(video.contentUrl === undefined ? {} : { contentUrl: absoluteUrl(video.contentUrl) }),
   ...(video.embedUrl === undefined ? {} : { embedUrl: absoluteUrl(video.embedUrl) }),
   publisher: publisher(),

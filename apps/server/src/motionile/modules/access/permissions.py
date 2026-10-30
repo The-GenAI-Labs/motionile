@@ -27,6 +27,10 @@ PERMISSIONS = (
     PermissionDefinition("render.testbed", "Run renders through the admin test bed"),
     PermissionDefinition("voices.manage", "Curate the built-in voice catalog"),
     PermissionDefinition("music.manage", "Manage the licensed music library"),
+    PermissionDefinition("prompts.manage", "Create, evaluate, activate and roll back prompt versions"),
+    PermissionDefinition("skills.manage", "Curate system skills"),
+    PermissionDefinition("jobs.read_all", "Read the generation jobs of every user"),
+    PermissionDefinition("evals.run", "Start evaluation runs"),
 )
 
 PERMISSION_KEYS = frozenset(definition.key for definition in PERMISSIONS)

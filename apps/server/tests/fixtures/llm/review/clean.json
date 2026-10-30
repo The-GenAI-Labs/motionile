@@ -1,0 +1,14 @@
+{
+  "frames": [
+    {
+      "sceneId": "hook",
+      "aspect": "16:9",
+      "legibility": 5,
+      "layout": 5,
+      "relevance": 5,
+      "styleConsistency": 5,
+      "visualErrors": 5
+    }
+  ],
+  "issues": []
+}

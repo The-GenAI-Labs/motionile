@@ -13,7 +13,10 @@ const config = {
     `uv run --project apps/server ruff format --force-exclude ${quote(files)}`,
     checkComments(files),
   ],
-  "*.{json,md}": (files) => `prettier --write ${quote(files)}`,
+  "*.{json,md}": (files) => {
+    const formatted = files.filter((file) => !file.includes("/evals/cassettes/"));
+    return formatted.length > 0 ? `prettier --write ${quote(formatted)}` : [];
+  },
   "*.{yml,yaml,css}": (files) => [`prettier --write ${quote(files)}`, checkComments(files)],
   "{*.toml,*.sh,*.tf,*.tftpl,*.hcl,*.lua,**/Dockerfile,**/Caddyfile,.husky/*,**/.env.example}": (
     files,

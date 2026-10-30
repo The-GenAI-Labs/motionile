@@ -16,8 +16,10 @@ TASK_MODULES: tuple[str, ...] = (
     "motionile.modules.billing.tasks",
     "motionile.modules.catalog.tasks",
     "motionile.modules.credits.tasks",
+    "motionile.modules.generation.tasks",
     "motionile.modules.media.tasks",
     "motionile.modules.notifications.tasks",
+    "motionile.modules.prompts.tasks",
     "motionile.modules.users.tasks",
     "motionile.modules.voices.tasks",
 )
@@ -30,6 +32,7 @@ class Queue(StrEnum):
     DEFAULT = "default"
     BILLING = "billing"
     PUBLISHING = "publishing"
+    GENERATION = "generation"
     RENDER = "render"
 
 
@@ -86,9 +89,14 @@ def periodic_task(
 
 
 def defer_after_commit(
-    session: AsyncSession, registered: RegisteredTask, *, priority: int = 0, **arguments: JSONValue
+    session: AsyncSession,
+    registered: RegisteredTask,
+    *,
+    priority: int = 0,
+    lock: str | None = None,
+    **arguments: JSONValue,
 ) -> None:
     async def enqueue() -> None:
-        await registered.configure(priority=priority).defer_async(**arguments)
+        await registered.configure(priority=priority, lock=lock).defer_async(**arguments)
 
     after_commit(session, enqueue)

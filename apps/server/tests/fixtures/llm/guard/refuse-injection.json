@@ -1,0 +1,6 @@
+{
+  "verdict": "refuse",
+  "code": "policy_prompt_injection",
+  "reason": "The text tries to override the system instructions.",
+  "detected": ["policy_prompt_injection"]
+}

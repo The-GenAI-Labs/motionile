@@ -1,6 +1,11 @@
 import * as contract from "@motionile/api-contract";
 
-import { renderIdSchema } from "@/features/library/schemas/library.schema";
+import {
+  LIBRARY_PAGE_SIZE,
+  renderIdSchema,
+  shareSlugSchema,
+} from "@/features/library/schemas/library.schema";
+import type { LibraryFilters } from "@/features/library/types/library.types";
 import { apiClient } from "@/lib/api/client";
 
 export const getMediaSession = async () =>
@@ -25,3 +30,23 @@ export const listRenditions = async (renderId: string) =>
       })
     ).data,
   );
+
+export const listLibrary = async (
+  filters: LibraryFilters,
+  cursor?: string,
+  limit: number = LIBRARY_PAGE_SIZE,
+) =>
+  contract.zLibraryListLibraryResponse.parse(
+    (
+      await apiClient.get<unknown>("/v1/library", {
+        authenticated: true,
+        params: contract.zLibraryListLibraryQuery.parse({ ...filters, cursor, limit }),
+      })
+    ).data,
+  );
+
+export const recordShareView = async (slug: string): Promise<void> => {
+  await apiClient.post<unknown>(`/v1/share/${shareSlugSchema.parse(slug)}/views`, undefined, {
+    skipAuthRefresh: true,
+  });
+};

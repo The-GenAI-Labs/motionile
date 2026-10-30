@@ -1,8 +1,75 @@
 import { z } from "zod";
 
-import type { Aspect, PlayableRendition, Rendition } from "@/features/library/types/library.types";
+import type {
+  Aspect,
+  JobSummary,
+  LibraryFilters,
+  PlayableRendition,
+  Rendition,
+} from "@/features/library/types/library.types";
 
 export const renderIdSchema = z.uuid();
+
+export const jobIdSchema = z.uuid();
+
+export const SHARE_SLUG_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
+export const shareSlugSchema = z.string().regex(SHARE_SLUG_PATTERN);
+
+export const LIBRARY_PAGE_SIZE = 24;
+export const RECENT_VIDEOS_LIMIT = 6;
+export const SEARCH_DEBOUNCE_MS = 300;
+export const MAX_SEARCH_LENGTH = 100;
+
+export const searchTextSchema = z.string().trim().min(1).max(MAX_SEARCH_LENGTH);
+
+export const toLibraryFilters = (search: string, aspect: Aspect | null): LibraryFilters => {
+  const q = searchTextSchema.safeParse(search);
+  return {
+    ...(q.success ? { q: q.data } : {}),
+    ...(aspect === null ? {} : { aspect }),
+  };
+};
+
+export const shareFormSchema = z.object({
+  aspect: z.enum(["16:9", "9:16", "1:1"], "Choose which version to share."),
+  allowIndexing: z.boolean(),
+});
+
+export type ShareFormValues = z.infer<typeof shareFormSchema>;
+
+const ACTIVE_STATUSES = new Set<JobSummary["status"]>([
+  "queued",
+  "planning",
+  "awaiting_approval",
+  "voicing",
+  "generating",
+  "validating",
+  "rendering",
+]);
+
+export const isActiveJob = (job: Pick<JobSummary, "status">): boolean =>
+  ACTIVE_STATUSES.has(job.status);
+
+export const jobStatusLabels = {
+  queued: "Queued",
+  planning: "Planning",
+  awaiting_approval: "Waiting for your approval",
+  voicing: "Recording narration",
+  generating: "Building scenes",
+  validating: "Checking the video",
+  rendering: "Rendering",
+  completed: "Completed",
+  failed: "Failed",
+  cancelled: "Cancelled",
+} as const satisfies Record<JobSummary["status"], string>;
+
+export const jobPath = (jobId: string): `/jobs/${string}` => `/jobs/${jobId}`;
+
+export const fallbackNotice = (count: number): string =>
+  count === 1
+    ? "1 scene uses a simplified layout"
+    : `${String(count)} scenes use a simplified layout`;
 
 export const ASPECT_ORDER = ["16:9", "9:16", "1:1"] as const satisfies readonly Aspect[];
 

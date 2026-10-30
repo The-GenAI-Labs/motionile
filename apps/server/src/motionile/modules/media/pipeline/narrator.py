@@ -32,11 +32,17 @@ class SceneNarrator:
         self._transcriber = transcriber
         self._tools = tools
 
-    async def synthesized(
-        self, user_id: UUID, voice: ResolvedVoice, scene_id: str, text: str, destination: Path
+    async def synthesized(  # noqa: PLR0913, PLR0917
+        self,
+        user_id: UUID,
+        voice: ResolvedVoice,
+        scene_id: str,
+        text: str,
+        destination: Path,
+        job_id: UUID | None = None,
     ) -> SceneAudio:
         options = self._speech.default_options(voice.provider, voice.language)
-        spoken = await self._speech.synthesize_text(voice_ref(voice), text, options, user_id=user_id)
+        spoken = await self._speech.synthesize_text(voice_ref(voice), text, options, user_id=user_id, job_id=job_id)
         normalized = await self._normalizer.normalize(spoken.audio, destination)
         return SceneAudio(scene_id, text, normalized.duration_ms, spoken.words, normalized.path)
 

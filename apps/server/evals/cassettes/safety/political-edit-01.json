@@ -1,0 +1,3 @@
+{"version":1,"namespace":"safety","case":"political-edit-01","entries":[
+{"request_hash":"b7732f2dd84875db083fde16ed97002ddfb6322652d3a6d9805f73cd467c5cab","task":"guard","output":{"verdict":"refuse","code":"policy_political_persuasion","reason":"The request is out of scope.","detected":[]},"usage":{"provider":"fake","model":"fake/guard","input_tokens":2651,"output_tokens":37,"cached_input_tokens":0,"cost_micros_usd":0}}
+]}

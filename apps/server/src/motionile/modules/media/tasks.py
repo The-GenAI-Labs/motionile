@@ -4,6 +4,7 @@ from uuid import UUID
 
 import structlog
 from procrastinate import RetryStrategy
+from procrastinate.exceptions import AlreadyEnqueued
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.core.clock import Clock
@@ -11,12 +12,16 @@ from motionile.core.config import get_settings
 from motionile.core.resources import build_resources
 from motionile.core.tasks.registry import Queue, defer_after_commit, periodic_task, task
 from motionile.modules.media.builders import render_events_for, render_pipeline_for, speech_for
+from motionile.modules.media.composition_check import CompositionCheckService
 from motionile.modules.media.pipeline import fail_stalled_renders as sweep_stalled_renders
 from motionile.modules.media.render_repository import SqlRenderJobRepository
 
 TTS_CACHE_RETENTION = timedelta(days=90)
 RENDER_RUN_TASK = "render.run"
+CHECK_COMPOSITION_TASK = "media.check_composition"
 RENDER_RETRY = RetryStrategy(max_attempts=3, wait=5)
+CHECK_PRIORITY = 10
+CHECK_RETRY = RetryStrategy(max_attempts=3, wait=5)
 
 logger = structlog.get_logger(__name__)
 
@@ -42,6 +47,32 @@ async def run_render(render_id: str) -> None:
         await pipeline.run(UUID(render_id))
     finally:
         await resources.aclose()
+
+
+@task(name=CHECK_COMPOSITION_TASK, queue=Queue.RENDER, retry=CHECK_RETRY)
+async def check_composition(job_id: str, check_id: str) -> None:
+    from motionile.modules.media.check_browser import check_browser_opener  # noqa: PLC0415
+
+    settings = get_settings()
+    resources = build_resources(settings, application_name="motionile-render-check")
+    try:
+        service = CompositionCheckService(
+            resources.storage,
+            check_browser_opener(settings),
+            timeout_seconds=float(settings.render.stage_timeout_seconds),
+        )
+        await service.run(UUID(job_id), check_id)
+    finally:
+        await resources.aclose()
+
+
+async def defer_composition_check(job_id: UUID, check_id: str) -> None:
+    try:
+        await check_composition.configure(queueing_lock=check_id, priority=CHECK_PRIORITY).defer_async(
+            job_id=str(job_id), check_id=check_id
+        )
+    except AlreadyEnqueued:
+        logger.info("media.composition_check_already_queued", job_id=str(job_id))
 
 
 def dispatch_render(session: AsyncSession, render_id: UUID) -> None:

@@ -93,6 +93,7 @@ class FakeCreditsStore:
         self.reservations: dict[UUID, ReservationRecord] = {}
         self.ledger: list[LedgerRecord] = []
         self.usage: list[StoredUsage] = []
+        self.locked_reservation_reads = 0
 
     def __call__(self, session: AsyncSession) -> "FakeCreditsStore":
         del session
@@ -217,7 +218,11 @@ class FakeCreditsStore:
             None,
         )
 
-    async def active_reservation_of(self, user_id: UUID, ref_type: str, ref_id: UUID) -> ReservationRecord | None:
+    async def active_reservation_of(
+        self, user_id: UUID, ref_type: str, ref_id: UUID, *, lock: bool = False
+    ) -> ReservationRecord | None:
+        if lock:
+            self.locked_reservation_reads += 1
         found = await self.active_reservation_for(ref_type, ref_id)
         return found if found is not None and found.user_id == user_id else None
 

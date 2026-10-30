@@ -329,7 +329,7 @@ async def test_usage_records_are_idempotent_and_aggregate_per_utc_day(env: Credi
     user, other = env.users[0], env.users[1]
 
     async def write(session: AsyncSession) -> tuple[UUID, UUID]:
-        entry = UsageEntry(user_id=user, stage="tts", provider="elevenlabs", key="usage:1", credits=4, job_id=new_id())
+        entry = UsageEntry(user_id=user, stage="tts", provider="elevenlabs", key="usage:1", credits=4)
         first = await record_usage(session, entry)
         again = await record_usage(session, UsageEntry(user_id=user, stage="tts", provider="xx", key="usage:1"))
         await record_usage(

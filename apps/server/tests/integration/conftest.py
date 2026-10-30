@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from testcontainers.community.minio import MinioContainer
 from testcontainers.community.postgres import PostgresContainer
 from testcontainers.community.redis import RedisContainer
+from tests.fakes.settings import SHARE_INTERNAL_SECRET
 from tests.fakes.storage import InMemoryStorage
 from tests.integration.billing_support import (
     PROCESS_TASK_NAME,
@@ -34,6 +35,7 @@ from motionile.core.config import (
     RateLimitSettings,
     RedisSettings,
     Settings,
+    ShareSettings,
     StorageSettings,
     with_driver,
 )
@@ -142,6 +144,7 @@ def settings(migrated_database_url: str, redis_url: str, minio_endpoint: str) ->
             access_key_id=SecretStr(MINIO_ACCESS_KEY),
             secret_access_key=SecretStr(MINIO_SECRET_KEY),
         ),
+        share=ShareSettings(internal_secret=SecretStr(SHARE_INTERNAL_SECRET)),
         rate_limit=RateLimitSettings(enabled=True),
     )
 

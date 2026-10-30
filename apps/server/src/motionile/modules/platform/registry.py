@@ -1,6 +1,11 @@
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import cast
+
+from pydantic import ValidationError
+
+from motionile.engine.ai.llm.routing import DEFAULT_ROUTING_JSON, parse_routing
 
 type SettingValue = bool | int | str | list[str]
 
@@ -14,6 +19,13 @@ VOICE_CONSENT_STATEMENT = (
 )
 
 
+def check_model_routing(value: str) -> None:
+    try:
+        parse_routing(value)
+    except ValidationError as error:
+        raise ValueError("Setting is not a valid model routing document") from error
+
+
 @dataclass(frozen=True)
 class SettingDefinition:
     key: str
@@ -21,6 +33,7 @@ class SettingDefinition:
     default: SettingValue
     description: str
     public: bool
+    check: Callable[[str], None] | None = None
 
 
 SETTING_DEFINITIONS = (
@@ -33,7 +46,7 @@ SETTING_DEFINITIONS = (
             "maxItems": 50,
             "uniqueItems": True,
         },
-        ["minimal", "editorial", "diagram"],
+        ["minimal-dark", "whiteboard", "blueprint", "terminal", "editorial-light"],
         "Allowed default video style slugs",
         True,
     ),
@@ -135,6 +148,119 @@ SETTING_DEFINITIONS = (
         "Version label of the voice consent statement; change it whenever the statement changes",
         True,
     ),
+    SettingDefinition(
+        "ai.model_routing",
+        {"type": "string", "minLength": 2, "maxLength": 20000},
+        DEFAULT_ROUTING_JSON,
+        "JSON routing per AI task: primary model, ordered fallbacks, temperature, output tokens and timeout",
+        False,
+        check=check_model_routing,
+    ),
+    SettingDefinition(
+        "ai.job_token_budget",
+        {"type": "integer", "minimum": 10000, "maximum": 5000000},
+        600000,
+        "Model tokens one job may use before it stops with budget_exceeded",
+        False,
+    ),
+    SettingDefinition(
+        "ai.max_repairs",
+        {"type": "integer", "minimum": 0, "maximum": 3},
+        2,
+        "Repair attempts per scene before the safe fallback scene replaces it",
+        False,
+    ),
+    SettingDefinition(
+        "ai.scene_concurrency",
+        {"type": "integer", "minimum": 1, "maximum": 8},
+        4,
+        "Scene modules generated in parallel per job",
+        False,
+    ),
+    SettingDefinition(
+        "ai.approval_timeout_hours",
+        {"type": "integer", "minimum": 1, "maximum": 720},
+        168,
+        "Hours a job may wait for storyboard approval before it is cancelled and its credits released",
+        False,
+    ),
+    SettingDefinition(
+        "ai.stage_timeout_minutes",
+        {"type": "integer", "minimum": 5, "maximum": 240},
+        30,
+        "Minutes a job may stay in one stage before the sweeper fails it and releases its credits",
+        False,
+    ),
+    SettingDefinition(
+        "ai.speaking_rate_min_milli_wps",
+        {"type": "integer", "minimum": 1000, "maximum": 4000},
+        2000,
+        "Slowest narration rate a storyboard scene may plan, in thousandths of a word per second",
+        False,
+    ),
+    SettingDefinition(
+        "ai.speaking_rate_max_milli_wps",
+        {"type": "integer", "minimum": 1000, "maximum": 5000},
+        2800,
+        "Fastest narration rate a storyboard scene may plan, in thousandths of a word per second",
+        False,
+    ),
+    SettingDefinition(
+        "ai.skill_token_budget",
+        {"type": "integer", "minimum": 1000, "maximum": 60000},
+        12000,
+        "Token budget for the full content of the skills selected for one generation",
+        False,
+    ),
+    SettingDefinition(
+        "ai.visual_review_enabled",
+        {"type": "boolean"},
+        True,
+        "Whether sampled key frames are reviewed by a vision model before rendering",
+        False,
+    ),
+    SettingDefinition(
+        "charging.base_credits",
+        {"type": "integer", "minimum": 0, "maximum": 100000},
+        20,
+        "Credits charged for every video before the per-second cost",
+        True,
+    ),
+    SettingDefinition(
+        "charging.credits_per_second",
+        {"type": "integer", "minimum": 0, "maximum": 10000},
+        2,
+        "Credits charged per second of final video duration",
+        True,
+    ),
+    SettingDefinition(
+        "charging.extra_aspect_percent",
+        {"type": "integer", "minimum": 0, "maximum": 300},
+        40,
+        "Percentage added to the subtotal for each aspect after the first",
+        True,
+    ),
+    SettingDefinition(
+        "charging.cloned_voice_premium",
+        {"type": "integer", "minimum": 0, "maximum": 100000},
+        10,
+        "Credits added when the narration uses a cloned voice",
+        True,
+    ),
+    SettingDefinition(
+        "jobs.max_active_per_user",
+        {"type": "integer", "minimum": 1, "maximum": 10},
+        2,
+        "Jobs a user may have queued or running at the same time",
+        False,
+    ),
+    SettingDefinition(
+        "evals.ci_live_budget_micros_usd",
+        {"type": "integer", "minimum": 0, "maximum": 100000000},
+        2000000,
+        "Spending cap in millionths of a US dollar for the live eval subset that runs on pull requests",
+        False,
+    ),
 )
 
 SETTINGS = {item.key: item for item in SETTING_DEFINITIONS}
@@ -192,5 +318,7 @@ def validate_setting(key: str, value: object) -> SettingValue:  # noqa: PLR0912
         string_pattern = schema.get("pattern")
         if isinstance(string_pattern, str) and re.fullmatch(string_pattern, value) is None:
             raise ValueError("Setting has an invalid format")
+        if definition.check is not None:
+            definition.check(value)
         return value
     raise ValueError("Setting value has the wrong type")

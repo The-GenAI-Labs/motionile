@@ -1,0 +1,3 @@
+{"version":1,"namespace":"safety","case":"allow-weapons-history-02","entries":[
+{"request_hash":"9fd1851404e6c09571c06254da631bbd86e60bf656695f6a180047f97704c34c","task":"guard","output":{"verdict":"allow","code":null,"reason":"The request asks for an educational explanation.","detected":[]},"usage":{"provider":"fake","model":"fake/guard","input_tokens":2632,"output_tokens":35,"cached_input_tokens":0,"cost_micros_usd":0}}
+]}

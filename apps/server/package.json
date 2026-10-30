@@ -10,6 +10,6 @@
     "test:unit": "uv run pytest -m unit --cov --cov-report=term --cov-report=xml:coverage/unit.xml",
     "test:integration": "uv run pytest -m integration --cov --cov-report=term --cov-report=xml:coverage/integration.xml",
     "contract:generate": "uv run python -m motionile.scripts.export_openapi",
-    "evals": "uv run python -m evals.run"
+    "evals": "uv run python -m evals.run --mode=deterministic"
   }
 }

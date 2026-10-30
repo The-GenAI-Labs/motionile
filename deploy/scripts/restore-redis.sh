@@ -6,7 +6,7 @@ source "$script_dir/lib.sh"
 export LOG_SCOPE=restore-redis
 
 readonly REDIS_DATA_DIR="${MOTIONILE_ROOT}/data/redis"
-readonly APPLICATION_SERVICES=(api mcp worker-default worker-render)
+readonly APPLICATION_SERVICES=(api mcp worker-default worker-generation worker-render)
 
 usage() {
   cat <<USAGE

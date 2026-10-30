@@ -28,12 +28,15 @@ stateDiagram-v2
 stateDiagram-v2
     [*] --> queued: created, credits reserved
     queued --> planning: worker picks up
-    planning --> awaiting_approval: storyboard ready
+    queued --> voicing: MCP job with narration text only
+    queued --> validating: MCP job with narration audio
+    planning --> awaiting_approval: storyboard ready, review requested
+    planning --> voicing: storyboard ready, review not requested
     awaiting_approval --> planning: user edits and regenerates
     awaiting_approval --> voicing: user approves
     voicing --> generating: narration ready
     generating --> validating: scenes generated
-    validating --> generating: scene repair (at most 2 per scene)
+    validating --> generating: scene repair (at most ai.max_repairs per scene)
     validating --> rendering: all scenes valid
     rendering --> completed: renditions uploaded
     queued --> cancelled
@@ -43,6 +46,7 @@ stateDiagram-v2
     generating --> cancelled
     validating --> cancelled
     rendering --> cancelled
+    awaiting_approval --> failed: approved but the resume never ran
     planning --> failed
     voicing --> failed
     generating --> failed
@@ -55,8 +59,48 @@ stateDiagram-v2
 ```
 
 - MCP jobs (`source = 'mcp'`) skip planning: `queued --> voicing` when only narration is submitted, `queued --> validating` when narration audio already exists.
+- A job whose `options.reviewStoryboard` is off goes from `planning` straight to `voicing`; otherwise it waits in `awaiting_approval`, and a regeneration returns it to `planning`.
+- Cancellation is allowed from every non-terminal state. `awaiting_approval` ends by approval, regeneration, cancellation or the approval timeout, which cancels; it fails only when the storyboard was approved and the resume task never ran within `ai.stage_timeout_minutes`, which the stalled-job sweeper detects with the `job_stalled` code.
+- `modules/generation/domain.py` (`JOB_TRANSITIONS`) is the code form of this diagram; a unit test compares the two.
 - `completed` commits the charged credits and releases the rest; `failed` and `cancelled` release the whole reservation.
 - `awaiting_approval` jobs expire to `cancelled` after 7 days.
+
+## `scenes.status`
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: scene row created from the approved storyboard
+    pending --> voiced: narration synthesized, duration and word timings stored
+    voiced --> generated: scene module generated, or the fallback built
+    generated --> validated: composition checks pass for the scene
+    validated --> generated: scene repaired after a later check
+    generated --> generated: scene repaired
+    pending --> failed
+    voiced --> failed
+    generated --> failed
+    validated --> failed
+    validated --> [*]
+    failed --> [*]
+```
+
+- Scene rows exist only for the approved storyboard version and are created when voicing starts, so every row starts at `pending`.
+- A repair increments `repair_attempts` (at most `ai.max_repairs`, itself at most 3) and appends to `attempt_log`; reaching the limit replaces the module with the fallback scene and sets `is_fallback`. A fallback scene follows the same path as any other scene.
+- `failed` is reserved for a scene that cannot be voiced or whose fallback still has blocking issues; it fails the job with `error_code` copied to the scene.
+
+## `eval_runs.status`
+
+```mermaid
+stateDiagram-v2
+    [*] --> running: run started
+    running --> finished: scores computed, passed set
+    running --> errored: infrastructure or dataset error
+    finished --> [*]
+    errored --> [*]
+```
+
+- `passed` is null until the run is `finished`; an `errored` run never counts toward activation and never has `passed`.
+- `finished_at` is set exactly when the run leaves `running`.
+- Activation of a prompt version requires, for every suite required for its template, a `finished` row with `passed = true` whose `prompt_version_ids` contain the version.
 
 ## `orders.status`
 

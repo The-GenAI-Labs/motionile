@@ -25,8 +25,18 @@ from motionile.modules.billing.router import billing_router
 from motionile.modules.billing.webhook_router import webhook_router
 from motionile.modules.catalog.router import catalog_admin_router, catalog_router
 from motionile.modules.credits.router import credits_router
+from motionile.modules.generation import (
+    admin_jobs_router,
+    events_router,
+    jobs_router,
+    library_router,
+    public_share_router,
+    share_router,
+)
 from motionile.modules.media import media_router, music_router, render_testbed_router, renders_router
 from motionile.modules.platform.router import platform_router
+from motionile.modules.prompts import admin_prompts_router
+from motionile.modules.skills import admin_skills_router, styles_router
 from motionile.modules.users.router import users_admin_router, users_router
 from motionile.modules.voices import VoiceLookupImpl, voices_admin_router, voices_router
 
@@ -51,6 +61,12 @@ def build_v1_router(*, include_test_routes: bool) -> APIRouter:
     router.include_router(billing_router)
     router.include_router(webhook_router)
     router.include_router(billing_admin_router)
+    router.include_router(jobs_router)
+    router.include_router(events_router)
+    router.include_router(share_router)
+    router.include_router(public_share_router)
+    router.include_router(library_router)
+    router.include_router(admin_jobs_router)
     router.include_router(media_router)
     router.include_router(renders_router)
     router.include_router(music_router)
@@ -62,6 +78,9 @@ def build_v1_router(*, include_test_routes: bool) -> APIRouter:
     router.include_router(users_admin_router)
     router.include_router(platform_router)
     router.include_router(catalog_admin_router)
+    router.include_router(admin_prompts_router)
+    router.include_router(admin_skills_router)
+    router.include_router(styles_router)
     if include_test_routes:
         router.include_router(test_support_router)
     return router

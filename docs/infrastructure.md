@@ -39,6 +39,7 @@ flowchart LR
                     api[api]
                     mcp[mcp]
                     wd[worker-default]
+                    wg[worker-generation]
                     wr[worker-render]
                     redis[(Redis AOF)]
                 end
@@ -63,9 +64,9 @@ flowchart LR
     waf --- cf
     acm --- cf
     cf -->|origin access control| media
-    api & mcp & wd & wr --> pg
-    api & wd & wr --> redis
-    api & wd & wr -->|SafeHttpClient| platforms
+    api & mcp & wd & wg & wr --> pg
+    api & wd & wg & wr --> redis
+    api & wd & wg & wr -->|SafeHttpClient| platforms
     api & wr -->|via S3 endpoint| s3e --> media
     redis -. daily backup .-> backup
     ec2 --> ecr

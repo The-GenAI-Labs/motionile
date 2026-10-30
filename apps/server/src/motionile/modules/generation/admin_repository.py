@@ -69,6 +69,10 @@ def completed_between(start: datetime, end: datetime) -> list[ColumnElement[bool
     return [Job.status == JobStatus.COMPLETED.value, Job.completed_at >= start, Job.completed_at < end]
 
 
+def finished_between(start: datetime, end: datetime) -> list[ColumnElement[bool]]:
+    return [Job.status.in_(OUTCOME_STATUSES), Job.completed_at >= start, Job.completed_at < end]
+
+
 class SqlAdminRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -174,16 +178,17 @@ class SqlAdminRepository:
 
     async def cost_totals(self, start: datetime, end: datetime) -> CostTotals:
         per_job = (
-            select(func.sum(UsageRecord.cost_micros_usd).label("cost"))
+            select(
+                func.sum(UsageRecord.cost_micros_usd).label("cost"),
+                func.coalesce(Job.credits_charged, 0).label("credits"),
+            )
             .join(Job, Job.id == UsageRecord.job_id)
-            .where(*completed_between(start, end))
-            .group_by(UsageRecord.job_id)
+            .where(*finished_between(start, end))
+            .group_by(Job.id, Job.credits_charged)
             .subquery()
         )
-        average_cost = await self.session.scalar(select(func.avg(per_job.c.cost)))
-        average_credits = await self.session.scalar(
-            select(func.avg(Job.credits_charged)).where(*completed_between(start, end))
-        )
+        row = (await self.session.execute(select(func.avg(per_job.c.cost), func.avg(per_job.c.credits)))).one()
+        average_cost, average_credits = row
         return CostTotals(
             float(average_cost) if average_cost is not None else None,
             float(average_credits) if average_credits is not None else None,

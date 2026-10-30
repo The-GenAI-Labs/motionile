@@ -1,3 +1,5 @@
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -5,6 +7,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from tests.fakes.credits import FakeAudit, FakeCreditsStore
 from tests.fakes.generation import (
+    FakeCheckpoints,
     FakeEditGuard,
     FakeMusic,
     FakePreferences,
@@ -92,6 +95,7 @@ class Harness:
         self.topics = FakeTopics()
         self.guard = FakeEditGuard()
         self.renders = FakeRenders()
+        self.checkpoints = FakeCheckpoints()
         self.dispatch = RecordingDispatch()
         self.audit = RecordingAudit()
         self.events = EventBus()
@@ -105,6 +109,7 @@ class Harness:
                 topics=self.topics,
                 edit_guard=self.guard,
                 renders=self.renders,
+                checkpoints=self.checkpoints,
                 clock=self.clock,
                 events=self.events,
                 dispatch=JobDispatch(run=self.dispatch.run, resume=self.dispatch.resume),
@@ -113,6 +118,16 @@ class Harness:
             )
         )
         self.counter = 0
+        self.open_transactions = 0
+        self.guard.open_transactions = lambda: self.open_transactions
+
+    @asynccontextmanager
+    async def transaction(self) -> AsyncGenerator[AsyncSession]:
+        self.open_transactions += 1
+        try:
+            yield self.session
+        finally:
+            self.open_transactions -= 1
 
     def key(self) -> str:
         self.counter += 1

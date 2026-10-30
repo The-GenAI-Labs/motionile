@@ -17,6 +17,7 @@ from motionile.modules.generation.domain import (
 from motionile.modules.generation.events import JobCompleted
 from motionile.modules.generation.events_router import events_router
 from motionile.modules.generation.exceptions import (
+    AiUnavailableError,
     AspectNotAllowedError,
     InputRefusedError,
     JobInsufficientCreditsError,
@@ -46,6 +47,7 @@ from motionile.modules.generation.factory import (
     tracer_for,
     usage_ledger_for,
 )
+from motionile.modules.generation.hooks import register_hooks
 from motionile.modules.generation.job_events import JobEvents, JobMessage, job_channel
 from motionile.modules.generation.library_router import library_router
 from motionile.modules.generation.library_service import LibraryService
@@ -80,12 +82,15 @@ from motionile.modules.generation.share_router import public_share_router, share
 from motionile.modules.generation.share_service import ShareService
 from motionile.modules.generation.sweepers import Sweeper
 
+register_hooks()
+
 __all__ = [
     "ACTIVE_JOB_STATUSES",
     "INITIAL_JOB_STATUS",
     "JOB_TRANSITIONS",
     "TERMINAL_JOB_STATUSES",
     "AdminJobsService",
+    "AiUnavailableError",
     "AspectNotAllowedError",
     "ChargingParameters",
     "ChosenVoice",

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, select
+from sqlalchemy import ColumnElement, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from motionile.engine.ai.job_options import JobStatus
@@ -26,6 +26,8 @@ class SweepStore(Protocol):
     async def stalled(self, before: datetime, after: UUID | None, limit: int) -> list[SweptJob]: ...
 
     async def expired_approvals(self, before: datetime, after: UUID | None, limit: int) -> list[SweptJob]: ...
+
+    async def unresumed_approvals(self, before: datetime, after: UUID | None, limit: int) -> list[SweptJob]: ...
 
     async def cancelling(self, before: datetime, after: UUID | None, limit: int) -> list[SweptJob]: ...
 
@@ -54,6 +56,22 @@ class SqlSweepRepository:
     async def expired_approvals(self, before: datetime, after: UUID | None, limit: int) -> list[SweptJob]:
         return await self._page(
             [Job.status == JobStatus.AWAITING_APPROVAL.value, Job.updated_at < before], after, limit
+        )
+
+    async def unresumed_approvals(self, before: datetime, after: UUID | None, limit: int) -> list[SweptJob]:
+        approved_before = (
+            exists()
+            .where(
+                Storyboard.job_id == Job.id,
+                Storyboard.approved_at.is_not(None),
+                Storyboard.approved_at < before,
+            )
+            .correlate(Job)
+        )
+        return await self._page(
+            [Job.status == JobStatus.AWAITING_APPROVAL.value, Job.cancel_requested_at.is_(None), approved_before],
+            after,
+            limit,
         )
 
     async def cancelling(self, before: datetime, after: UUID | None, limit: int) -> list[SweptJob]:

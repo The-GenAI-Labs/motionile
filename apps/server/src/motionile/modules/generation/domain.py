@@ -17,7 +17,9 @@ JOB_TRANSITIONS: Mapping[JobStatus, frozenset[JobStatus]] = {
     JobStatus.PLANNING: frozenset(
         {JobStatus.AWAITING_APPROVAL, JobStatus.VOICING, JobStatus.CANCELLED, JobStatus.FAILED}
     ),
-    JobStatus.AWAITING_APPROVAL: frozenset({JobStatus.PLANNING, JobStatus.VOICING, JobStatus.CANCELLED}),
+    JobStatus.AWAITING_APPROVAL: frozenset(
+        {JobStatus.PLANNING, JobStatus.VOICING, JobStatus.CANCELLED, JobStatus.FAILED}
+    ),
     JobStatus.VOICING: frozenset({JobStatus.GENERATING, JobStatus.CANCELLED, JobStatus.FAILED}),
     JobStatus.GENERATING: frozenset({JobStatus.VALIDATING, JobStatus.CANCELLED, JobStatus.FAILED}),
     JobStatus.VALIDATING: frozenset({JobStatus.GENERATING, JobStatus.RENDERING, JobStatus.CANCELLED, JobStatus.FAILED}),

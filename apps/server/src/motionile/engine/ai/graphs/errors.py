@@ -13,6 +13,7 @@ class PipelineErrorCode(StrEnum):
     TTS_FAILED = "tts_failed"
     DURATION_LIMIT_EXCEEDED = "duration_limit_exceeded"
     NO_STYLE_SKILL = "no_style_skill"
+    RESERVATION_LOST = "reservation_lost"
 
 
 class PipelineError(Exception):
@@ -55,6 +56,7 @@ PIPELINE_MESSAGES: Final[dict[PipelineErrorCode, str]] = {
     PipelineErrorCode.TTS_FAILED: "The narration could not be recorded. Please try again in a little while.",
     PipelineErrorCode.DURATION_LIMIT_EXCEEDED: "The narration is longer than the maximum video length.",
     PipelineErrorCode.NO_STYLE_SKILL: "The chosen style is not available.",
+    PipelineErrorCode.RESERVATION_LOST: "The credits held for this video are no longer available, so it was stopped.",
 }
 
 

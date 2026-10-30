@@ -43,6 +43,17 @@ SENSITIVE_KEYS = frozenset(
         "acquirer_data",
     }
 )
+QUIET_LOGGERS = (
+    "httpx",
+    "httpcore",
+    "botocore",
+    "boto3",
+    "urllib3",
+    "uvicorn.access",
+    "LiteLLM",
+    "litellm",
+    "langfuse",
+)
 SENSITIVE_SUFFIXES = ("_token", "_secret", "_password", "_key_id", "_api_key", "_signature")
 
 
@@ -86,7 +97,7 @@ def _json_dumps(event: object, **_: object) -> bytes:
 def configure_logging(settings: Settings) -> None:
     level = logging.getLevelNamesMapping()[settings.logging.level.value]
     logging.basicConfig(level=level, stream=sys.stdout, format="%(message)s", force=True)
-    for name in ("httpx", "httpcore", "botocore", "boto3", "urllib3", "uvicorn.access"):
+    for name in QUIET_LOGGERS:
         logging.getLogger(name).setLevel(logging.WARNING)
     if settings.is_local:
         structlog.configure(

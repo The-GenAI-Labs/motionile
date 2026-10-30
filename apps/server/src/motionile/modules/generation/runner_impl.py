@@ -1,27 +1,22 @@
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import Any, Final, cast
+from typing import Final
 from uuid import UUID
 
 import structlog
-from langgraph.checkpoint.base import BaseCheckpointSaver
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from psycopg import AsyncConnection
-from psycopg.rows import DictRow, dict_row
 
 from motionile.core.config import Settings
 from motionile.core.resources import Resources, build_resources
 from motionile.engine.ai.graphs.deps import PipelineDependencies
 from motionile.engine.ai.graphs.resume import ApprovalResume
 from motionile.engine.ai.graphs.run import RunOutcome, run_graph
+from motionile.modules.generation.checkpoints import CheckpointSource, postgres_checkpointer
 from motionile.modules.generation.pipeline_deps import build_dependencies
 from motionile.modules.generation.ports import ResumeKind
 
-CHECKPOINT_SCHEMA: Final = "langgraph"
 APPLICATION_NAME: Final = "motionile-generation"
 
 type ResourceSource = Callable[[], AbstractAsyncContextManager[Resources]]
-type CheckpointSource = Callable[[Settings], AbstractAsyncContextManager[BaseCheckpointSaver[Any]]]
 type DependencyBuilder = Callable[[Resources, UUID], Awaitable[PipelineDependencies]]
 
 logger = structlog.get_logger(__name__)
@@ -37,21 +32,6 @@ def worker_resources(settings: Settings) -> ResourceSource:
             await resources.aclose()
 
     return open_resources
-
-
-@asynccontextmanager
-async def postgres_checkpointer(settings: Settings) -> AsyncGenerator[BaseCheckpointSaver[Any]]:
-    options: dict[str, Any] = {
-        "autocommit": True,
-        "prepare_threshold": 0,
-        "row_factory": dict_row,
-        "options": f"-c search_path={CHECKPOINT_SCHEMA}",
-    }
-    connection = cast(
-        "AsyncConnection[DictRow]", await AsyncConnection.connect(settings.database.migration_url, **options)
-    )
-    async with connection:
-        yield AsyncPostgresSaver(connection)
 
 
 class GraphPipelineRunner:

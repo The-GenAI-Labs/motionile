@@ -129,23 +129,17 @@ class ShareService:
             raise JobNotFoundError
         return await store.revoke(job.id, None, self._clock.now())
 
-    async def view(self, session: AsyncSession, slug: str, viewer: str) -> SharedVideoView:
+    async def view(self, session: AsyncSession, slug: str, viewer: str, *, count_view: bool = True) -> SharedVideoView:
         store = self._store_factory(session)
-        found = await store.find(lookup_slug(slug))
-        if found is None or not self._available(found[0], found[1]):
-            raise ShareNotFoundError
-        link, job = found
-        render_id = job.render_id
-        if render_id is None:
-            raise ShareNotFoundError
+        link, job, render_id = await self._live_link(store, slug)
         signed = await self._media.signed_rendition(
             session, job.user_id, render_id, link.rendition_id, self._playback_ttl
         )
         if signed is None:
             raise ShareNotFoundError
         content = await store.approved_content(job.id) or {}
-        if await self._views.first_view(link.slug, viewer):
-            await store.record_view(link.id)
+        if count_view:
+            await self._count(store, link, viewer)
         return SharedVideoView(
             title=str(content.get("title") or job.query),
             summary=str(content["summary"]) if content.get("summary") else None,
@@ -161,6 +155,24 @@ class ShareService:
             uploaded_at=job.completed_at or link.created_at,
             music_attribution=await self._music_attribution(session, job.user_id, render_id, link.rendition_id),
         )
+
+    async def record_view(self, session: AsyncSession, slug: str, viewer: str) -> None:
+        store = self._store_factory(session)
+        link, _job, _render_id = await self._live_link(store, slug)
+        await self._count(store, link, viewer)
+
+    async def _live_link(self, store: ShareStore, slug: str) -> tuple[ShareLink, Job, UUID]:
+        found = await store.find(lookup_slug(slug))
+        if found is None or not self._available(found[0], found[1]):
+            raise ShareNotFoundError
+        link, job = found
+        if job.render_id is None:
+            raise ShareNotFoundError
+        return link, job, job.render_id
+
+    async def _count(self, store: ShareStore, link: ShareLink, viewer: str) -> None:
+        if await self._views.first_view(link.slug, viewer):
+            await store.record_view(link.id)
 
     async def _music_attribution(
         self, session: AsyncSession, owner_id: UUID, render_id: UUID, rendition_id: UUID

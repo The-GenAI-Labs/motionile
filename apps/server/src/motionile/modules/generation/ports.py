@@ -97,6 +97,10 @@ class MusicCheck(Protocol):
     async def require_active(self, session: AsyncSession, track_id: UUID) -> object: ...
 
 
+class CheckpointPurger(Protocol):
+    async def purge(self, job_ids: Sequence[UUID]) -> None: ...
+
+
 class RenderCleanup(Protocol):
     async def delete_render(self, session: AsyncSession, user_id: UUID, render_id: UUID) -> None: ...
 

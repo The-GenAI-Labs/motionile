@@ -1,12 +1,13 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 
 from motionile.core.dependencies import CursorCodecDep, DatabaseDep
 from motionile.core.errors import problem_responses
 from motionile.core.ratelimit.limiter import rate_limit
 from motionile.modules.access import RequirePermission
+from motionile.modules.audit import context_from_request
 from motionile.modules.auth import enforce_csrf
 from motionile.modules.generation.admin_repository import AdminJobFilter
 from motionile.modules.generation.admin_schemas import (
@@ -16,7 +17,7 @@ from motionile.modules.generation.admin_schemas import (
     AnalyticsQuery,
     JobAnalyticsView,
 )
-from motionile.modules.generation.dependencies import AdminJobsServiceDep
+from motionile.modules.generation.dependencies import AdminJobsServiceDep, CurrentUserIdDep
 
 JOBS_PERMISSION = "jobs.read_all"
 
@@ -62,9 +63,15 @@ async def list_admin_jobs(
     summary="Inspect one job: events, storyboard versions, scenes, reports, cost and trace link",
     responses=problem_responses(status.HTTP_404_NOT_FOUND),
 )
-async def get_admin_job(job_id: UUID, database: DatabaseDep, service: AdminJobsServiceDep) -> AdminJobDetail:
+async def get_admin_job(
+    job_id: UUID,
+    request: Request,
+    admin_id: CurrentUserIdDep,
+    database: DatabaseDep,
+    service: AdminJobsServiceDep,
+) -> AdminJobDetail:
     async with database.transaction() as session:
-        return await service.detail(session, job_id)
+        return await service.detail(session, admin_id, job_id, context_from_request(request))
 
 
 @admin_jobs_router.get(

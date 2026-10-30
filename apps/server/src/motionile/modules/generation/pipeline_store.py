@@ -143,7 +143,12 @@ class SqlPipelineStore:
             preferences=preferences,
             parent=parent,
             render_id=job.render_id,
+            credits_reserved=job.credits_reserved,
         )
+
+    async def reservation_active(self, job_id: UUID) -> bool:
+        async with self._transaction() as session:
+            return await self._service.has_active_reservation(session, job_id)
 
     async def _parent(self, repo: PipelineStorage, job: Job) -> ParentContext | None:
         if job.parent_job_id is None:

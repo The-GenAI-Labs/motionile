@@ -110,6 +110,9 @@ class InMemoryPipelineStore:
     failure: tuple[str, str] | None = None
     completed_duration_ms: int | None = None
     snapshots_taken: int = 0
+    reservation_held: bool = True
+    reservation_checks: int = 0
+    reservation_answers: list[bool] = field(default_factory=list[bool])
 
     def _own(self, job_id: UUID) -> None:
         if job_id != self.job.id:
@@ -119,6 +122,13 @@ class InMemoryPipelineStore:
         self._own(job_id)
         self.snapshots_taken += 1
         return self.job
+
+    async def reservation_active(self, job_id: UUID) -> bool:
+        self._own(job_id)
+        self.reservation_checks += 1
+        if self.reservation_answers:
+            return self.reservation_answers.pop(0)
+        return self.reservation_held
 
     async def transition(self, job_id: UUID, to: JobStatus, *, stage: str) -> bool:
         self._own(job_id)

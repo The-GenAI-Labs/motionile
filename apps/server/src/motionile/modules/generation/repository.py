@@ -197,6 +197,9 @@ class SqlJobRepository:
         )
         return await self.session.scalar(statement)
 
+    async def ids_of(self, user_id: UUID) -> list[UUID]:
+        return list(await self.session.scalars(select(Job.id).where(Job.user_id == user_id).order_by(Job.id)))
+
     async def delete(self, user_id: UUID, job_id: UUID) -> bool:
         statement = delete(Job).where(Job.id == job_id, Job.user_id == user_id).returning(Job.id)
         return await self.session.scalar(statement) is not None

@@ -15,6 +15,7 @@ from tests.unit.modules.generation.support import storyboard_content
 from motionile.core.db import Database
 from motionile.core.ids import new_id
 from motionile.modules.credits import CreditRef, CreditsService, GrantCommand
+from motionile.modules.generation.checkpoints import PostgresCheckpointPurger
 from motionile.modules.generation.lookups import (
     CatalogTopicLookup,
     SkillsStyleLookup,
@@ -262,6 +263,7 @@ def build_generation_service(api: MediaApi, dispatch: RecordingDispatch, guard: 
             topics=CatalogTopicLookup(),
             edit_guard=guard,
             renders=media_service_for(resources),
+            checkpoints=PostgresCheckpointPurger(resources.settings),
             clock=resources.clock,
             events=resources.events,
             dispatch=JobDispatch(run=dispatch.run, resume=dispatch.resume),

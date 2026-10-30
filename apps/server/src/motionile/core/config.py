@@ -371,6 +371,17 @@ class CatalogSettings(GroupSettings):
         return SecuritySettings.require_long_secret(value)
 
 
+class ShareSettings(GroupSettings):
+    model_config = SettingsConfigDict(env_prefix="SHARE_")
+
+    internal_secret: OptionalSecret = None
+
+    @field_validator("internal_secret")
+    @classmethod
+    def validate_secret(cls, value: SecretStr | None) -> SecretStr | None:
+        return SecuritySettings.require_long_secret(value)
+
+
 class AuthSettings(GroupSettings):
     model_config = SettingsConfigDict(env_prefix="AUTH_")
 
@@ -680,6 +691,7 @@ class Settings(BaseModel):
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     outbound_http: OutboundHttpSettings = Field(default_factory=OutboundHttpSettings)
     catalog: CatalogSettings = Field(default_factory=CatalogSettings)
+    share: ShareSettings = Field(default_factory=ShareSettings)
     billing: BillingSettings = Field(default_factory=BillingSettings)
     render: RenderSettings = Field(default_factory=RenderSettings)
     audio: AudioSettings = Field(default_factory=AudioSettings)
@@ -745,6 +757,8 @@ class Settings(BaseModel):
             problems.append("TURNSTILE_SECRET_KEY must be set")
         if self.catalog.revalidation_secret is None:
             problems.append("CATALOG_REVALIDATION_SECRET must be set")
+        if self.share.internal_secret is None:
+            problems.append("SHARE_INTERNAL_SECRET must be set")
         problems.extend(self.auth_deployment_problems())
         problems.extend(self.billing_deployment_problems())
         return problems

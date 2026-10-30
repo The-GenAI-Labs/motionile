@@ -22,11 +22,13 @@ from motionile.core.config import (
     RedisSettings,
     SecuritySettings,
     Settings,
+    ShareSettings,
     StorageSettings,
     TurnstileSettings,
 )
 
 STRONG_SECRET = SecretStr("s" * 48)
+SHARE_INTERNAL_SECRET = "integration-share-internal-secret-0123456789"  # noqa: S105
 ENCRYPTION_KEY = SecretStr(base64.b64encode(b"k" * 32).decode())
 
 
@@ -62,6 +64,7 @@ def deployed_settings(env: AppEnv = AppEnv.PRODUCTION) -> Settings:
             microsoft_client_secret=STRONG_SECRET,
         ),
         catalog=CatalogSettings(revalidation_secret=STRONG_SECRET),
+        share=ShareSettings(internal_secret=STRONG_SECRET),
         billing=BillingSettings(
             razorpay_key_id="rzp_live_key",
             razorpay_key_secret=STRONG_SECRET,

@@ -9,7 +9,7 @@ from motionile.modules.generation.ports import SettingsReader
 from motionile.modules.platform import PlatformService, SettingValue
 
 MILLI = 1_000
-RESERVATION_MARGIN = timedelta(hours=24)
+JOB_RESERVATION_TTL = timedelta(days=120)
 
 
 class PlatformSettingsReader:
@@ -61,9 +61,6 @@ class RuntimeSettings:
 
     async def stage_timeout(self, session: AsyncSession) -> timedelta:
         return timedelta(minutes=await self.integer(session, "ai.stage_timeout_minutes"))
-
-    async def reservation_ttl(self, session: AsyncSession) -> timedelta:
-        return await self.approval_timeout(session) + RESERVATION_MARGIN
 
     async def storyboard_limits(self, session: AsyncSession) -> StoryboardLimits:
         minimum = await self.integer(session, "ai.speaking_rate_min_milli_wps")

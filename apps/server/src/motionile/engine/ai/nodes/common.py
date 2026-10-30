@@ -11,6 +11,8 @@ from motionile.engine.ai.graphs.errors import (
     JobEnded,
     MissingJobIdError,
     PipelineError,
+    PipelineErrorCode,
+    pipeline_error,
 )
 from motionile.engine.ai.graphs.events import EventType, emit
 from motionile.engine.ai.graphs.stages import STAGE_STATUS, Stage
@@ -42,6 +44,11 @@ async def begin(deps: PipelineDependencies, job_id: UUID, status: JobStatus, sta
     if snapshot.cancel_requested:
         raise JobCancelled
     raise InvalidTransitionError(f"{snapshot.status.value} cannot move to {status.value}")
+
+
+async def require_reservation(deps: PipelineDependencies, job: JobSnapshot) -> None:
+    if job.credits_reserved > 0 and not await deps.store.reservation_active(job.id):
+        raise pipeline_error(PipelineErrorCode.RESERVATION_LOST)
 
 
 async def ensure_active(deps: PipelineDependencies, job_id: UUID) -> None:

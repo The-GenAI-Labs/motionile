@@ -9,11 +9,15 @@ from motionile.modules.prompts import tasks
 from motionile.modules.prompts.domain import EvalQueue
 
 
+def bare_name(name: str) -> str:
+    return name.rpartition(":")[2]
+
+
 def test_generation_suites_run_on_the_generation_queue_and_browser_suites_on_the_render_queue() -> None:
     assert tasks.run_eval.queue == Queue.GENERATION.value
     assert tasks.run_eval_browser.queue == Queue.RENDER.value
-    assert tasks.run_eval.name == "prompts.run_eval"
-    assert tasks.run_eval_browser.name == "prompts.run_eval_browser"
+    assert bare_name(tasks.run_eval.name) == "prompts.run_eval"
+    assert bare_name(tasks.run_eval_browser.name) == "prompts.run_eval_browser"
 
 
 @pytest.mark.parametrize(
@@ -25,7 +29,7 @@ def test_deferral_picks_the_task_of_the_queue(monkeypatch: pytest.MonkeyPatch, q
 
     def capture(session: AsyncSession, registered: RegisteredTask, **arguments: str) -> None:
         del session
-        deferred.append((registered.name, arguments))
+        deferred.append((bare_name(registered.name), arguments))
 
     monkeypatch.setattr(tasks, "defer_after_commit", capture)
     run_id = uuid4()

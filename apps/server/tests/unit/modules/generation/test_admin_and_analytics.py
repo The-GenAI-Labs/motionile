@@ -3,13 +3,14 @@ from uuid import UUID
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from tests.fakes.generation import EPOCH, GenerationWorld
+from tests.fakes.generation import EPOCH, GenerationWorld, RecordingAudit
 from tests.unit.modules.generation.support import storyboard_content
 
 from motionile.core.clock import FrozenClock
 from motionile.core.ids import new_id
 from motionile.core.pagination import Cursor
 from motionile.engine.ai.job_options import JobStatus
+from motionile.modules.audit import ActorType
 from motionile.modules.generation.admin_repository import AdminJobFilter, CostTotals, UsageTotals
 from motionile.modules.generation.admin_schemas import AnalyticsQuery
 from motionile.modules.generation.admin_service import AdminJobsService, TraceSettings, public_reports
@@ -184,10 +185,13 @@ class Fixture:
         self.world = GenerationWorld()
         self.store = FakeAdminStore(self.world)
         self.session = AsyncSession()
+        self.audit = RecordingAudit()
+        self.admin_id = new_id()
         self.service = AdminJobsService(
             FrozenClock(NOW),
             TraceSettings(tracing, "https://langfuse.example", "proj-1"),
             lambda _session: self.store,
+            self.audit,
         )
 
 
@@ -208,7 +212,7 @@ async def test_the_detail_shows_versions_the_approved_content_scenes_cost_and_tr
         )
     )
 
-    detail = await fixture.service.detail(fixture.session, job.id)
+    detail = await fixture.service.detail(fixture.session, fixture.admin_id, job.id)
 
     assert [(item.version, item.origin, item.approved) for item in detail.storyboard_versions] == [
         (1, "planner", False),
@@ -230,7 +234,7 @@ async def test_the_detail_has_no_trace_link_when_tracing_is_off() -> None:
     fixture = Fixture(tracing=False)
     job = fixture.world.add_job(new_id())
 
-    detail = await fixture.service.detail(fixture.session, job.id)
+    detail = await fixture.service.detail(fixture.session, fixture.admin_id, job.id)
 
     assert detail.trace_url is None
     assert detail.approved_storyboard is None
@@ -241,7 +245,9 @@ async def test_the_detail_never_carries_prompt_material() -> None:
     fixture = Fixture(tracing=True)
     job = fixture.world.add_job(new_id())
 
-    document = (await fixture.service.detail(fixture.session, job.id)).model_dump_json(by_alias=True).lower()
+    document = (
+        (await fixture.service.detail(fixture.session, fixture.admin_id, job.id)).model_dump_json(by_alias=True).lower()
+    )
 
     for forbidden in ("canary", "system_prompt", "skill_body", "raw_output"):
         assert forbidden not in document
@@ -251,7 +257,7 @@ async def test_an_unknown_job_is_not_found() -> None:
     fixture = Fixture()
 
     with pytest.raises(JobNotFoundError):
-        await fixture.service.detail(fixture.session, new_id())
+        await fixture.service.detail(fixture.session, fixture.admin_id, new_id())
 
 
 async def test_the_list_is_paged_and_cut_to_the_query_preview() -> None:
@@ -316,3 +322,29 @@ async def test_analytics_refuses_a_range_over_a_year() -> None:
         await fixture.service.analytics(
             fixture.session, AnalyticsQuery(date_from=date(2025, 1, 1), date_to=date(2026, 10, 25))
         )
+
+
+async def test_an_admin_read_of_a_job_is_audited_with_the_admin_as_actor() -> None:
+    fixture = Fixture()
+    owner = new_id()
+    job = fixture.world.add_job(owner)
+
+    await fixture.service.detail(fixture.session, fixture.admin_id, job.id)
+
+    [event] = fixture.audit.events
+    assert (event.action, event.actor_type, event.actor_user_id) == (
+        "job.admin_viewed",
+        ActorType.ADMIN,
+        fixture.admin_id,
+    )
+    assert (event.target_type, event.target_id) == ("job", str(job.id))
+    assert event.metadata == {"ownerId": str(owner)}
+
+
+async def test_reading_a_job_that_does_not_exist_writes_no_audit_entry() -> None:
+    fixture = Fixture()
+
+    with pytest.raises(JobNotFoundError):
+        await fixture.service.detail(fixture.session, fixture.admin_id, new_id())
+
+    assert fixture.audit.events == []

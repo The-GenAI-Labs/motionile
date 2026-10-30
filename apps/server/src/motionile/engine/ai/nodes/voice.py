@@ -3,7 +3,7 @@ from motionile.engine.ai.graphs.errors import PipelineErrorCode, pipeline_error
 from motionile.engine.ai.graphs.events import EventType, emit
 from motionile.engine.ai.graphs.stages import Stage
 from motionile.engine.ai.graphs.state import PipelineState
-from motionile.engine.ai.nodes.common import job_id_of, stage_scope
+from motionile.engine.ai.nodes.common import job_id_of, require_reservation, stage_scope
 from motionile.engine.ai.ports import JobSnapshot, NarrationScript, StoredStoryboard
 from motionile.engine.audio.narration import NarrationError
 from motionile.engine.audio.narration_models import NarrationDocument
@@ -41,6 +41,7 @@ async def run_voice(deps: PipelineDependencies, state: PipelineState) -> Pipelin
         existing = await deps.store.narration(job_id)
         if existing is not None and covers(existing, scripts):
             return {}
+        await require_reservation(deps, job)
         narration = await synthesize(deps, job, scripts)
         if narration.total_duration_ms > deps.config.max_duration_ms:
             raise pipeline_error(PipelineErrorCode.DURATION_LIMIT_EXCEEDED)

@@ -21,6 +21,8 @@ RENEW_SECONDS: Final = 10.0
 REPLAY_PAGE: Final = 200
 SEEN_LIMIT: Final = 5_000
 HEARTBEAT_FRAME: Final = b": heartbeat\n\n"
+RECONNECT_FRAME: Final = b"event: reconnect\ndata: {}\n\n"
+MAX_STREAM_SECONDS: Final = 900.0
 SNAPSHOT_EVENT: Final = "snapshot"
 MESSAGE_EVENT: Final = "job_event"
 
@@ -132,6 +134,7 @@ class Follower:
         self._delivery = delivery
         self._lease = lease
         self._timing = timing
+        self.started = started
         self._last_sent = self._last_checked = self._last_renewed = started
 
     async def maintain(self, now: float) -> None:
@@ -182,6 +185,7 @@ async def stream_job_events(  # noqa: PLR0913
     heartbeat_seconds: float = HEARTBEAT_SECONDS,
     poll_seconds: float = POLL_SECONDS,
     recheck_seconds: float = RECHECK_SECONDS,
+    max_seconds: float = MAX_STREAM_SECONDS,
 ) -> AsyncGenerator[bytes]:
     try:
         async with events.subscribe(job_id) as subscription:
@@ -202,6 +206,9 @@ async def stream_job_events(  # noqa: PLR0913
                 source, delivery, lease, Timing(heartbeat_seconds, recheck_seconds, RENEW_SECONDS), loop.time()
             )
             while not await is_disconnected():
+                if loop.time() - follower.started >= max_seconds:
+                    yield RECONNECT_FRAME
+                    return
                 message = await subscription.next(poll_seconds)
                 now = loop.time()
                 await follower.maintain(now)

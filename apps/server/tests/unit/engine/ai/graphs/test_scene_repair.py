@@ -1,3 +1,6 @@
+import re
+
+import pytest
 from tests.fakes.pipeline import (
     always_broken,
     broken_on_checks,
@@ -13,7 +16,7 @@ from motionile.engine.ai.graphs.run import RunOutcome
 from motionile.engine.ai.llm.fake import FakeScript
 from motionile.engine.ai.llm.models import LlmTask, LlmUnavailableError, ModelOutputInvalidError
 from motionile.engine.ai.ports import SceneAttemptKind
-from motionile.engine.ai.scenes.models import SceneModule
+from motionile.engine.ai.scenes.models import SceneAsset, SceneModule
 from motionile.engine.ai.scenes.static_checks import check_scene_module
 from motionile.engine.render.models import RenderEngineError
 
@@ -233,6 +236,50 @@ async def test_a_canary_in_scene_code_fails_the_job_as_blocked_output() -> None:
     assert harness.store.failure[0] == "output_blocked"
     assert canary not in harness.store.failure[1]
     assert harness.renders.started == []
+
+
+def prompt_run(harness: Harness, key: str, words: int = 14) -> str:
+    body = harness.prompts.prompts[key].body
+    text = " ".join(re.findall(r"[A-Za-z]+", body))
+    return " ".join(text.split()[40 : 40 + words])
+
+
+@pytest.mark.parametrize("where", ["builder", "css", "svg"])
+async def test_a_system_prompt_sentence_in_scene_output_fails_the_job_as_blocked_output(where: str) -> None:
+    harness = build_harness()
+    sentence = prompt_run(harness, "scene.module")
+    modules = {
+        "builder": SceneModule(scene_id="hook", builder=f"ctx.root.dataset.note = '{sentence}';"),
+        "css": SceneModule(
+            scene_id="hook", builder="ctx.at(0);", css=f".mo-s-hook::after {{ content: '{sentence}'; }}"
+        ),
+        "svg": SceneModule(
+            scene_id="hook",
+            builder="ctx.at(0);",
+            assets=[
+                SceneAsset(id="note", svg=f"<svg xmlns='http://www.w3.org/2000/svg'><text>{sentence}</text></svg>")
+            ],
+        ),
+    }
+    harness.llm.script(LlmTask.SCENE, modules[where])
+
+    outcome = await harness.run()
+
+    assert outcome is RunOutcome.FAILED
+    assert harness.store.failure is not None
+    assert harness.store.failure[0] == "output_blocked"
+    assert sentence not in harness.store.failure[1]
+    assert harness.renders.started == []
+
+
+async def test_a_short_phrase_from_a_system_prompt_in_scene_output_is_allowed() -> None:
+    harness = build_harness()
+    phrase = prompt_run(harness, "scene.module", words=6)
+    harness.llm.script(LlmTask.SCENE, SceneModule(scene_id="hook", builder=f"ctx.root.dataset.note = '{phrase}';"))
+
+    outcome = await harness.run()
+
+    assert outcome is RunOutcome.FINISHED
 
 
 async def test_a_blocking_visual_review_issue_triggers_a_repair_and_only_that_scene_is_reviewed_again() -> None:

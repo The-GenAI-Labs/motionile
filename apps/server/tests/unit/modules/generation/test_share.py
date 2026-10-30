@@ -370,3 +370,54 @@ async def test_the_page_carries_the_upload_date_and_the_music_credit(fixture: Fi
 
     assert page.music_attribution == "Slow Morning (CC BY 4.0)"
     assert page.uploaded_at == (fixture.job.completed_at or NOW)
+
+
+async def test_a_view_that_asks_not_to_be_counted_leaves_the_counter_alone(fixture: Fixture) -> None:
+    view = await fixture.service.create(fixture.session, fixture.owner, fixture.job.id, fixture.request())
+
+    page = await fixture.service.view(fixture.session, view.slug, "internal", count_view=False)
+
+    assert page.title == "How does TCP work?"
+    assert fixture.store.links[0].view_count == 0
+    assert fixture.views.seen == set()
+
+
+async def test_recording_a_view_counts_once_per_viewer_and_slug_in_the_window(fixture: Fixture) -> None:
+    view = await fixture.service.create(fixture.session, fixture.owner, fixture.job.id, fixture.request())
+
+    for viewer in ("viewer-1", "viewer-1", "viewer-2"):
+        await fixture.service.record_view(fixture.session, view.slug, viewer)
+
+    assert fixture.store.links[0].view_count == 2
+    assert fixture.media.signed_for == []
+
+
+async def test_a_page_read_and_a_recorded_view_of_one_viewer_count_once_together(fixture: Fixture) -> None:
+    view = await fixture.service.create(fixture.session, fixture.owner, fixture.job.id, fixture.request())
+
+    await fixture.service.view(fixture.session, view.slug, "viewer-1")
+    await fixture.service.record_view(fixture.session, view.slug, "viewer-1")
+
+    assert fixture.store.links[0].view_count == 1
+
+
+async def test_every_kind_of_dead_link_looks_the_same_when_recording_a_view(fixture: Fixture) -> None:
+    first = await fixture.service.create(fixture.session, fixture.owner, fixture.job.id, fixture.request())
+    revoked = await fixture.service.create(
+        fixture.session, fixture.owner, fixture.job.id, fixture.request(aspect="9:16")
+    )
+    await fixture.service.revoke(fixture.session, fixture.owner, fixture.job.id)
+    expired = await fixture.service.create(fixture.session, fixture.owner, fixture.job.id, fixture.request())
+    next(link for link in fixture.store.links if link.slug == expired.slug).expires_at = NOW - timedelta(seconds=1)
+    fixture.job.status = "failed"
+
+    errors: list[tuple[int, str, str | None]] = []
+    for slug in (first.slug, revoked.slug, expired.slug, new_slug(), "short", "../etc/passwd"):
+        with pytest.raises(ShareNotFoundError) as caught:
+            await fixture.service.record_view(fixture.session, slug, "viewer")
+        errors.append((caught.value.status_code, caught.value.code, caught.value.detail))
+
+    assert len(set(errors)) == 1
+    assert errors[0][:2] == (404, "share_not_found")
+    assert fixture.views.seen == set()
+    assert all(link.view_count == 0 for link in fixture.store.links)

@@ -31,7 +31,7 @@ ALLOWED: dict[JobStatus, set[JobStatus]] = {
         JobStatus.FAILED,
     },
     JobStatus.PLANNING: {JobStatus.AWAITING_APPROVAL, JobStatus.VOICING, JobStatus.CANCELLED, JobStatus.FAILED},
-    JobStatus.AWAITING_APPROVAL: {JobStatus.PLANNING, JobStatus.VOICING, JobStatus.CANCELLED},
+    JobStatus.AWAITING_APPROVAL: {JobStatus.PLANNING, JobStatus.VOICING, JobStatus.CANCELLED, JobStatus.FAILED},
     JobStatus.VOICING: {JobStatus.GENERATING, JobStatus.CANCELLED, JobStatus.FAILED},
     JobStatus.GENERATING: {JobStatus.VALIDATING, JobStatus.CANCELLED, JobStatus.FAILED},
     JobStatus.VALIDATING: {JobStatus.GENERATING, JobStatus.RENDERING, JobStatus.CANCELLED, JobStatus.FAILED},
@@ -128,7 +128,10 @@ def test_a_new_job_starts_queued() -> None:
 def test_a_regeneration_returns_an_awaiting_job_to_planning_and_it_can_still_be_cancelled() -> None:
     assert can_transition(JobStatus.AWAITING_APPROVAL, JobStatus.PLANNING)
     assert can_transition(JobStatus.AWAITING_APPROVAL, JobStatus.CANCELLED)
-    assert not can_transition(JobStatus.AWAITING_APPROVAL, JobStatus.FAILED)
+
+
+def test_an_approved_job_whose_resume_never_ran_can_be_failed_from_awaiting_approval() -> None:
+    assert can_transition(JobStatus.AWAITING_APPROVAL, JobStatus.FAILED)
 
 
 def test_the_repair_loop_runs_between_generating_and_validating() -> None:

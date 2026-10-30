@@ -75,6 +75,10 @@ def render_work_key(render_id: UUID, *parts: str) -> str:
     return validate_key(render_work_prefix(render_id) + "/".join(segment(part) for part in parts))
 
 
+def job_work_prefix(job_id: UUID) -> str:
+    return validate_key(f"{WORK_ROOT}/jobs/{job_id}") + "/"
+
+
 def composition_check_prefix(job_id: UUID, check_id: str) -> str:
     return validate_key(f"{WORK_ROOT}/jobs/{job_id}/checks/{segment(check_id)}") + "/"
 

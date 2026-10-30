@@ -1,5 +1,6 @@
 import re
 from collections.abc import Awaitable, Callable
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
@@ -22,10 +23,12 @@ from motionile.modules.credits import (
     InsufficientCreditsError,
     ReservationNotActiveError,
     ReservationNotFoundError,
+    ReservationView,
     ReserveCommand,
 )
 from motionile.modules.generation.charging import charge_for
 from motionile.modules.generation.edits import changed_texts, instructions_digest
+from motionile.modules.generation.event_payloads import sanitize_payload
 from motionile.modules.generation.events import JobCompleted
 from motionile.modules.generation.exceptions import (
     InputRefusedError,
@@ -46,6 +49,7 @@ from motionile.modules.generation.models import Job
 from motionile.modules.generation.models import Storyboard as StoryboardRow
 from motionile.modules.generation.options import OptionInputs, OptionResolver, estimate_for, with_revision
 from motionile.modules.generation.ports import (
+    CheckpointPurger,
     EditGuard,
     JobDispatch,
     RenderCleanup,
@@ -61,7 +65,7 @@ from motionile.modules.generation.repository import (
     SqlJobRepository,
     sources_for,
 )
-from motionile.modules.generation.runtime_settings import RuntimeSettings
+from motionile.modules.generation.runtime_settings import JOB_RESERVATION_TTL, RuntimeSettings
 from motionile.modules.generation.schemas import (
     ApproveRequest,
     ChargingParametersView,
@@ -87,10 +91,20 @@ AUDIT_TARGET = "job"
 ERROR_CODE_PATTERN = re.compile(r"^[a-z][a-z0-9_]{1,59}$")
 ERROR_MESSAGE_LIMIT = 2_000
 CANCELLED_BY_USER = "cancelled_by_user"
+RESERVATION_LOST_ALERT = "generation.reservation_lost"
 IMMEDIATE_CANCEL_SOURCES = frozenset({JobStatus.QUEUED, JobStatus.AWAITING_APPROVAL})
 
 type AuditRecorder = Callable[[AsyncSession, AuditEvent, AuditContext | None], Awaitable[UUID]]
 type StoreFactory = Callable[[AsyncSession], JobStore]
+type Transaction = Callable[[], AbstractAsyncContextManager[AsyncSession]]
+
+
+def create_key(client_key: str) -> str:
+    return f"create:{client_key}"
+
+
+def revise_key(parent_id: UUID, client_key: str) -> str:
+    return f"revise:{parent_id}:{client_key}"
 
 
 def reserve_key(job_id: UUID) -> str:
@@ -119,11 +133,18 @@ class GenerationDeps:
     topics: TopicLookup
     edit_guard: EditGuard
     renders: RenderCleanup
+    checkpoints: CheckpointPurger
     clock: Clock
     events: EventBus
     dispatch: JobDispatch
     store_factory: StoreFactory = SqlJobRepository
     audit: AuditRecorder = record_audit
+
+
+@dataclass(frozen=True, slots=True)
+class EditPreview:
+    unchanged: StoryboardView | None
+    texts: list[str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,47 +199,52 @@ class GenerationService:
         context: AuditContext | None = None,
     ) -> JobView:
         store = self._store(session)
-        replayed = await store.get_by_key(user_id, idempotency_key)
+        scoped_key = create_key(idempotency_key)
+        replayed = await store.get_by_key(user_id, scoped_key)
         if replayed is not None:
             return await self._view(store, replayed)
         source, topic_id, query = await self._source(session, request)
         options = await self._deps.options.resolve(session, user_id, OptionInputs.from_request(request.options))
-        draft = JobDraft(user_id, source, topic_id, None, query, options, idempotency_key)
+        draft = JobDraft(user_id, source, topic_id, None, query, options, scoped_key)
         return await self._admit(session, store, draft, context)
 
     async def revise(  # noqa: PLR0913, PLR0917
         self,
-        session: AsyncSession,
+        transaction: Transaction,
         user_id: UUID,
         parent_id: UUID,
         request: ReviseRequest,
         idempotency_key: str,
         context: AuditContext | None = None,
     ) -> JobView:
-        store = self._store(session)
-        replayed = await store.get_by_key(user_id, idempotency_key)
-        if replayed is not None:
-            return await self._view(store, replayed)
-        parent = await self._owned(store, user_id, parent_id)
-        if parent.status != JobStatus.COMPLETED.value:
-            raise JobNotRevisableError
-        await self._check_scene_ids(store, user_id, parent, request)
-        require_allowed(await self._deps.edit_guard.check_instructions(user_id, parent.id, request.instructions))
-        base = JobOptions.model_validate(parent.options).model_copy(update={"revision": None})
-        options = await self._deps.options.resolve(session, user_id, OptionInputs.from_overrides(request.options), base)
-        revised = with_revision(
-            options, RevisionRequest(instructions=request.instructions, scene_ids=request.scene_ids)
-        )
-        draft = JobDraft(
-            user_id=user_id,
-            source=job_source(parent.source),
-            topic_id=parent.topic_id,
-            parent_job_id=parent.id,
-            query=parent.query,
-            options=revised,
-            idempotency_key=idempotency_key,
-        )
-        return await self._admit(session, store, draft, context)
+        scoped_key = revise_key(parent_id, idempotency_key)
+        async with transaction() as session:
+            store = self._store(session)
+            replayed = await store.get_by_key(user_id, scoped_key)
+            if replayed is not None:
+                return await self._view(store, replayed)
+            await self._revisable_parent(store, user_id, parent_id, request)
+        require_allowed(await self._deps.edit_guard.check_instructions(user_id, parent_id, request.instructions))
+        async with transaction() as session:
+            store = self._store(session)
+            parent = await self._revisable_parent(store, user_id, parent_id, request)
+            base = JobOptions.model_validate(parent.options).model_copy(update={"revision": None})
+            options = await self._deps.options.resolve(
+                session, user_id, OptionInputs.from_overrides(request.options), base
+            )
+            revised = with_revision(
+                options, RevisionRequest(instructions=request.instructions, scene_ids=request.scene_ids)
+            )
+            draft = JobDraft(
+                user_id=user_id,
+                source=job_source(parent.source),
+                topic_id=parent.topic_id,
+                parent_job_id=parent.id,
+                query=parent.query,
+                options=revised,
+                idempotency_key=scoped_key,
+            )
+            return await self._admit(session, store, draft, context)
 
     async def get(self, session: AsyncSession, user_id: UUID, job_id: UUID) -> JobView:
         store = self._store(session)
@@ -245,71 +271,25 @@ class GenerationService:
         return storyboard_view(row, JobOptions.model_validate(job.options), limits)
 
     async def update_storyboard(
-        self, session: AsyncSession, user_id: UUID, job_id: UUID, request: StoryboardUpdateRequest
+        self, transaction: Transaction, user_id: UUID, job_id: UUID, request: StoryboardUpdateRequest
     ) -> StoryboardView:
-        store = self._store(session)
-        job = await self._owned(store, user_id, job_id)
-        latest = await self._editable_storyboard(store, user_id, job, request.expected_version)
-        previous = Storyboard.model_validate(latest.content)
-        options = JobOptions.model_validate(job.options)
-        limits = await self._deps.settings.storyboard_limits(session)
-        issues = storyboard_issues(request.content, options, limits)
-        if issues:
-            raise StoryboardInvalidError(issue_errors(request.content, issues))
-        if request.content == previous:
-            return storyboard_view(latest, options, limits)
-        texts = changed_texts(previous, request.content)
-        if texts:
-            require_allowed(await self._deps.edit_guard.check_edit(user_id, job_id, texts))
-        locked = await self._locked(store, user_id, job_id)
-        current = await self._editable_storyboard(store, user_id, locked, request.expected_version)
-        saved = await store.insert_storyboard(
-            NewStoryboard(
-                job_id=job_id,
-                version=current.version + 1,
-                origin="user",
-                content=request.content.model_dump(mode="json", by_alias=True),
-            )
-        )
-        if saved is None:
-            raise StoryboardVersionConflictError(current.version + 1)
-        await store.add_event(
-            NewJobEvent(
-                job_id, "storyboard.updated", stage="approval", payload={"version": saved.version, "origin": "user"}
-            )
-        )
-        return storyboard_view(saved, options, limits)
+        async with transaction() as session:
+            preview = await self._preview_edit(session, user_id, job_id, request)
+        if preview.unchanged is not None:
+            return preview.unchanged
+        if preview.texts:
+            require_allowed(await self._deps.edit_guard.check_edit(user_id, job_id, preview.texts))
+        async with transaction() as session:
+            return await self._save_edit(session, user_id, job_id, request)
 
     async def regenerate(
-        self, session: AsyncSession, user_id: UUID, job_id: UUID, request: RegenerateRequest
+        self, transaction: Transaction, user_id: UUID, job_id: UUID, request: RegenerateRequest
     ) -> JobView:
-        store = self._store(session)
-        job = await self._owned(store, user_id, job_id)
-        self._require_awaiting_approval(job)
+        async with transaction() as session:
+            self._require_awaiting_approval(await self._owned(self._store(session), user_id, job_id))
         require_allowed(await self._deps.edit_guard.check_instructions(user_id, job_id, request.instructions))
-        locked = await self._locked(store, user_id, job_id)
-        self._require_awaiting_approval(locked)
-        latest = await store.latest_storyboard(user_id, job_id)
-        if latest is not None and latest.approved_at is not None:
-            raise StoryboardNotEditableError
-        moved = await store.transition(
-            job_id, JobStatus.PLANNING, {JobStatus.AWAITING_APPROVAL}, {"current_stage": "plan"}
-        )
-        if moved is None:
-            raise StoryboardNotEditableError
-        await store.add_event(
-            NewJobEvent(
-                job_id,
-                "storyboard.regenerate_requested",
-                stage="approval",
-                payload={
-                    "length": len(request.instructions),
-                    "digest": instructions_digest(request.instructions),
-                },
-            )
-        )
-        self._deps.dispatch.resume(session, job_id, ResumeKind.REGENERATE, request.instructions)
-        return await self._view(store, moved)
+        async with transaction() as session:
+            return await self._request_regeneration(session, user_id, job_id, request)
 
     async def approve(
         self,
@@ -368,6 +348,7 @@ class GenerationService:
         if job.render_id is not None:
             await self._deps.renders.delete_render(session, user_id, job.render_id)
         await store.delete(user_id, job_id)
+        await self._deps.checkpoints.purge([job_id])
         await self._audit(session, user_id, "job.deleted", job_id, {"status": job.status}, context)
 
     async def fail_job(self, session: AsyncSession, job_id: UUID, code: str, message: str) -> bool:
@@ -395,7 +376,9 @@ class GenerationService:
                 job_id,
                 "job.failed",
                 stage=failed.current_stage,
-                payload={"code": code, "message": message[:ERROR_MESSAGE_LIMIT], "creditsReleased": released},
+                payload=sanitize_payload(
+                    "job.failed", {"code": code, "message": message[:ERROR_MESSAGE_LIMIT], "creditsReleased": released}
+                ),
             )
         )
         return True
@@ -405,8 +388,10 @@ class GenerationService:
         job = await store.get_for_pipeline(job_id, lock=True)
         if job is None or JobStatus(job.status) not in sources_for(JobStatus.COMPLETED):
             return None
-        reservation = await self._deps.credits.active_reservation(session, job.user_id, JOB_REF_TYPE, job.id)
-        charged = await self._charge(session, job, final_duration_ms, reservation.amount if reservation else 0)
+        reservation = await self._deps.credits.active_reservation(
+            session, job.user_id, JOB_REF_TYPE, job.id, for_update=True
+        )
+        charged = await self._settle(session, job, reservation, final_duration_ms)
         completed = await store.transition(
             job_id,
             JobStatus.COMPLETED,
@@ -415,10 +400,6 @@ class GenerationService:
         )
         if completed is None:
             return None
-        if reservation is not None:
-            await self._deps.credits.commit(session, reservation.id, charged, commit_key(job.id))
-        elif job.credits_reserved > 0:
-            raise_alert("job_reservation_missing", job_id=str(job.id))
         fallbacks = (await store.fallback_scene_keys([job_id])).get(job_id, [])
         await store.add_event(
             NewJobEvent(
@@ -433,6 +414,13 @@ class GenerationService:
             JobCompleted(job_id=job.id, user_id=job.user_id, duration_ms=final_duration_ms, credits_charged=charged),
         )
         return charged
+
+    async def has_active_reservation(self, session: AsyncSession, job_id: UUID) -> bool:
+        job = await self._store(session).get_for_pipeline(job_id)
+        if job is None:
+            return False
+        reservation = await self._deps.credits.active_reservation(session, job.user_id, JOB_REF_TYPE, job.id)
+        return reservation is not None
 
     async def finish_cancellation(self, session: AsyncSession, job_id: UUID, reason: str = CANCELLED_BY_USER) -> bool:
         store = self._store(session)
@@ -449,6 +437,82 @@ class GenerationService:
             return False
         await self._record_cancellation(session, store, cancelled, cancelled.user_id, None, reason)
         return True
+
+    async def _preview_edit(
+        self, session: AsyncSession, user_id: UUID, job_id: UUID, request: StoryboardUpdateRequest
+    ) -> EditPreview:
+        store = self._store(session)
+        job = await self._owned(store, user_id, job_id)
+        latest = await self._editable_storyboard(store, user_id, job, request.expected_version)
+        previous = Storyboard.model_validate(latest.content)
+        options = JobOptions.model_validate(job.options)
+        limits = await self._deps.settings.storyboard_limits(session)
+        issues = storyboard_issues(request.content, options, limits)
+        if issues:
+            raise StoryboardInvalidError(issue_errors(request.content, issues))
+        if request.content == previous:
+            return EditPreview(storyboard_view(latest, options, limits), [])
+        return EditPreview(None, changed_texts(previous, request.content))
+
+    async def _save_edit(
+        self, session: AsyncSession, user_id: UUID, job_id: UUID, request: StoryboardUpdateRequest
+    ) -> StoryboardView:
+        store = self._store(session)
+        locked = await self._locked(store, user_id, job_id)
+        current = await self._editable_storyboard(store, user_id, locked, request.expected_version)
+        options = JobOptions.model_validate(locked.options)
+        limits = await self._deps.settings.storyboard_limits(session)
+        saved = await store.insert_storyboard(
+            NewStoryboard(
+                job_id=job_id,
+                version=current.version + 1,
+                origin="user",
+                content=request.content.model_dump(mode="json", by_alias=True),
+            )
+        )
+        if saved is None:
+            raise StoryboardVersionConflictError(current.version + 1)
+        await store.add_event(
+            NewJobEvent(
+                job_id, "storyboard.updated", stage="approval", payload={"version": saved.version, "origin": "user"}
+            )
+        )
+        return storyboard_view(saved, options, limits)
+
+    async def _request_regeneration(
+        self, session: AsyncSession, user_id: UUID, job_id: UUID, request: RegenerateRequest
+    ) -> JobView:
+        store = self._store(session)
+        locked = await self._locked(store, user_id, job_id)
+        self._require_awaiting_approval(locked)
+        latest = await store.latest_storyboard(user_id, job_id)
+        if latest is not None and latest.approved_at is not None:
+            raise StoryboardNotEditableError
+        moved = await store.transition(
+            job_id, JobStatus.PLANNING, {JobStatus.AWAITING_APPROVAL}, {"current_stage": "plan"}
+        )
+        if moved is None:
+            raise StoryboardNotEditableError
+        await store.add_event(
+            NewJobEvent(
+                job_id,
+                "storyboard.regenerate_requested",
+                stage="approval",
+                payload={
+                    "length": len(request.instructions),
+                    "digest": instructions_digest(request.instructions),
+                },
+            )
+        )
+        self._deps.dispatch.resume(session, job_id, ResumeKind.REGENERATE, request.instructions)
+        return await self._view(store, moved)
+
+    async def _revisable_parent(self, store: JobStore, user_id: UUID, parent_id: UUID, request: ReviseRequest) -> Job:
+        parent = await self._owned(store, user_id, parent_id)
+        if parent.status != JobStatus.COMPLETED.value:
+            raise JobNotRevisableError
+        await self._check_scene_ids(store, user_id, parent, request)
+        return parent
 
     async def _source(self, session: AsyncSession, request: JobCreateRequest) -> tuple[JobSource, UUID | None, str]:
         if request.topic_id is not None:
@@ -508,13 +572,28 @@ class GenerationService:
         return job_view(job)
 
     async def _reserve(self, session: AsyncSession, job: Job, amount: int) -> None:
-        ttl = await self._deps.settings.reservation_ttl(session)
         try:
             await self._deps.credits.reserve(
-                session, ReserveCommand(job.user_id, amount, JOB_REF_TYPE, job.id, reserve_key(job.id), ttl)
+                session,
+                ReserveCommand(job.user_id, amount, JOB_REF_TYPE, job.id, reserve_key(job.id), JOB_RESERVATION_TTL),
             )
         except InsufficientCreditsError as error:
             raise JobInsufficientCreditsError(available=error.available, required=error.required) from None
+
+    async def _settle(
+        self, session: AsyncSession, job: Job, reservation: ReservationView | None, final_duration_ms: int
+    ) -> int:
+        if reservation is None:
+            if job.credits_reserved > 0:
+                raise_alert(RESERVATION_LOST_ALERT, job_id=str(job.id))
+            return 0
+        charged = await self._charge(session, job, final_duration_ms, reservation.amount)
+        try:
+            await self._deps.credits.commit(session, reservation.id, charged, commit_key(job.id))
+        except ReservationNotActiveError:
+            raise_alert(RESERVATION_LOST_ALERT, job_id=str(job.id))
+            return 0
+        return charged
 
     async def _charge(self, session: AsyncSession, job: Job, final_duration_ms: int, reserved: int) -> int:
         if reserved <= 0:
@@ -551,7 +630,10 @@ class GenerationService:
                 payload={"code": reason, "creditsReleased": released},
             )
         )
-        await self._audit(session, user_id, "job.cancelled", job.id, {"creditsReleased": released}, context)
+        if reason == CANCELLED_BY_USER:
+            await self._audit(session, user_id, "job.cancelled", job.id, {"creditsReleased": released}, context)
+            return
+        await self._audit_system(session, "job.cancelled", job.id, {"creditsReleased": released, "reason": reason})
 
     async def _cancels_at_once(self, store: JobStore, user_id: UUID, job: Job) -> bool:
         status = JobStatus(job.status)
@@ -596,6 +678,19 @@ class GenerationService:
         if job.status != JobStatus.COMPLETED.value:
             return job_view(job)
         return job_view(job, (await store.fallback_scene_keys([job.id])).get(job.id, ()))
+
+    async def _audit_system(self, session: AsyncSession, action: str, job_id: UUID, metadata: dict[str, Any]) -> None:
+        await self._deps.audit(
+            session,
+            AuditEvent(
+                action=action,
+                actor_type=ActorType.SYSTEM,
+                target_type=AUDIT_TARGET,
+                target_id=str(job_id),
+                metadata=metadata,
+            ),
+            None,
+        )
 
     async def _audit(  # noqa: PLR0913, PLR0917
         self,

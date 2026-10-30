@@ -18,8 +18,12 @@ LONGEST_SCENE_COUNT_RANGE: Final = (7, 12)
 NONE_LABEL: Final = "none"
 
 
+def joined(lines: Iterable[str]) -> str:
+    return "\n".join(lines)
+
+
 def pairs_text(pairs: Iterable[tuple[str, str]]) -> str:
-    return "\n".join(f"{key}: {value}" for key, value in pairs)
+    return joined(f"{key}: {value}" for key, value in pairs)
 
 
 def scene_count_range(duration_seconds: int, limits: StoryboardLimits) -> tuple[int, int]:
@@ -119,14 +123,8 @@ def indented(prefix: str, values: Iterable[str]) -> list[str]:
     return [f"  {prefix}{value}" for value in values]
 
 
-def scene_context(brief: SceneBrief, attempt: int | None = None) -> str:
-    scene = brief.scene
-    lines = [
-        f"sceneId: {scene.id}",
-        f"position: {scene.position}",
-        f"sceneCount: {brief.scene_count}",
-        f"aspects: {', '.join(brief.aspects)}",
-        f"style: {brief.style}",
+def scene_edit_lines(scene: StoryboardScene) -> list[str]:
+    return [
         f"goal: {scene.goal}",
         f"visualBrief: {scene.visual_brief}",
         "layoutNotes:",
@@ -134,26 +132,36 @@ def scene_context(brief: SceneBrief, attempt: int | None = None) -> str:
         "onScreenText:",
         *indented("- ", scene.on_screen_text),
         f"keyTerms: {', '.join(scene.key_terms) or NONE_LABEL}",
+    ]
+
+
+def scene_context(brief: SceneBrief, attempt: int | None = None) -> str:
+    lines = [
+        f"sceneId: {brief.scene.id}",
+        f"position: {brief.scene.position}",
+        f"sceneCount: {brief.scene_count}",
+        f"aspects: {', '.join(brief.aspects)}",
+        f"style: {brief.style}",
         f"durationSeconds: {brief.duration_ms / MS_PER_SECOND:.2f}",
         f"language: {brief.language}",
     ]
     if attempt is not None:
         lines.append(f"attempt: {attempt}")
-    return delimit("context", "\n".join(lines))
+    return joined(
+        [delimit("context", joined(lines)), delimit("storyboard_edit", joined(scene_edit_lines(brief.scene)))]
+    )
 
 
 def review_context(brief: SceneBrief) -> str:
     scene = brief.scene
-    lines = [
-        f"sceneId: {scene.id}",
-        f"style: {brief.style}",
+    lines = [f"sceneId: {scene.id}", f"style: {brief.style}", f"aspects: {', '.join(brief.aspects)}"]
+    edited = [
         f"goal: {scene.goal}",
         "onScreenText:",
         *indented("- ", scene.on_screen_text),
         f"keyTerms: {', '.join(scene.key_terms) or NONE_LABEL}",
-        f"aspects: {', '.join(brief.aspects)}",
     ]
-    return delimit("context", "\n".join(lines))
+    return joined([delimit("context", joined(lines)), delimit("storyboard_edit", joined(edited))])
 
 
 def scene_brief(storyboard: Storyboard, narration: NarrationDocument, scene: StoryboardScene) -> SceneBrief:

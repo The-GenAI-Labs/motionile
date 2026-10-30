@@ -1,12 +1,29 @@
 from http import HTTPStatus
 
-from motionile.core.errors import AppError, ConflictError, FieldError, NotFoundError, ValidationAppError
+from motionile.core.errors import (
+    AppError,
+    ConflictError,
+    FieldError,
+    NotFoundError,
+    ServiceUnavailableError,
+    ValidationAppError,
+)
+from motionile.engine.ai.graphs.errors import LLM_FAILURE_MESSAGES
 from motionile.engine.ai.guardrails import PolicyCode, policy_message
+from motionile.engine.ai.llm.models import LlmErrorCode
 
 
 class JobNotFoundError(NotFoundError):
     default_code = "job_not_found"
     title = "Job not found"
+
+
+class AiUnavailableError(ServiceUnavailableError):
+    default_code = LlmErrorCode.LLM_UNAVAILABLE.value
+    title = "AI service unavailable"
+
+    def __init__(self, error_code: LlmErrorCode) -> None:
+        super().__init__(LLM_FAILURE_MESSAGES[error_code], code=error_code.value)
 
 
 class TopicNotFoundError(NotFoundError):

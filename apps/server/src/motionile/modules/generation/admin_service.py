@@ -1,4 +1,4 @@
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, time, timedelta
 from typing import Any, Final, cast
@@ -12,6 +12,8 @@ from motionile.core.pagination import Cursor
 from motionile.engine.ai.job_options import JobStatus
 from motionile.engine.ai.llm.tracing import job_trace_id, trace_link
 from motionile.engine.ai.storyboard import Storyboard
+from motionile.modules.audit import ActorType, AuditContext, AuditEvent
+from motionile.modules.audit import record as record_audit
 from motionile.modules.generation.admin_repository import AdminJobFilter, AdminStore, SqlAdminRepository, UsageTotals
 from motionile.modules.generation.admin_schemas import (
     MAX_QUERY_PREVIEW,
@@ -37,10 +39,13 @@ from motionile.modules.generation.models import Job, Scene
 from motionile.modules.generation.views import job_source, job_view
 
 type AdminStoreFactory = Callable[[AsyncSession], AdminStore]
+type AuditRecorder = Callable[[AsyncSession, AuditEvent, AuditContext | None], Awaitable[UUID]]
 
 MESSAGE_KEY: Final = "message"
 REVIEW_KEY: Final = "review"
 ISSUES_KEY: Final = "issues"
+JOB_VIEWED_ACTION: Final = "job.admin_viewed"
+JOB_TARGET: Final = "job"
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,10 +128,12 @@ class AdminJobsService:
         clock: Clock,
         tracing: TraceSettings,
         store_factory: AdminStoreFactory = SqlAdminRepository,
+        audit: AuditRecorder = record_audit,
     ) -> None:
         self._clock = clock
         self._tracing = tracing
         self._store_factory = store_factory
+        self._audit = audit
 
     async def list_jobs(
         self, session: AsyncSession, job_filter: AdminJobFilter, cursor: Cursor | None, limit: int
@@ -136,11 +143,25 @@ class AdminJobsService:
         next_cursor = Cursor(shown[-1].created_at, shown[-1].id) if len(rows) > limit and shown else None
         return AdminJobsResult([summary_of(job) for job in shown], next_cursor)
 
-    async def detail(self, session: AsyncSession, job_id: UUID) -> AdminJobDetail:
+    async def detail(
+        self, session: AsyncSession, admin_id: UUID, job_id: UUID, context: AuditContext | None = None
+    ) -> AdminJobDetail:
         store = self._store_factory(session)
         job = await store.job(job_id)
         if job is None:
             raise JobNotFoundError
+        await self._audit(
+            session,
+            AuditEvent(
+                action=JOB_VIEWED_ACTION,
+                actor_type=ActorType.ADMIN,
+                actor_user_id=admin_id,
+                target_type=JOB_TARGET,
+                target_id=str(job_id),
+                metadata={"ownerId": str(job.user_id)},
+            ),
+            context,
+        )
         storyboards = await store.storyboards(job_id)
         approved = next((row for row in reversed(storyboards) if row.approved_at is not None), None)
         scenes = await store.scenes(approved.id) if approved is not None else []

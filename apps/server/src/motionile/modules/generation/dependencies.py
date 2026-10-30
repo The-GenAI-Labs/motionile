@@ -1,10 +1,12 @@
+import hashlib
+import hmac
 from datetime import timedelta
-from typing import Annotated
+from typing import Annotated, Final
 from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, Request
 
-from motionile.core.dependencies import ResourcesDep
+from motionile.core.dependencies import ResourcesDep, SettingsDep
 from motionile.core.errors import UnauthorizedError
 from motionile.modules.auth import CurrentPrincipalDep
 from motionile.modules.generation.admin_service import AdminJobsService, TraceSettings
@@ -14,6 +16,20 @@ from motionile.modules.generation.library_service import LibraryService
 from motionile.modules.generation.service import GenerationService
 from motionile.modules.generation.share_service import RedisViewCounter, ShareService
 from motionile.modules.media import media_service_for
+
+INTERNAL_HEADER: Final = "X-Motionile-Internal"
+
+
+def digest_of(value: str) -> bytes:
+    return hashlib.sha256(value.encode("utf-8")).digest()
+
+
+def is_internal_share_caller(request: Request, settings: SettingsDep) -> bool:
+    secret = settings.share.internal_secret
+    supplied = request.headers.get(INTERNAL_HEADER)
+    if secret is None or supplied is None:
+        return False
+    return hmac.compare_digest(digest_of(supplied), digest_of(secret.get_secret_value()))
 
 
 def get_generation_service(resources: ResourcesDep) -> GenerationService:
@@ -57,4 +73,5 @@ CurrentUserIdDep = Annotated[UUID, Depends(get_current_user_id)]
 JobEventsDep = Annotated[JobEvents, Depends(get_job_events)]
 LibraryServiceDep = Annotated[LibraryService, Depends(get_library_service)]
 ShareServiceDep = Annotated[ShareService, Depends(get_share_service)]
+InternalShareCallerDep = Annotated[bool, Depends(is_internal_share_caller)]
 AdminJobsServiceDep = Annotated[AdminJobsService, Depends(get_admin_jobs_service)]

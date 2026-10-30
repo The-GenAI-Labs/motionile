@@ -50,6 +50,11 @@ KNOWN_FAILURES: Final[dict[str, ErrorDescription]] = {
         "The video could not be assembled",
         "Motionile could not assemble the scenes into a valid video. Your credits were returned. Try again.",
     ),
+    "reservation_lost": ErrorDescription(
+        "The video was stopped",
+        "The credits held for this video were no longer available, so Motionile stopped before spending more. "
+        "Try again.",
+    ),
     "job_stalled": ErrorDescription(
         "The video took too long",
         "The video stopped making progress and was cancelled. Your credits were returned. Try again.",

@@ -113,8 +113,8 @@ class CallContext:
 class LlmCall:
     task: LlmTask
     context: CallContext
-    system_blocks: Sequence[str]
-    user_blocks: Sequence[UserBlock]
+    system_blocks: Sequence[str] = field(repr=False)
+    user_blocks: Sequence[UserBlock] = field(repr=False)
     metadata: Mapping[str, str] = field(default_factory=dict[str, str])
 
 

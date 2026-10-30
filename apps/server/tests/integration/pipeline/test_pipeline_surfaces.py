@@ -4,6 +4,7 @@ from uuid import UUID
 
 import httpx
 import pytest
+from tests.fakes.settings import SHARE_INTERNAL_SECRET
 from tests.integration.pipeline.support import PipelineEnv, SseFrame, parse_sse
 from tests.integration.test_auth import csrf
 
@@ -170,8 +171,64 @@ async def test_a_view_is_counted_once_per_visitor_and_hour(finished: Finished) -
     for _ in range(3):
         assert (await finished.anonymous.get(f"/v1/share/{slug}")).status_code == 200
 
-    views = await finished.env.generation.scalar("SELECT view_count FROM share_links WHERE slug = :slug", slug=slug)
-    assert views == 1
+    assert await view_count(finished, slug) == 1
+
+
+async def view_count(finished: Finished, slug: str) -> object:
+    return await finished.env.generation.scalar("SELECT view_count FROM share_links WHERE slug = :slug", slug=slug)
+
+
+async def test_a_page_read_with_the_internal_secret_counts_no_view(finished: Finished) -> None:
+    slug = (await finished.share()).json()["slug"]
+    internal = {"X-Motionile-Internal": SHARE_INTERNAL_SECRET}
+
+    for _ in range(3):
+        assert (await finished.anonymous.get(f"/v1/share/{slug}", headers=internal)).status_code == 200
+
+    assert await view_count(finished, slug) == 0
+
+
+async def test_a_wrong_internal_secret_is_treated_as_a_public_read(finished: Finished) -> None:
+    slug = (await finished.share()).json()["slug"]
+
+    for _ in range(2):
+        response = await finished.anonymous.get(f"/v1/share/{slug}", headers={"X-Motionile-Internal": "x" * 40})
+        assert response.status_code == 200
+
+    assert await view_count(finished, slug) == 1
+
+
+async def test_the_browser_post_counts_one_view_per_visitor_and_hour(finished: Finished) -> None:
+    slug = (await finished.share()).json()["slug"]
+    internal = {"X-Motionile-Internal": SHARE_INTERNAL_SECRET}
+
+    assert (await finished.anonymous.get(f"/v1/share/{slug}", headers=internal)).status_code == 200
+    for _ in range(3):
+        counted = await finished.anonymous.post(f"/v1/share/{slug}/views")
+        assert counted.status_code == 204
+        assert counted.content == b""
+
+    assert await view_count(finished, slug) == 1
+
+
+async def test_counting_a_view_of_a_dead_link_answers_like_reading_it(finished: Finished) -> None:
+    revoked = (await finished.share()).json()["slug"]
+    await finished.unshare()
+
+    reads = [await finished.anonymous.get(f"/v1/share/{slug}") for slug in (revoked, "x" * 22, "short")]
+    counts = [await finished.anonymous.post(f"/v1/share/{slug}/views") for slug in (revoked, "x" * 22, "short")]
+
+    assert {response.status_code for response in [*reads, *counts]} == {404}
+    assert (
+        len(
+            {
+                (response.json()["code"], response.json()["title"], response.json()["detail"])
+                for response in [*reads, *counts]
+            }
+        )
+        == 1
+    )
+    assert await view_count(finished, revoked) == 0
 
 
 async def test_a_new_link_replaces_the_old_one_and_revoking_ends_the_new_one(finished: Finished) -> None:

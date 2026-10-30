@@ -109,6 +109,9 @@ class OutputScanner:
             shingle in self._skill_shingles for shingle in shingles_of(words, SKILL_OVERLAP_WORDS)
         )
 
+    def overlaps_prompts(self, text: str) -> bool:
+        return bool(self._shingles) and any(shingle in self._shingles for shingle in shingles_of(words_of(text)))
+
     def scan_text(self, text: str) -> ScanResult:
         if self.contains_canary(text):
             return ScanResult("canary")
@@ -120,6 +123,17 @@ class OutputScanner:
         if self.contains_canary(text):
             return ScanResult("canary")
         return ScanResult()
+
+    def scan_scene(self, code: str, literals: str) -> ScanResult:
+        result = self.scan_code(code)
+        if result.blocked:
+            return result
+        if self.overlaps_prompts(literals):
+            return ScanResult("overlap")
+        return ScanResult()
+
+    def ensure_clean_scene(self, code: str, literals: str, *, source: str) -> str:
+        return self.ensure(self.scan_scene(code, literals), code, source)
 
     def ensure_clean_text(self, text: str, *, source: str) -> str:
         return self.ensure(self.scan_text(text), text, source)

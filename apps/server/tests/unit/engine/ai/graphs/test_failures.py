@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import pytest
 from tests.fakes.pipeline import (
     FakeNarrator,
@@ -323,3 +325,49 @@ async def test_a_style_without_tokens_fails_the_job() -> None:
 
     assert outcome is RunOutcome.FAILED
     assert_failed(harness, "no_style_skill")
+
+
+async def test_a_lost_reservation_fails_the_job_before_the_paid_voice_stage() -> None:
+    harness = build_harness(job=replace(make_job(), credits_reserved=140))
+    harness.store.reservation_held = False
+
+    outcome = await harness.run()
+
+    assert outcome is RunOutcome.FAILED
+    message = assert_failed(harness, "reservation_lost")
+    assert "no longer available" in message
+    assert harness.narrator.calls == []
+    assert harness.renders.started == []
+    assert "voice" in harness.store.stage_names
+    assert "render" not in harness.store.stage_names
+
+
+async def test_a_held_reservation_lets_the_job_pass_the_paid_stages() -> None:
+    harness = build_harness(job=replace(make_job(), credits_reserved=140))
+
+    outcome = await harness.run()
+
+    assert outcome is RunOutcome.FINISHED
+    assert harness.store.reservation_checks == 2
+
+
+async def test_a_job_that_reserved_nothing_never_checks_the_reservation() -> None:
+    harness = build_harness()
+    harness.store.reservation_held = False
+
+    outcome = await harness.run()
+
+    assert outcome is RunOutcome.FINISHED
+    assert harness.store.reservation_checks == 0
+
+
+async def test_a_reservation_lost_during_generation_stops_the_job_before_the_render() -> None:
+    harness = build_harness(job=replace(make_job(), credits_reserved=140))
+    harness.store.reservation_answers = [True, False]
+
+    outcome = await harness.run()
+
+    assert outcome is RunOutcome.FAILED
+    assert_failed(harness, "reservation_lost")
+    assert len(harness.narrator.calls) == 1
+    assert harness.renders.started == []

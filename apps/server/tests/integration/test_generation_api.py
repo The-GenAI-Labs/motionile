@@ -1,8 +1,12 @@
 import asyncio
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import pytest
+from langchain_core.runnables.config import RunnableConfig
+from langgraph.checkpoint.base import empty_checkpoint
+from sqlalchemy import text
 from tests.fakes.generation import FakeEditGuard, RecordingDispatch
 from tests.integration.generation_support import (
     JOBS,
@@ -16,8 +20,14 @@ from tests.integration.test_auth import csrf
 from tests.unit.modules.generation.support import storyboard_content
 
 from motionile.core.ids import new_id
+from motionile.modules.credits import UsageEntry, record_usage
 from motionile.modules.generation import ResumeKind
+from motionile.modules.generation.admin_repository import SqlAdminRepository
+from motionile.modules.generation.checkpoints import postgres_checkpointer
 from motionile.modules.generation.dependencies import get_generation_service
+from motionile.modules.generation.hooks import purge_user_jobs
+from motionile.modules.media import job_work_prefix
+from motionile.modules.users import purge_registry
 
 
 @pytest.fixture
@@ -435,3 +445,101 @@ async def test_a_job_that_is_still_running_cannot_be_deleted(generation_api: Gen
     assert response.status_code == 409
     assert response.json()["code"] == "job_not_deletable"
     assert await generation_api.job_status(job_id) == "voicing"
+
+
+async def test_average_cost_counts_failed_and_cancelled_jobs_and_averages_credits_over_the_same_jobs(
+    generation_api: GenerationApi,
+) -> None:
+    owner = generation_api.primary_id
+    completed = await generation_api.seed_job(owner, "completed")
+    failed = await generation_api.seed_job(owner, "failed")
+    cancelled = await generation_api.seed_job(owner, "cancelled")
+    unused = await generation_api.seed_job(owner, "completed")
+    running = await generation_api.seed_job(owner, "generating")
+    async with generation_api.database.transaction() as session:
+        await session.execute(
+            text("UPDATE jobs SET credits_charged = 80 WHERE id = :id OR id = :unused"),
+            {"id": completed, "unused": unused},
+        )
+        for job_id, cost in ((completed, 30_000), (failed, 10_000), (cancelled, 2_000), (running, 999_999)):
+            await record_usage(
+                session,
+                UsageEntry(
+                    user_id=owner,
+                    stage="plan",
+                    provider="anthropic",
+                    key=f"cost-test:{job_id}",
+                    cost_micros_usd=cost,
+                    job_id=job_id,
+                ),
+            )
+    start = datetime(2026, 10, 24, tzinfo=UTC)
+
+    async with generation_api.database.transaction() as session:
+        totals = await SqlAdminRepository(session).cost_totals(start, start + timedelta(days=1))
+
+    assert totals.average_cost_micros_usd == pytest.approx(14_000.0)
+    assert totals.average_credits_charged == pytest.approx(80 / 3)
+
+
+async def test_the_average_cost_is_empty_without_finished_jobs_that_used_anything(
+    generation_api: GenerationApi,
+) -> None:
+    await generation_api.seed_job(generation_api.primary_id, "completed")
+    start = datetime(2026, 10, 24, tzinfo=UTC)
+
+    async with generation_api.database.transaction() as session:
+        totals = await SqlAdminRepository(session).cost_totals(start, start + timedelta(days=1))
+
+    assert (totals.average_cost_micros_usd, totals.average_credits_charged) == (None, None)
+
+
+async def put_checkpoint(api: GenerationApi, job_id: UUID) -> None:
+    config = RunnableConfig(configurable={"thread_id": str(job_id), "checkpoint_ns": ""})
+    async with postgres_checkpointer(api.media.resources.settings) as saver:
+        await saver.aput(config, empty_checkpoint(), {"source": "input", "step": 0, "parents": {}}, {})
+
+
+async def checkpoint_count(api: GenerationApi, job_id: UUID) -> int:
+    return int(
+        await api.scalar("SELECT count(*) FROM langgraph.checkpoints WHERE thread_id = :id", id=str(job_id)) or 0
+    )
+
+
+async def test_deleting_a_job_deletes_its_checkpoints_and_only_its_own(generation_api: GenerationApi) -> None:
+    deleted = await generation_api.seed_job(generation_api.primary_id, "failed")
+    kept = await generation_api.seed_job(generation_api.primary_id, "failed")
+    await put_checkpoint(generation_api, deleted)
+    await put_checkpoint(generation_api, kept)
+
+    response = await generation_api.primary.delete(f"{JOBS}/{deleted}", headers=csrf(generation_api.primary))
+
+    assert response.status_code == 204
+    assert await checkpoint_count(generation_api, deleted) == 0
+    assert await checkpoint_count(generation_api, kept) == 1
+
+
+async def test_a_user_purge_deletes_the_checkpoints_and_work_files_of_all_their_jobs(
+    generation_api: GenerationApi,
+) -> None:
+    resources = generation_api.media.resources
+    owned = [await generation_api.seed_job(generation_api.primary_id, status) for status in ("completed", "voicing")]
+    foreign = await generation_api.seed_job(generation_api.other_id, "completed")
+    for job_id in (*owned, foreign):
+        await put_checkpoint(generation_api, job_id)
+        await generation_api.media.put_object(
+            f"{job_work_prefix(job_id)}checks/abc/request.json", b"{}", "application/json"
+        )
+
+    async with generation_api.database.transaction() as session:
+        await purge_user_jobs(resources, session, generation_api.primary_id)
+
+    for job_id in owned:
+        assert await checkpoint_count(generation_api, job_id) == 0
+        assert not await resources.storage.exists(f"{job_work_prefix(job_id)}checks/abc/request.json")
+    assert await checkpoint_count(generation_api, foreign) == 1
+    assert await resources.storage.exists(f"{job_work_prefix(foreign)}checks/abc/request.json")
+
+
+async def test_the_generation_purge_hook_is_registered_with_the_user_purge() -> None:
+    assert "generation" in purge_registry.names()

@@ -107,7 +107,9 @@ class CreditsStore(Protocol):
     async def reservation(self, reservation_id: UUID) -> ReservationRecord | None: ...
     async def lock_reservation(self, reservation_id: UUID) -> ReservationRecord | None: ...
     async def active_reservation_for(self, ref_type: str, ref_id: UUID) -> ReservationRecord | None: ...
-    async def active_reservation_of(self, user_id: UUID, ref_type: str, ref_id: UUID) -> ReservationRecord | None: ...
+    async def active_reservation_of(
+        self, user_id: UUID, ref_type: str, ref_id: UUID, *, lock: bool = False
+    ) -> ReservationRecord | None: ...
     async def add_reservation(self, reservation: ReservationRecord) -> None: ...
     async def save_reservation(self, reservation: ReservationRecord) -> None: ...
     async def expired_lot_remaining(self, user_id: UUID, now: datetime) -> int: ...
@@ -346,8 +348,10 @@ class SqlCreditsRepository:
         )
         return reservation_record(model) if model is not None else None
 
-    async def active_reservation_of(self, user_id: UUID, ref_type: str, ref_id: UUID) -> ReservationRecord | None:
-        model = await self.session.scalar(
+    async def active_reservation_of(
+        self, user_id: UUID, ref_type: str, ref_id: UUID, *, lock: bool = False
+    ) -> ReservationRecord | None:
+        statement = (
             select(CreditReservation)
             .where(
                 CreditReservation.user_id == user_id,
@@ -357,6 +361,9 @@ class SqlCreditsRepository:
             )
             .execution_options(**FRESH_ROWS)
         )
+        if lock:
+            statement = statement.with_for_update()
+        model = await self.session.scalar(statement)
         return reservation_record(model) if model is not None else None
 
     async def add_reservation(self, reservation: ReservationRecord) -> None:

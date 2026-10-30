@@ -1,4 +1,4 @@
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -351,21 +351,38 @@ class FakeTopics:
 class FakeEditGuard:
     def __init__(self) -> None:
         self.refuse_with: PolicyCode | None = None
+        self.fail_with: Exception | None = None
         self.edits: list[list[str]] = []
         self.instructions: list[str] = []
+        self.open_transactions: Callable[[], int] = lambda: 0
+        self.transactions_open_during_calls: list[int] = []
 
     async def check_edit(self, user_id: UUID, job_id: UUID, texts: Sequence[str]) -> GuardResult:
         del user_id, job_id
         self.edits.append(list(texts))
-        return self._result()
+        return await self._result()
 
     async def check_instructions(self, user_id: UUID, job_id: UUID, text: str) -> GuardResult:
         del user_id, job_id
         self.instructions.append(text)
-        return self._result()
+        return await self._result()
 
-    def _result(self) -> GuardResult:
+    async def _result(self) -> GuardResult:
+        self.transactions_open_during_calls.append(self.open_transactions())
+        if self.fail_with is not None:
+            raise self.fail_with
         return GuardResult.refuse(self.refuse_with) if self.refuse_with else GuardResult.allow()
+
+
+class FakeCheckpoints:
+    def __init__(self) -> None:
+        self.purged: list[UUID] = []
+        self.failure: Exception | None = None
+
+    async def purge(self, job_ids: Sequence[UUID]) -> None:
+        if self.failure is not None:
+            raise self.failure
+        self.purged.extend(job_ids)
 
 
 class FakeRenders:

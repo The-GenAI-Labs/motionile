@@ -370,3 +370,19 @@ async def test_the_active_reservation_is_hidden_from_other_owners_and_after_sett
     assert await harness.service.active_reservation(harness.session, harness.user_id, "other", ref_id) is None
     await harness.service.release(harness.session, reservation.id, "release:lookup")
     assert await harness.service.active_reservation(harness.session, harness.user_id, "job", ref_id) is None
+
+
+async def test_the_active_reservation_can_be_read_under_a_row_lock(harness: Harness) -> None:
+    await harness.grant(100)
+    ref_id = new_id()
+    reservation = await harness.reserve(30, ref_id=ref_id)
+
+    plain = await harness.service.active_reservation(harness.session, harness.user_id, "job", ref_id)
+    assert harness.store.locked_reservation_reads == 0
+    locked = await harness.service.active_reservation(harness.session, harness.user_id, "job", ref_id, for_update=True)
+
+    assert harness.store.locked_reservation_reads == 1
+    assert plain is not None
+    assert locked is not None
+    assert plain == locked
+    assert locked.id == reservation.id

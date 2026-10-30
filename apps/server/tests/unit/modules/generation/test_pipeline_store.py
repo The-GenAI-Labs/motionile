@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tests.fakes.pipeline_storage import InMemoryPipelineStorage
 from tests.unit.modules.generation.support import Harness, storyboard_content, valid_storyboard
 
+from motionile.core.ids import new_id
 from motionile.engine.ai.job_options import JobStatus
 from motionile.engine.ai.ports import (
     CompositionIssue,
@@ -343,3 +344,21 @@ async def test_finishing_a_cancellation_releases_the_credits(fixture: Fixture) -
 
     assert job.status == "cancelled"
     assert fixture.harness.wallet() == (500, 0)
+
+
+async def test_the_snapshot_carries_the_reserved_credits_and_the_store_reports_the_reservation(
+    fixture: Fixture,
+) -> None:
+    job = await fixture.started_job("voicing")
+
+    snapshot = await fixture.store.snapshot(job.id)
+    assert snapshot.credits_reserved == job.credits_reserved > 0
+    assert await fixture.store.reservation_active(job.id)
+
+    await fixture.harness.service.fail_job(fixture.harness.session, job.id, "tts_failed", "x")
+
+    assert not await fixture.store.reservation_active(job.id)
+
+
+async def test_an_unknown_job_has_no_active_reservation(fixture: Fixture) -> None:
+    assert not await fixture.store.reservation_active(new_id())

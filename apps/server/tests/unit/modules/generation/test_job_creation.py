@@ -18,6 +18,7 @@ from motionile.modules.generation import (
     TopicNotFoundError,
 )
 from motionile.modules.generation.ports import UserPreferences
+from motionile.modules.generation.runtime_settings import JOB_RESERVATION_TTL
 from motionile.modules.generation.schemas import JobOptionsRequest
 from motionile.modules.media import MusicTrackUnavailableError
 
@@ -73,6 +74,7 @@ async def test_creating_a_job_reserves_credits_and_dispatches_it(harness: Harnes
     reservation = await harness.credits.active_reservation(harness.session, harness.user_id, "job", view.id)
     assert reservation is not None
     assert reservation.amount == 140
+    assert reservation.expires_at - harness.clock.now() == JOB_RESERVATION_TTL
 
 
 async def test_a_repeated_idempotency_key_returns_the_same_job_without_charging_twice(harness: Harness) -> None:

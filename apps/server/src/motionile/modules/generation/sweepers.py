@@ -54,7 +54,11 @@ class Sweeper:
         async with self._transaction() as session:
             timeout = await self._settings.stage_timeout(session)
         before = self._clock.now() - timeout
-        return await self._sweep(lambda store, after: store.stalled(before, after, PAGE_SIZE), self._fail)
+        stalled = await self._sweep(lambda store, after: store.stalled(before, after, PAGE_SIZE), self._fail)
+        unresumed = await self._sweep(
+            lambda store, after: store.unresumed_approvals(before, after, PAGE_SIZE), self._fail_unresumed
+        )
+        return stalled + unresumed
 
     async def cancel_expired_approvals(self) -> int:
         async with self._transaction() as session:
@@ -98,6 +102,17 @@ class Sweeper:
     async def _fail(self, session: AsyncSession, store: SweepStore, job: SweptJob) -> bool:
         del store
         await self._cancel_render(session, job)
+        return await self._service.fail_job(session, job.id, STALLED_CODE, STALLED_MESSAGE)
+
+    async def _fail_unresumed(self, session: AsyncSession, store: SweepStore, job: SweptJob) -> bool:
+        current = await store.locked(job.id)
+        if (
+            current is None
+            or current.status != JobStatus.AWAITING_APPROVAL.value
+            or current.cancel_requested_at is not None
+            or not await store.is_approved(job.id)
+        ):
+            return False
         return await self._service.fail_job(session, job.id, STALLED_CODE, STALLED_MESSAGE)
 
     async def _expire(self, session: AsyncSession, store: SweepStore, job: SweptJob) -> bool:

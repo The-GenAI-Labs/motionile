@@ -26,7 +26,7 @@ from motionile.modules.prompts.exceptions import (
     PromptVersionNotFoundError,
     UnknownSuiteError,
 )
-from motionile.modules.prompts.executor import eval_executor_for
+from motionile.modules.prompts.executor import eval_executor_for, installed
 from motionile.modules.prompts.gate import KNOWN_SUITES, REQUIRED_SUITES
 from motionile.modules.prompts.models import EvalRun
 from motionile.modules.prompts.repository import RunFilter
@@ -195,17 +195,16 @@ async def test_without_an_installed_executor_the_run_errors(harness: Harness) ->
     assert (run.status, run.error_code) == ("errored", "eval_executor_unavailable")
 
 
-def test_the_executor_is_installed_and_removed_through_the_provider() -> None:
+def test_the_executor_is_installed_and_removed_through_the_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(installed, "factory", None)
     resources = cast("Resources", object())
     executor = ScriptedExecutor()
     assert eval_executor_for(resources) is None
 
     install_eval_executor(lambda _: executor)
-    try:
-        assert eval_executor_for(resources) is executor
-    finally:
-        install_eval_executor(None)
+    assert eval_executor_for(resources) is executor
 
+    install_eval_executor(None)
     assert eval_executor_for(resources) is None
 
 

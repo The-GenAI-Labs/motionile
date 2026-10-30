@@ -9,6 +9,7 @@ from tests.fakes.generation import TERMINAL, GenerationWorld
 from tests.unit.modules.generation.support import Harness, storyboard_content
 
 from motionile.core.ids import new_id
+from motionile.modules.audit import ActorType
 from motionile.modules.generation.models import Job
 from motionile.modules.generation.sweeper_repository import SweepStore, SweptJob
 from motionile.modules.generation.sweepers import APPROVAL_EXPIRED, STALLED_CODE, Sweeper
@@ -38,6 +39,17 @@ class FakeSweepStore:
     async def expired_approvals(self, before: datetime, after: UUID | None, limit: int) -> list[SweptJob]:
         rows = [
             job for job in self._world.jobs.values() if job.status == "awaiting_approval" and job.updated_at < before
+        ]
+        return self._page(rows, after, limit)
+
+    async def unresumed_approvals(self, before: datetime, after: UUID | None, limit: int) -> list[SweptJob]:
+        approved = {
+            row.job_id for row in self._world.storyboards if row.approved_at is not None and row.approved_at < before
+        }
+        rows = [
+            job
+            for job in self._world.jobs.values()
+            if job.status == "awaiting_approval" and job.cancel_requested_at is None and job.id in approved
         ]
         return self._page(rows, after, limit)
 
@@ -83,7 +95,9 @@ class Fixture:
 
         def store(session: AsyncSession) -> SweepStore:
             del session
-            return FakeSweepStore(harness.world)
+            return self.store_type(harness.world)
+
+        self.store_type: type[FakeSweepStore] = FakeSweepStore
 
         self.sweeper = Sweeper(transaction, harness.service, harness.runtime, harness.clock, self.renders, store)
 
@@ -243,3 +257,83 @@ async def test_sweeping_twice_does_nothing_the_second_time(fixture: Fixture) -> 
 
     assert await fixture.sweeper.fail_stalled_jobs() == 1
     assert await fixture.sweeper.fail_stalled_jobs() == 0
+
+
+async def test_an_approved_job_whose_resume_never_ran_is_failed_and_its_credits_returned(fixture: Fixture) -> None:
+    stuck = await fixture.job("awaiting_approval")
+    row = fixture.harness.world.add_storyboard(stuck, storyboard_content())
+    row.approved_at = fixture.harness.clock.now() - timedelta(minutes=31)
+    row.approved_by = stuck.user_id
+
+    assert await fixture.sweeper.fail_stalled_jobs() == 1
+
+    assert (stuck.status, stuck.error_code) == ("failed", STALLED_CODE)
+    assert fixture.harness.wallet() == (500, 0)
+    event = fixture.harness.world.events[-1]
+    assert (event.type, event.payload["code"]) == ("job.failed", STALLED_CODE)
+    assert event.payload["creditsReleased"] > 0
+
+
+async def test_an_approval_given_recently_is_left_for_the_resume_task(fixture: Fixture) -> None:
+    waiting = await fixture.job("awaiting_approval")
+    fixture.age(waiting, timedelta(hours=5))
+    row = fixture.harness.world.add_storyboard(waiting, storyboard_content())
+    row.approved_at = fixture.harness.clock.now() - timedelta(minutes=29)
+
+    assert await fixture.sweeper.fail_stalled_jobs() == 0
+
+    assert waiting.status == "awaiting_approval"
+    balance, reserved = fixture.harness.wallet()
+    assert (balance, reserved > 0) == (500, True)
+
+
+async def test_an_unapproved_storyboard_is_never_failed_by_the_stall_sweeper(fixture: Fixture) -> None:
+    waiting = await fixture.job("awaiting_approval")
+    fixture.harness.world.add_storyboard(waiting, storyboard_content())
+    fixture.age(waiting, timedelta(days=3))
+
+    assert await fixture.sweeper.fail_stalled_jobs() == 0
+    assert waiting.status == "awaiting_approval"
+
+
+async def test_an_approved_job_that_moved_on_before_the_sweep_is_not_failed(fixture: Fixture) -> None:
+    resumed = await fixture.job("awaiting_approval")
+    row = fixture.harness.world.add_storyboard(resumed, storyboard_content())
+    row.approved_at = fixture.harness.clock.now() - timedelta(hours=1)
+
+    class ResumingStore(FakeSweepStore):
+        async def unresumed_approvals(self, before: datetime, after: UUID | None, limit: int) -> list[SweptJob]:
+            found = await super().unresumed_approvals(before, after, limit)
+            resumed.status = "voicing"
+            return found
+
+    fixture.store_type = ResumingStore
+
+    assert await fixture.sweeper.fail_stalled_jobs() == 0
+    assert resumed.status == "voicing"
+    assert fixture.harness.wallet()[1] > 0
+
+
+async def test_an_approval_expiry_is_audited_as_the_system_not_the_user(fixture: Fixture) -> None:
+    waiting = await fixture.job("awaiting_approval")
+    fixture.harness.world.add_storyboard(waiting, storyboard_content())
+    fixture.age(waiting, timedelta(hours=169))
+    fixture.harness.audit.events.clear()
+
+    await fixture.sweeper.cancel_expired_approvals()
+
+    [event] = fixture.harness.audit.events
+    assert (event.action, event.actor_type, event.actor_user_id) == ("job.cancelled", ActorType.SYSTEM, None)
+    assert event.target_id == str(waiting.id)
+    assert event.metadata["reason"] == APPROVAL_EXPIRED
+
+
+async def test_finishing_a_user_requested_cancellation_is_audited_as_the_user(fixture: Fixture) -> None:
+    job = await fixture.job("rendering", cancel_requested_at=fixture.harness.clock.now())
+    fixture.age(job, timedelta(minutes=3))
+    fixture.harness.audit.events.clear()
+
+    await fixture.sweeper.finalize_cancelled_jobs()
+
+    [event] = fixture.harness.audit.events
+    assert (event.action, event.actor_type, event.actor_user_id) == ("job.cancelled", ActorType.USER, job.user_id)

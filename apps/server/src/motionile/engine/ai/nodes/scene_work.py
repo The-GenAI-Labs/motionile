@@ -24,6 +24,7 @@ from motionile.engine.ai.nodes.common import call_context
 from motionile.engine.ai.ports import CompositionIssue, JobSnapshot, LoadedSkill, SceneAttemptKind, SelectedSkills
 from motionile.engine.ai.prompts.canary import OutputScanner
 from motionile.engine.ai.scenes.fallback import fallback_module
+from motionile.engine.ai.scenes.literals import scene_literals
 from motionile.engine.ai.scenes.models import SceneModule
 from motionile.engine.ai.storyboard import Storyboard, StoryboardScene
 from motionile.engine.audio.narration_models import NarrationDocument, NarrationScene
@@ -91,7 +92,7 @@ async def ask_module(  # noqa: PLR0913
     )
     produced = (await work.deps.llm.generate(call, SceneModule)).output
     module = produced.model_copy(update={"scene_id": scene.id})
-    work.scanner.ensure_clean_code(module_text(module), source=SCANNED_SOURCE)
+    work.scanner.ensure_clean_scene(module_text(module), scene_literals(module), source=SCANNED_SOURCE)
     return module
 
 

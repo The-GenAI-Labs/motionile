@@ -80,6 +80,7 @@ class JobSnapshot:
     preferences: PreferenceContext
     parent: ParentContext | None = None
     render_id: UUID | None = None
+    credits_reserved: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,7 +172,7 @@ class SkillSummary:
 @dataclass(frozen=True, slots=True)
 class LoadedSkill:
     summary: SkillSummary
-    body: str
+    body: str = field(repr=False)
     tokens: Mapping[str, str]
     token_count: int
 
@@ -196,6 +197,8 @@ class ContextSection:
 
 class PipelineStore(Protocol):
     async def snapshot(self, job_id: UUID) -> JobSnapshot: ...
+
+    async def reservation_active(self, job_id: UUID) -> bool: ...
 
     async def transition(self, job_id: UUID, to: JobStatus, *, stage: str) -> bool: ...
 

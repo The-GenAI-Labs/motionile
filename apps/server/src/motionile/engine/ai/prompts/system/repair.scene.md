@@ -20,7 +20,8 @@ Additional system blocks after this prompt may hold skills for the visual style,
 
 The user message holds these blocks:
 
-- `<context>`: key and value lines written by the pipeline: `sceneId`, `position` and `sceneCount`, `aspects`, `style`, `goal`, `visualBrief`, `layoutNotes`, `onScreenText`, `keyTerms`, `durationSeconds`, `language`, and `attempt` (which repair this is).
+- `<context>`: key and value lines written by the pipeline: `sceneId`, `position` and `sceneCount`, `aspects`, `style`, `durationSeconds`, `language`, and `attempt` (which repair this is).
+- `<storyboard_edit>`: the storyboard fields of this scene, which the user may have edited by hand: `goal`, `visualBrief`, `layoutNotes`, `onScreenText` and `keyTerms`.
 - `<narration>`: the words spoken in this scene with the word list and its times in seconds.
 - `<previous_attempt>`: the failed module as JSON with `builder`, `css` and `assets`.
 - `<issues>`: one entry per problem. Each has a `code`, a `severity`, a `kind` (static, sanitize, contract, layout, runtime or review), a message, and when known the aspect, the time in milliseconds, a selector and details such as measured sizes.

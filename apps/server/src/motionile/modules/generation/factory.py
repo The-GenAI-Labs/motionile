@@ -17,6 +17,7 @@ from motionile.modules.generation.ai_wiring import (
     SettingsBudgetProvider,
     SettingsRoutingProvider,
 )
+from motionile.modules.generation.checkpoints import PostgresCheckpointPurger
 from motionile.modules.generation.job_events import JobEvents
 from motionile.modules.generation.lookups import (
     CatalogTopicLookup,
@@ -158,6 +159,7 @@ def generation_service_for(resources: Resources) -> GenerationService:
                 topics=CatalogTopicLookup(),
                 edit_guard=edit_guard_for(resources),
                 renders=media_service_for(resources),
+                checkpoints=PostgresCheckpointPurger(resources.settings),
                 clock=resources.clock,
                 events=resources.events,
                 dispatch=DISPATCH,

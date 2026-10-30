@@ -144,7 +144,10 @@ async def get_storyboard(
     summary="Save an edited storyboard as a new version while the job awaits approval",
     dependencies=WRITE_LIMIT,
     responses=problem_responses(
-        status.HTTP_404_NOT_FOUND, status.HTTP_409_CONFLICT, status.HTTP_422_UNPROCESSABLE_CONTENT
+        status.HTTP_404_NOT_FOUND,
+        status.HTTP_409_CONFLICT,
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
+        status.HTTP_503_SERVICE_UNAVAILABLE,
     ),
 )
 async def update_storyboard(
@@ -154,8 +157,7 @@ async def update_storyboard(
     database: DatabaseDep,
     service: GenerationServiceDep,
 ) -> StoryboardView:
-    async with database.transaction() as session:
-        return await service.update_storyboard(session, user_id, job_id, body)
+    return await service.update_storyboard(database.transaction, user_id, job_id, body)
 
 
 @jobs_router.post(
@@ -165,7 +167,10 @@ async def update_storyboard(
     summary="Ask the planner for a new storyboard with your instructions while the job awaits approval",
     dependencies=WRITE_LIMIT,
     responses=problem_responses(
-        status.HTTP_404_NOT_FOUND, status.HTTP_409_CONFLICT, status.HTTP_422_UNPROCESSABLE_CONTENT
+        status.HTTP_404_NOT_FOUND,
+        status.HTTP_409_CONFLICT,
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
+        status.HTTP_503_SERVICE_UNAVAILABLE,
     ),
 )
 async def regenerate_storyboard(
@@ -175,8 +180,7 @@ async def regenerate_storyboard(
     database: DatabaseDep,
     service: GenerationServiceDep,
 ) -> JobView:
-    async with database.transaction() as session:
-        return await service.regenerate(session, user_id, job_id, body)
+    return await service.regenerate(database.transaction, user_id, job_id, body)
 
 
 @jobs_router.post(
@@ -228,6 +232,7 @@ async def cancel_job(
         status.HTTP_404_NOT_FOUND,
         status.HTTP_409_CONFLICT,
         status.HTTP_422_UNPROCESSABLE_CONTENT,
+        status.HTTP_503_SERVICE_UNAVAILABLE,
     ),
 )
 async def revise_job(  # noqa: PLR0913, PLR0917
@@ -239,8 +244,9 @@ async def revise_job(  # noqa: PLR0913, PLR0917
     service: GenerationServiceDep,
     guard: Annotated[IdempotencyGuard, Depends(idempotent(REVISE_SCOPE))],
 ) -> JSONResponse:
-    async with database.transaction() as session:
-        view = await service.revise(session, user_id, job_id, body, read_key(request), context_from_request(request))
+    view = await service.revise(
+        database.transaction, user_id, job_id, body, read_key(request), context_from_request(request)
+    )
     return await guard.respond(view, status_code=status.HTTP_202_ACCEPTED, headers={"Location": f"/v1/jobs/{view.id}"})
 
 

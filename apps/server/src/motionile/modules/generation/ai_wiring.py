@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 from collections.abc import Awaitable, Callable, Sequence
 from contextlib import AbstractAsyncContextManager
@@ -7,16 +8,19 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from motionile.core.ids import new_id
 from motionile.engine.ai.guardrails import GuardResult, InputKind
-from motionile.engine.ai.llm.models import CallContext, LlmTask, LlmUsage, RoutingConfig
+from motionile.engine.ai.llm.models import CallContext, LlmError, LlmTask, LlmUsage, RoutingConfig
 from motionile.engine.ai.llm.routing import parse_routing
 from motionile.modules.credits import UsageEntry, UsageRecord, record_usage
+from motionile.modules.generation.exceptions import AiUnavailableError
 from motionile.modules.platform import SettingValue
 
 MAX_GUARD_CHARS = 30_000
 TEXT_SEPARATOR = "\n\n"
 GUARD_STAGE = "guard"
 KEY_PREFIX = "llm:"
+MAX_CONCURRENT_GUARDS = 8
 
 type SettingRead = Callable[[str], Awaitable[SettingValue]]
 type UsageRecorder = Callable[[AsyncSession, UsageEntry], Awaitable[UUID]]
@@ -94,9 +98,8 @@ def chunk_texts(texts: Sequence[str], limit: int = MAX_GUARD_CHARS) -> list[str]
     return chunks
 
 
-def guard_context(user_id: UUID, job_id: UUID, kind: InputKind, text: str) -> CallContext:
-    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:24]
-    return CallContext(user_id=user_id, job_id=job_id, stage=GUARD_STAGE, call_key=f"edit:{kind}:{job_id}:{digest}")
+def guard_context(user_id: UUID, job_id: UUID, kind: InputKind) -> CallContext:
+    return CallContext(user_id=user_id, job_id=job_id, stage=GUARD_STAGE, call_key=f"edit:{kind}:{job_id}:{new_id()}")
 
 
 class TextGuard(Protocol):
@@ -104,17 +107,23 @@ class TextGuard(Protocol):
 
 
 class InputGuardEditGuard:
-    def __init__(self, guard: TextGuard) -> None:
+    def __init__(self, guard: TextGuard, *, max_concurrent: int = MAX_CONCURRENT_GUARDS) -> None:
         self._guard = guard
+        self._slots = asyncio.Semaphore(max_concurrent)
 
     async def check_edit(self, user_id: UUID, job_id: UUID, texts: Sequence[str]) -> GuardResult:
         for chunk in chunk_texts(texts):
-            result = await self._guard.check(
-                chunk, guard_context(user_id, job_id, "storyboard_edit", chunk), "storyboard_edit"
-            )
+            result = await self._check(chunk, guard_context(user_id, job_id, "storyboard_edit"), "storyboard_edit")
             if not result.allowed:
                 return result
         return GuardResult.allow()
 
     async def check_instructions(self, user_id: UUID, job_id: UUID, text: str) -> GuardResult:
-        return await self._guard.check(text, guard_context(user_id, job_id, "instructions", text), "instructions")
+        return await self._check(text, guard_context(user_id, job_id, "instructions"), "instructions")
+
+    async def _check(self, text: str, context: CallContext, kind: InputKind) -> GuardResult:
+        async with self._slots:
+            try:
+                return await self._guard.check(text, context, kind)
+            except LlmError as error:
+                raise AiUnavailableError(error.code) from None

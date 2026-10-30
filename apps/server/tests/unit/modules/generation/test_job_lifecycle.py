@@ -1,13 +1,16 @@
 from uuid import UUID
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+from structlog.testing import capture_logs
 from tests.unit.modules.generation.support import START, Harness
 
 from motionile.core.db import run_after_commit
 from motionile.core.ids import new_id
 from motionile.core.pagination import Cursor
 from motionile.engine.ai.job_options import JobStatus
-from motionile.modules.credits import ReserveCommand
+from motionile.modules.audit import ActorType
+from motionile.modules.credits import CommitResult, ReservationNotActiveError, ReserveCommand
 from motionile.modules.generation import (
     JobCompleted,
     JobNotDeletableError,
@@ -115,10 +118,13 @@ async def test_failing_a_finished_job_is_a_no_op(harness: Harness) -> None:
     assert harness.world.jobs[job_id].status == "completed"
 
 
-async def test_a_waiting_job_cannot_be_failed_by_the_pipeline(harness: Harness) -> None:
-    job, _ = harness.waiting_job()
+async def test_a_waiting_job_can_be_failed_when_its_resume_never_ran(harness: Harness) -> None:
+    job_id = await started(harness, "awaiting_approval")
 
-    assert not await harness.service.fail_job(harness.session, job.id, "job_stalled", "x")
+    assert await harness.service.fail_job(harness.session, job_id, "job_stalled", "x")
+
+    assert harness.world.jobs[job_id].status == "failed"
+    assert harness.wallet() == (500, 0)
 
 
 async def test_failing_with_a_malformed_code_is_a_programming_error(harness: Harness) -> None:
@@ -303,3 +309,94 @@ async def test_a_completed_job_view_lists_its_fallback_scenes(harness: Harness) 
     view = await harness.service.get(harness.session, harness.user_id, job.id)
 
     assert view.fallback_scene_ids == ["alpha"]
+
+
+async def test_completion_reads_the_reservation_under_a_row_lock(harness: Harness) -> None:
+    job_id = await started(harness, "rendering")
+
+    await harness.service.complete_job(harness.session, job_id, 30_000)
+
+    assert harness.credit_store.locked_reservation_reads == 1
+
+
+async def test_a_reservation_lost_before_completion_completes_the_job_for_free_and_raises_the_alert(
+    harness: Harness,
+) -> None:
+    job_id = await started(harness, "rendering")
+    reservation = await harness.credits.active_reservation(harness.session, harness.user_id, "job", job_id)
+    assert reservation is not None
+    await harness.credits.release(harness.session, reservation.id, "release:lost")
+
+    with capture_logs() as logs:
+        charged = await harness.service.complete_job(harness.session, job_id, 30_000)
+
+    assert charged == 0
+    job = harness.world.jobs[job_id]
+    assert (job.status, job.credits_charged) == ("completed", 0)
+    assert harness.wallet() == (500, 0)
+    assert harness.world.events[-1].payload["creditsCharged"] == 0
+    alerts = [entry for entry in logs if entry.get("alert")]
+    assert [(entry["alert_code"], entry["job_id"]) for entry in alerts] == [
+        ("generation.reservation_lost", str(job_id))
+    ]
+
+
+async def test_a_commit_that_finds_the_reservation_settled_still_completes_the_job(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    job_id = await started(harness, "rendering")
+
+    async def refuse(session: AsyncSession, reservation_id: UUID, actual: int, key: str) -> CommitResult:
+        del session, reservation_id, actual, key
+        raise ReservationNotActiveError
+
+    monkeypatch.setattr(harness.credits, "commit", refuse)
+
+    with capture_logs() as logs:
+        charged = await harness.service.complete_job(harness.session, job_id, 30_000)
+
+    assert charged == 0
+    job = harness.world.jobs[job_id]
+    assert (job.status, job.credits_charged) == ("completed", 0)
+    assert harness.world.events[-1].type == "job.completed"
+    assert [entry["alert_code"] for entry in logs if entry.get("alert")] == ["generation.reservation_lost"]
+
+
+async def test_a_free_job_without_a_reservation_completes_without_an_alert(harness: Harness) -> None:
+    job = harness.world.add_job(harness.user_id, status="rendering", credits_reserved=0, credits_estimated=0)
+
+    with capture_logs() as logs:
+        assert await harness.service.complete_job(harness.session, job.id, 30_000) == 0
+
+    assert not [entry for entry in logs if entry.get("alert")]
+
+
+async def test_a_user_cancellation_is_audited_as_the_user(harness: Harness) -> None:
+    job_id = await started(harness)
+
+    await harness.service.cancel(harness.session, harness.user_id, job_id)
+
+    event = harness.audit.events[-1]
+    assert (event.action, event.actor_type, event.actor_user_id) == ("job.cancelled", ActorType.USER, harness.user_id)
+
+
+async def test_a_system_cancellation_is_audited_as_the_system(harness: Harness) -> None:
+    job_id = await started(harness, "awaiting_approval")
+
+    assert await harness.service.finish_cancellation(harness.session, job_id, "approval_expired")
+
+    event = harness.audit.events[-1]
+    assert (event.action, event.actor_type, event.actor_user_id) == ("job.cancelled", ActorType.SYSTEM, None)
+    assert event.metadata == {"creditsReleased": 140, "reason": "approval_expired"}
+
+
+async def test_the_failure_event_payload_is_cut_to_the_published_shape(harness: Harness) -> None:
+    job_id = await started(harness, "generating")
+
+    await harness.service.fail_job(harness.session, job_id, "tts_failed", "x" * 5_000)
+
+    payload = harness.world.events[-1].payload
+    assert set(payload) == {"code", "message", "creditsReleased"}
+    assert len(payload["message"]) == 500
+    assert harness.world.jobs[job_id].error_message is not None
+    assert len(harness.world.jobs[job_id].error_message or "") == 2_000

@@ -6,7 +6,7 @@ from motionile.engine.ai.graphs.errors import JobCancelled, JobEnded, PipelineEr
 from motionile.engine.ai.graphs.events import emit_progress
 from motionile.engine.ai.graphs.stages import Stage
 from motionile.engine.ai.graphs.state import PipelineState
-from motionile.engine.ai.nodes.common import ensure_active, job_id_of, stage_scope
+from motionile.engine.ai.nodes.common import ensure_active, job_id_of, require_reservation, stage_scope
 from motionile.engine.ai.nodes.composition import Composition, load_composition
 from motionile.engine.ai.ports import JobSnapshot, NarrationScript, RenderProgress
 
@@ -60,6 +60,7 @@ async def run_render(deps: PipelineDependencies, state: PipelineState) -> Pipeli
     job_id = job_id_of(state)
     async with stage_scope(deps, job_id, Stage.RENDER):
         job = await deps.store.snapshot(job_id)
+        await require_reservation(deps, job)
         composition = await load_composition(deps, job_id)
         render_id = await ensure_render(deps, job, composition)
         final = await await_render(deps, job_id, render_id)

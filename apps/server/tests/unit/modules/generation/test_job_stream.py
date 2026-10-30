@@ -16,6 +16,8 @@ from motionile.modules.generation.job_events import JobMessage, JobSubscription
 from motionile.modules.generation.schemas import JobView
 from motionile.modules.generation.stream import (
     HEARTBEAT_FRAME,
+    MAX_STREAM_SECONDS,
+    RECONNECT_FRAME,
     message_frame,
     parse_last_event_id,
     stream_job_events,
@@ -303,3 +305,41 @@ def test_a_frame_carries_the_event_id_and_one_json_line() -> None:
 @pytest.mark.parametrize("raw", [b"not json", b"{}", b'{"id": "x"}'])
 def test_a_malformed_live_message_is_dropped(raw: bytes) -> None:
     assert JobMessage.from_json(raw) is None
+
+
+async def never_disconnected() -> bool:
+    return False
+
+
+async def test_a_long_stream_ends_with_a_reconnect_frame_so_the_client_authenticates_again() -> None:
+    source = FakeSource(view_with("rendering"))
+    lease = FakeLease()
+
+    stream = stream_job_events(
+        source,
+        FakeEvents(),
+        new_id(),
+        after=None,
+        is_disconnected=never_disconnected,
+        lease=lease,
+        poll_seconds=0.001,
+        max_seconds=0.02,
+    )
+    frames = [frame async for frame in stream]
+
+    assert decode(frames[0])[1] == "snapshot"
+    assert frames[-1] == RECONNECT_FRAME
+    assert decode(frames[-1])[1:] == ("reconnect", {})
+    assert lease.released == 1
+
+
+async def test_a_stream_inside_its_time_limit_never_sends_a_reconnect_frame() -> None:
+    source = FakeSource(view_with("rendering"))
+
+    frames = await collect(source, FakeEvents(), polls=3)
+
+    assert RECONNECT_FRAME not in frames
+
+
+def test_the_default_stream_limit_is_fifteen_minutes() -> None:
+    assert MAX_STREAM_SECONDS == 900.0

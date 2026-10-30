@@ -45,7 +45,7 @@ class PromptVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     checksum: Mapped[bytes]
     canary: Mapped[str]
     eval_status: Mapped[str] = mapped_column(server_default=text("'pending'"))
-    eval_report: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    eval_report: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     created_by: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
 

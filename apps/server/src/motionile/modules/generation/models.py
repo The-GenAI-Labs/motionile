@@ -140,9 +140,9 @@ class Scene(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     target_duration_ms: Mapped[int] = mapped_column(Integer)
     actual_duration_ms: Mapped[int | None]
     audio_asset_id: Mapped[UUID | None] = mapped_column(ForeignKey("assets.id", ondelete="SET NULL"))
-    word_timestamps: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    word_timestamps: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB(none_as_null=True))
     html_asset_id: Mapped[UUID | None] = mapped_column(ForeignKey("assets.id", ondelete="SET NULL"))
-    module: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    module: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     status: Mapped[str] = mapped_column(server_default=text("'pending'"))
     repair_attempts: Mapped[int] = mapped_column(SmallInteger, server_default="0")
     is_fallback: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))

@@ -77,7 +77,7 @@ class SkillVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     frontmatter: Mapped[dict[str, Any]] = mapped_column(JSONB)
     checksum: Mapped[bytes]
     scan_status: Mapped[str] = mapped_column(server_default=text("'pending'"))
-    scan_report: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    scan_report: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     scanned_at: Mapped[datetime | None]
     created_by: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 

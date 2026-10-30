@@ -65,7 +65,7 @@ build-backend = "uv_build"
 
 [tool.uv]
 default-groups = ["dev", "render"]
-override-dependencies = ["uuid-utils>=1.0.0"]
+override-dependencies = ["uuid-utils>=1.0.0", "filelock>=4.2.1"]
 
 [tool.ruff]
 line-length = 120
